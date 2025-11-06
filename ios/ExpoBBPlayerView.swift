@@ -370,11 +370,13 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func setMuted(_ muted: Bool) {
-    playerController.playerView?.player.setMuted(muted: muted, userAction: true)
+    guard let player = playerController.playerView?.player else { return }
+    player.setMuted(muted: muted, userAction: true)
   }
 
   func setVolume(_ volume: Double) {
-    playerController.playerView?.player.setVolume(volume: Float(volume), userAction: true)
+    guard let player = playerController.playerView?.player else { return }
+    player.setVolume(volume: volume, userAction: true)
   }
 
   func loadWithClipId(_ clipId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
