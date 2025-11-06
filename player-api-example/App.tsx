@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, Tex
 import { StatusBar } from 'expo-status-bar';
 import { ExpoBBPlayerView, convertPlayoutUrlToMediaclipUrl } from 'expo-bb-player';
 import type { ExpoBBPlayerViewType, Phase, State } from 'expo-bb-player';
+import { BlueBillywigLogo } from './BlueBillywigLogo';
 
 // Demo video URLs
 const DEMO_VIDEOS = [
@@ -143,8 +144,8 @@ export default function App() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Blue Billywig Player API Demo</Text>
-        <Text style={styles.subtitle}>Comprehensive API Example</Text>
+        <BlueBillywigLogo height={32} />
+        <Text style={styles.subtitle}>Player API Demo</Text>
       </View>
 
       <ScrollView style={styles.scrollView}>
@@ -397,7 +398,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#002837',
     padding: 16,
     alignItems: 'center',
   },
@@ -409,7 +410,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#e0e0e0',
+    color: '#ffffff',
+    marginTop: 4,
   },
   playerContainer: {
     backgroundColor: '#000',
@@ -458,7 +460,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   button: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#649BD2',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 6,
@@ -466,10 +468,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonActive: {
-    backgroundColor: '#004499',
+    backgroundColor: '#002837',
   },
   buttonPrimary: {
-    backgroundColor: '#00cc66',
+    backgroundColor: '#649BD2',
     width: '100%',
     marginTop: 12,
   },
@@ -528,7 +530,7 @@ const styles = StyleSheet.create({
   eventLogName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0066cc',
+    color: '#649BD2',
     marginBottom: 2,
   },
   eventLogData: {
@@ -547,7 +549,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
     padding: 16,
     borderTopWidth: 3,
-    borderTopColor: '#0066cc',
+    borderTopColor: '#649BD2',
   },
   customControlsTop: {
     flexDirection: 'row',
@@ -583,7 +585,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#0066cc',
+    backgroundColor: '#649BD2',
   },
   customControlsButtons: {
     flexDirection: 'row',
@@ -600,7 +602,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   customControlButtonPrimary: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#649BD2',
     minWidth: 100,
   },
   customControlButtonText: {
