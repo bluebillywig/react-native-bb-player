@@ -39,6 +39,8 @@ enum BBPlayerEvent {
     case viewFinished
     case viewStarted
     case volumeChange(Double)
+    case timeUpdate(currentTime: Double, duration: Double)
+    case apiReady
 }
 
 protocol BBPlayerViewControllerDelegate: AnyObject {

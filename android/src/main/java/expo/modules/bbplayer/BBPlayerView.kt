@@ -76,6 +76,31 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     private val onCanPlay by EventDispatcher<Unit>()
     private val onStall by EventDispatcher<Unit>()
 
+    // Additional missing event dispatchers
+    private val onModeChange by EventDispatcher<Map<String, String?>>()
+    private val onAutoPause by EventDispatcher<Map<String, String?>>()
+    private val onAutoPausePlay by EventDispatcher<Map<String, String?>>()
+    private val onFullscreen by EventDispatcher<Unit>()
+    private val onRetractFullscreen by EventDispatcher<Unit>()
+    private val onRequestCollapse by EventDispatcher<Unit>()
+    private val onRequestExpand by EventDispatcher<Unit>()
+    private val onCustomStatistics by EventDispatcher<Map<String, Any?>>()
+    private val onViewStarted by EventDispatcher<Unit>()
+    private val onViewFinished by EventDispatcher<Unit>()
+    private val onApiReady by EventDispatcher<Unit>()
+
+    // Ad event dispatchers
+    private val onAdLoadStart by EventDispatcher<Unit>()
+    private val onAdLoaded by EventDispatcher<Unit>()
+    private val onAdNotFound by EventDispatcher<Unit>()
+    private val onAdError by EventDispatcher<Map<String, String?>>()
+    private val onAdStarted by EventDispatcher<Unit>()
+    private val onAdQuartile1 by EventDispatcher<Unit>()
+    private val onAdQuartile2 by EventDispatcher<Unit>()
+    private val onAdQuartile3 by EventDispatcher<Unit>()
+    private val onAdFinished by EventDispatcher<Unit>()
+    private val onAllAdsCompleted by EventDispatcher<Unit>()
+
     fun setJsonUrl(url: String) {
         Log.d("BBPlayerView", "setJsonUrl: $url")
         this.jsonUrl = url
@@ -139,6 +164,176 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     fun seek(offsetInSeconds: Double) {
         if (::playerView.isInitialized) {
             playerView.player?.seek(offsetInSeconds)
+        }
+    }
+
+    fun setVolume(volume: Double) {
+        if (::playerView.isInitialized) {
+            playerView.setApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.volume, volume)
+        }
+    }
+
+    fun setMuted(muted: Boolean) {
+        if (::playerView.isInitialized) {
+            playerView.setApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.muted, muted)
+        }
+    }
+
+    fun autoPlayNextCancel() {
+        if (::playerView.isInitialized) {
+            playerView.player?.autoPlayNextCancel()
+        }
+    }
+
+    fun collapse() {
+        if (::playerView.isInitialized) {
+            playerView.player?.collapse()
+        }
+    }
+
+    fun expand() {
+        if (::playerView.isInitialized) {
+            playerView.player?.expand()
+        }
+    }
+
+    fun enterFullscreen() {
+        if (::playerView.isInitialized) {
+            playerView.player?.enterFullScreen()
+        }
+    }
+
+    fun exitFullscreen() {
+        if (::playerView.isInitialized) {
+            playerView.player?.exitFullScreen()
+        }
+    }
+
+    fun destroy() {
+        if (::playerView.isInitialized) {
+            playerView.player?.destroy()
+        }
+    }
+
+    // Getter methods
+    fun getPhase(): Phase? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.phase) as? Phase
+        } else null
+    }
+
+    fun getState(): State? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.state) as? State
+        } else null
+    }
+
+    fun getMode(): String? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.mode) as? String
+        } else null
+    }
+
+    fun getPlayoutData(): com.bluebillywig.bbnativeshared.model.Playout? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.playoutData) as? com.bluebillywig.bbnativeshared.model.Playout
+        } else null
+    }
+
+    fun getProjectData(): Project? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.projectData) as? Project
+        } else null
+    }
+
+    fun getClipData(): MediaClip? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.clipData) as? MediaClip
+        } else null
+    }
+
+    fun getDuration(): Double? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.duration) as? Double
+        } else null
+    }
+
+    fun getVolume(): Double? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.volume) as? Double
+        } else null
+    }
+
+    fun getMuted(): Boolean? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.muted) as? Boolean
+        } else null
+    }
+
+    fun getInView(): Boolean? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.inView) as? Boolean
+        } else null
+    }
+
+    fun getControls(): Boolean? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.controls) as? Boolean
+        } else null
+    }
+
+    fun getAdMediaWidth(): Double? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.adMediaWidth) as? Double
+        } else null
+    }
+
+    fun getAdMediaHeight(): Double? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.adMediaHeight) as? Double
+        } else null
+    }
+
+    fun getAdMediaClip(): MediaClip? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.adMediaClip) as? MediaClip
+        } else null
+    }
+
+    // Load methods
+    fun loadWithClipId(clipId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+        if (::playerView.isInitialized) {
+            playerView.player?.loadWithClipId(clipId, initiator, autoPlay, seekTo)
+        }
+    }
+
+    fun loadWithClipListId(clipListId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+        if (::playerView.isInitialized) {
+            playerView.player?.loadWithClipListId(clipListId, initiator, autoPlay, seekTo)
+        }
+    }
+
+    fun loadWithProjectId(projectId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+        if (::playerView.isInitialized) {
+            playerView.player?.loadWithProjectId(projectId, initiator, autoPlay, seekTo)
+        }
+    }
+
+    fun loadWithClipJson(clipJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+        if (::playerView.isInitialized) {
+            playerView.player?.loadWithClipJson(clipJson, initiator, autoPlay, seekTo)
+        }
+    }
+
+    fun loadWithClipListJson(clipListJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+        if (::playerView.isInitialized) {
+            playerView.player?.loadWithClipListJson(clipListJson, initiator, autoPlay, seekTo)
+        }
+    }
+
+    fun loadWithProjectJson(projectJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+        if (::playerView.isInitialized) {
+            playerView.player?.loadWithProjectJson(projectJson, initiator, autoPlay, seekTo)
         }
     }
 
@@ -328,6 +523,117 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     override fun didTriggerStall(view: BBNativePlayerView) {
         Log.d("BBPlayerView", "didTriggerStall")
         onStall(Unit)
+    }
+
+    // Additional missing delegate implementations
+    override fun didTriggerModeChange(view: BBNativePlayerView, mode: String?) {
+        Log.d("BBPlayerView", "didTriggerModeChange: $mode")
+        onModeChange(mapOf("mode" to mode))
+    }
+
+    override fun didTriggerAutoPause(view: BBNativePlayerView, why: String?) {
+        Log.d("BBPlayerView", "didTriggerAutoPause: $why")
+        onAutoPause(mapOf("why" to why))
+    }
+
+    override fun didTriggerAutoPausePlay(view: BBNativePlayerView, why: String?) {
+        Log.d("BBPlayerView", "didTriggerAutoPausePlay: $why")
+        onAutoPausePlay(mapOf("why" to why))
+    }
+
+    override fun didTriggerFullscreen(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerFullscreen")
+        onFullscreen(Unit)
+    }
+
+    override fun didTriggerRetractFullscreen(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerRetractFullscreen")
+        onRetractFullscreen(Unit)
+    }
+
+    override fun didRequestCollapse(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didRequestCollapse")
+        onRequestCollapse(Unit)
+    }
+
+    override fun didRequestExpand(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didRequestExpand")
+        onRequestExpand(Unit)
+    }
+
+    override fun didTriggerCustomStatistics(view: BBNativePlayerView, ident: String?, ev: String?, aux: Map<String, Any?>?) {
+        Log.d("BBPlayerView", "didTriggerCustomStatistics: ident=$ident, ev=$ev")
+        onCustomStatistics(mapOf(
+            "ident" to ident,
+            "ev" to ev,
+            "aux" to aux
+        ))
+    }
+
+    override fun didTriggerViewStarted(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerViewStarted")
+        onViewStarted(Unit)
+    }
+
+    override fun didTriggerViewFinished(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerViewFinished")
+        onViewFinished(Unit)
+    }
+
+    override fun didTriggerApiReady(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerApiReady")
+        onApiReady(Unit)
+    }
+
+    // Ad delegate implementations
+    override fun didTriggerAdLoadStart(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerAdLoadStart")
+        onAdLoadStart(Unit)
+    }
+
+    override fun didTriggerAdLoaded(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerAdLoaded")
+        onAdLoaded(Unit)
+    }
+
+    override fun didTriggerAdNotFound(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerAdNotFound")
+        onAdNotFound(Unit)
+    }
+
+    override fun didTriggerAdError(view: BBNativePlayerView, error: String?) {
+        Log.e("BBPlayerView", "didTriggerAdError: $error")
+        onAdError(mapOf("error" to error))
+    }
+
+    override fun didTriggerAdStarted(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerAdStarted")
+        onAdStarted(Unit)
+    }
+
+    override fun didTriggerAdQuartile1(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerAdQuartile1")
+        onAdQuartile1(Unit)
+    }
+
+    override fun didTriggerAdQuartile2(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerAdQuartile2")
+        onAdQuartile2(Unit)
+    }
+
+    override fun didTriggerAdQuartile3(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerAdQuartile3")
+        onAdQuartile3(Unit)
+    }
+
+    override fun didTriggerAdFinished(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerAdFinished")
+        onAdFinished(Unit)
+    }
+
+    override fun didTriggerAllAdsCompleted(view: BBNativePlayerView) {
+        Log.d("BBPlayerView", "didTriggerAllAdsCompleted")
+        onAllAdsCompleted(Unit)
     }
 
     override fun onDetachedFromWindow() {

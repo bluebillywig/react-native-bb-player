@@ -61,6 +61,10 @@ public class ExpoBBPlayerModule: Module {
         return view.projectData()
       }
 
+      AsyncFunction("state") { (view: ExpoBBPlayerView) in
+        return view.state()
+      }
+
       AsyncFunction("playerState") { (view: ExpoBBPlayerView) in
         return view.state()
       }
@@ -109,6 +113,34 @@ public class ExpoBBPlayerModule: Module {
         return view.setVolume(volume)
       }
 
+      AsyncFunction("destroy") { (view: ExpoBBPlayerView) in
+        return view.destroy()
+      }
+
+      AsyncFunction("loadWithClipId") { (view: ExpoBBPlayerView, clipId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) in
+        return view.loadWithClipId(clipId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo)
+      }
+
+      AsyncFunction("loadWithClipListId") { (view: ExpoBBPlayerView, clipListId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) in
+        return view.loadWithClipListId(clipListId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo)
+      }
+
+      AsyncFunction("loadWithProjectId") { (view: ExpoBBPlayerView, projectId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) in
+        return view.loadWithProjectId(projectId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo)
+      }
+
+      AsyncFunction("loadWithClipJson") { (view: ExpoBBPlayerView, clipJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) in
+        return view.loadWithClipJson(clipJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo)
+      }
+
+      AsyncFunction("loadWithClipListJson") { (view: ExpoBBPlayerView, clipListJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) in
+        return view.loadWithClipListJson(clipListJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo)
+      }
+
+      AsyncFunction("loadWithProjectJson") { (view: ExpoBBPlayerView, projectJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) in
+        return view.loadWithProjectJson(projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo)
+      }
+
       Events([
         "onDidFailWithError",
         "onDidRequestCollapse",
@@ -148,6 +180,8 @@ public class ExpoBBPlayerModule: Module {
         "onDidTriggerViewFinished",
         "onDidTriggerViewStarted",
         "onDidTriggerVolumeChange",
+        "onDidTriggerTimeUpdate",
+        "onDidTriggerApiReady",
       ])
     }
   }

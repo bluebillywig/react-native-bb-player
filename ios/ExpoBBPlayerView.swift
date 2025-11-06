@@ -50,6 +50,8 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   private let onDidTriggerViewFinished = EventDispatcher()
   private let onDidTriggerViewStarted = EventDispatcher()
   private let onDidTriggerVolumeChange = EventDispatcher()
+  private let onDidTriggerTimeUpdate = EventDispatcher()
+  private let onDidTriggerApiReady = EventDispatcher()
 
   override func didMoveToWindow() {
     super.didMoveToWindow()
@@ -201,6 +203,15 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
 
     case .volumeChange(let volume):
       onDidTriggerVolumeChange(["payload": volume])
+
+    case .timeUpdate(let currentTime, let duration):
+      onDidTriggerTimeUpdate([
+        "currentTime": currentTime,
+        "duration": duration
+      ])
+
+    case .apiReady:
+      onDidTriggerApiReady()
     }
   }
 
@@ -281,11 +292,17 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func enterFullscreen() {
-
+    // iOS SDK Note: The iOS SDK uses enterFullScreen() method
+    playerController.playerView?.player.enterFullScreen()
   }
 
   func exitFullscreen() {
+    // iOS SDK Note: The iOS SDK uses exitFullScreen() method
+    playerController.playerView?.player.exitFullScreen()
+  }
 
+  func destroy() {
+    playerController.playerView?.player.destroy()
   }
 
   func pause() {
@@ -309,5 +326,29 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   func setVolume(_ volume: Double) {
     playerController.playerView?.player
       .setVolume(volume: volume, userAction: true)
+  }
+
+  func loadWithClipId(_ clipId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
+    playerController.playerView?.player.loadWithClipId(clipId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  }
+
+  func loadWithClipListId(_ clipListId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
+    playerController.playerView?.player.loadWithClipListId(clipListId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  }
+
+  func loadWithProjectId(_ projectId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
+    playerController.playerView?.player.loadWithProjectId(projectId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  }
+
+  func loadWithClipJson(_ clipJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
+    playerController.playerView?.player.loadWithClipJson(clipJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  }
+
+  func loadWithClipListJson(_ clipListJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
+    playerController.playerView?.player.loadWithClipListJson(clipListJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  }
+
+  func loadWithProjectJson(_ projectJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
+    playerController.playerView?.player.loadWithProjectJson(projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
   }
 }

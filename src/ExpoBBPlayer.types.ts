@@ -10,6 +10,7 @@ import type {
 } from "./types";
 
 export type ExpoBBPlayerViewType = {
+  // Getter methods
   adMediaHeight: () => Promise<number>;
   adMediaWidth: () => Promise<number>;
   adMediaClip: () => Promise<MediaClip>;
@@ -22,7 +23,10 @@ export type ExpoBBPlayerViewType = {
   playoutData: () => Promise<Project>;
   projectData: () => Promise<Project>;
   playerState: () => Promise<State>;
+  state: () => Promise<State>;
   volume: () => Promise<number>;
+
+  // Playback control methods
   autoPlayNextCancel: () => Promise<void>;
   collapse: () => Promise<void>;
   expand: () => Promise<void>;
@@ -33,6 +37,45 @@ export type ExpoBBPlayerViewType = {
   seek: (position: number) => Promise<void>;
   setMuted: (muted: boolean) => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
+  destroy: () => Promise<void>;
+
+  // Load methods
+  loadWithClipId: (
+    clipId: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => Promise<void>;
+  loadWithClipListId: (
+    clipListId: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => Promise<void>;
+  loadWithProjectId: (
+    projectId: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => Promise<void>;
+  loadWithClipJson: (
+    clipJson: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => Promise<void>;
+  loadWithClipListJson: (
+    clipListJson: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => Promise<void>;
+  loadWithProjectJson: (
+    projectJson: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => Promise<void>;
 };
 
 export type ExpoBBPlayerViewProps = {
@@ -54,6 +97,7 @@ export type ExpoBBPlayerViewProps = {
   onDidTriggerAdQuartile3?: () => void;
   onDidTriggerAdStarted?: () => void;
   onDidTriggerAllAdsCompleted?: () => void;
+  onDidTriggerApiReady?: () => void;
   onDidTriggerAutoPause?: (why: string) => void;
   onDidTriggerAutoPausePlay?: (why: string) => void;
   onDidTriggerCanPlay?: () => void;

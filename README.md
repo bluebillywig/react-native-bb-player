@@ -32,7 +32,13 @@ Native video player for React Native - powered by Blue Billywig's iOS (AVPlayer)
 - [API Reference](#api-reference)
 - [Advanced Guides](#advanced-guides)
 - [Troubleshooting](#troubleshooting)
-- [Example App](#example-app)
+- [Hello World Demo App](#hello-world-demo-app)
+
+## Documentation
+
+- **[Complete API Reference](./API.md)** - Comprehensive documentation of all methods, events, and types
+- **[Build Configuration Guide](./claude.md)** - Build settings and requirements
+- **[TypeScript Types](./src/ExpoBBPlayer.types.ts)** - Full type definitions
 
 ## Installation
 
@@ -371,210 +377,92 @@ export function LoadingExample() {
 
 ## API Reference
 
-### Component Props
+### Quick Reference
 
-#### `ExpoBBPlayerView`
+**For complete API documentation, see [API.md](./API.md)**
+
+### Component Props
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
 | `jsonUrl` | `string` | ✅ | Blue Billywig media JSON URL |
 | `options` | `Record<string, unknown>` | ❌ | Player configuration options |
 | `style` | `ViewStyle` | ❌ | React Native style object |
-| Event props | See [Events](#events) | ❌ | Event callback handlers |
+| Event props | See [API.md](./API.md#player-events) | ❌ | Event callback handlers |
 
-### Player Options
-
-Common options you can pass to the `options` prop:
+### Common Methods
 
 ```typescript
-{
-  autoPlay: boolean;           // Auto-start playback (default: false)
-  autoMute: boolean;           // Start muted (default: false)
-  autoLoop: boolean;           // Loop playback (default: false)
-  allowCollapseExpand: boolean; // Allow outstream sizing (default: false)
-}
-```
-
-### Methods
-
-Access these methods via the player ref:
-
-#### Playback Control
-
-```typescript
+// Playback Control
 play(): Promise<void>
 pause(): Promise<void>
-seek(position: number): Promise<void>  // Position in seconds
-```
+seek(position: number): Promise<void>
 
-#### Volume Control
-
-```typescript
-setVolume(volume: number): Promise<void>  // 0.0 - 1.0
+// Volume Control
+setVolume(volume: number): Promise<void>
 setMuted(muted: boolean): Promise<void>
+
+// Layout Control
+collapse(): Promise<void>
+expand(): Promise<void>
+enterFullscreen(): Promise<void>
+exitFullscreen(): Promise<void>
+
+// Load Content Dynamically
+loadWithClipId(clipId: string, initiator?: string, autoPlay?: boolean, seekTo?: number): Promise<void>
+loadWithProjectId(projectId: string, initiator?: string, autoPlay?: boolean, seekTo?: number): Promise<void>
+loadWithClipJson(clipJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number): Promise<void>
+
+// State Getters
+state(): Promise<State>
+phase(): Promise<Phase>
+duration(): Promise<number>
+volume(): Promise<number>
+muted(): Promise<boolean>
+playoutData(): Promise<Project>
+projectData(): Promise<Project>
+
+// Cleanup
+destroy(): Promise<void>
 ```
 
-#### Fullscreen Control
+### Common Events
 
 ```typescript
-enterFullscreen(): Promise<void>  // Android only; iOS no-op
-exitFullscreen(): Promise<void>   // Android only; iOS no-op
+// Setup & Lifecycle
+onDidSetupWithJsonUrl?: (url: string) => void
+onDidTriggerApiReady?: () => void
+onDidFailWithError?: (error: string) => void
+
+// Playback
+onDidTriggerPlay?: () => void
+onDidTriggerPause?: () => void
+onDidTriggerEnded?: () => void
+onDidTriggerTimeUpdate?: (currentTime: number, duration: number) => void
+
+// State Changes
+onDidTriggerStateChange?: (state: State) => void
+onDidTriggerPhaseChange?: (phase: Phase) => void
+
+// Media Loading
+onDidTriggerMediaClipLoaded?: (clip: MediaClip) => void
+onDidTriggerProjectLoaded?: (project: Project) => void
+
+// Ads (10+ ad events available - see API.md)
+onDidTriggerAdStarted?: () => void
+onDidTriggerAdFinished?: () => void
 ```
 
-> **Note**: Fullscreen methods are currently only implemented on Android. iOS implementation is pending.
-
-#### Outstream Sizing Control
-
-```typescript
-expand(): Promise<void>    // Expand outstream player
-collapse(): Promise<void>  // Collapse outstream player
-```
-
-#### Ad Control
-
-```typescript
-autoPlayNextCancel(): Promise<void>
-```
-
-#### State Getters
-
-```typescript
-playerState(): Promise<State | undefined>
-phase(): Promise<Phase | undefined>
-duration(): Promise<number | undefined>
-volume(): Promise<number | undefined>
-muted(): Promise<boolean | undefined>
-inView(): Promise<boolean | undefined>
-mode(): Promise<string | undefined>
-controls(): Promise<boolean | undefined>  // Android only; iOS returns undefined
-playoutData(): Promise<Playout | undefined>
-projectData(): Promise<Project | undefined>
-```
-
-#### Ad Data Getters
-
-```typescript
-adMediaHeight(): Promise<number | undefined>
-adMediaWidth(): Promise<number | undefined>
-adMediaClip(): Promise<MediaClip | undefined>
-```
-
-### Events
-
-All events below are exposed as optional props on `ExpoBBPlayerView`:
-
-#### Player Lifecycle Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidSetupWithJsonUrl` | `string` | Player finished initial setup |
-| `onDidTriggerCanPlay` | - | Player is ready |
-| `onDidFailWithError` | `string` | Fatal error occurred |
-
-#### Playback Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidTriggerPlay` | - | Playback started |
-| `onDidTriggerPause` | - | Playback paused |
-| `onDidTriggerPlaying` | - | Playback is progressing |
-| `onDidTriggerEnded` | - | Playback ended |
-| `onDidTriggerSeeking` | - | Seek started |
-| `onDidTriggerSeeked` | `number` | Seek completed (position in seconds) |
-| `onDidTriggerStall` | - | Playback stalled (buffering) |
-
-#### State Change Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidTriggerStateChange` | `State` | Player state changed |
-| `onDidTriggerPhaseChange` | `Phase` | Player phase changed |
-| `onDidTriggerModeChange` | `string` | Player mode changed |
-| `onDidTriggerDurationChange` | `number` | Media duration changed (seconds) |
-| `onDidTriggerTimeUpdate` | `(currentTime: number, duration: number)` | Playback position updated |
-| `onDidTriggerVolumeChange` | `number` | Volume changed (0.0 - 1.0) |
-
-#### Fullscreen Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidTriggerFullscreen` | - | Entered fullscreen |
-| `onDidTriggerRetractFullscreen` | - | Exited fullscreen |
-
-#### Outstream Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidRequestExpand` | - | Player requested expansion |
-| `onDidRequestCollapse` | - | Player requested collapse |
-
-#### Media Loading Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidTriggerProjectLoaded` | `Project` | Project metadata loaded |
-| `onDidTriggerMediaClipLoaded` | `MediaClip` | Media clip metadata loaded |
-| `onDidTriggerMediaClipFailed` | - | Media clip failed to load |
-
-#### Ad Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidTriggerAdLoadStart` | - | Ad load started |
-| `onDidTriggerAdLoaded` | - | Ad loaded successfully |
-| `onDidTriggerAdStarted` | - | Ad playback started |
-| `onDidTriggerAdQuartile1` | - | Ad reached 25% |
-| `onDidTriggerAdQuartile2` | - | Ad reached 50% |
-| `onDidTriggerAdQuartile3` | - | Ad reached 75% |
-| `onDidTriggerAdFinished` | - | Ad playback completed |
-| `onDidTriggerAdNotFound` | - | No ad available |
-| `onDidTriggerAdError` | `string` | Ad error occurred |
-| `onDidTriggerAllAdsCompleted` | - | All ads completed |
-
-#### Auto-pause Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidTriggerAutoPause` | Android: `string` · iOS: `void` | Auto-pause triggered |
-| `onDidTriggerAutoPausePlay` | Android: `string` · iOS: `void` | Auto-pause resumed |
-
-> **Platform Note**: On Android, auto-pause events include a `why` string explaining the reason. On iOS, no payload is provided.
-
-#### View Tracking Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidTriggerViewStarted` | - | View tracking started |
-| `onDidTriggerViewFinished` | - | View tracking finished |
-
-#### Misc Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `onDidRequestOpenUrl` | `string` | Player requested to open a URL |
-| `onDidTriggerCustomStatistics` | `{ ident: string; ev: string; aux: Record<string,string> }` | Custom analytics event |
+**See [API.md](./API.md) for complete documentation of all 45+ methods and 35+ events.**
 
 ### TypeScript Types
 
 ```typescript
-// Player States
-type State = "IDLE" | "LOADING" | "PLAYING" | "PAUSED" | "ERROR";
-
-// Player Phases
-type Phase = "INIT" | "PRE" | "MAIN" | "POST" | "EXIT";
-
-// Media Metadata (see src/types.ts for full definitions)
-interface Project { /* ... */ }
-interface MediaClip { /* ... */ }
-interface Playout { /* ... */ }
-interface CustomStatistics {
-  ident: string;
-  ev: string;
-  aux: Record<string, string>;
-}
+type State = "IDLE" | "LOADING" | "READY" | "PLAYING" | "PAUSED" | "ENDED" | "ERROR";
+type Phase = "PRE" | "MAIN" | "POST" | "EXIT";
 ```
 
-For complete type definitions, see [src/types.ts](./src/types.ts).
+For complete type definitions, see [src/ExpoBBPlayer.types.ts](./src/ExpoBBPlayer.types.ts) and [API.md](./API.md).
 
 ## Advanced Guides
 
@@ -902,12 +790,12 @@ Enable verbose logging:
 />
 ```
 
-## Example App
+## Hello World Demo App
 
-The `/example` directory contains a complete working app demonstrating all features:
+The `/player-hello-world` directory contains a minimal working demo app:
 
 ```bash
-cd example
+cd player-hello-world
 npm install
 
 # Run on iOS
@@ -917,14 +805,26 @@ npx expo run:ios
 npx expo run:android
 ```
 
-The example app includes:
-- Basic player setup
-- Player controls (play, pause, seek, volume)
-- Event listeners and state tracking
-- Multiple players demo
-- Fullscreen demo
-- Outstream player demo
-- Error handling demo
+The demo app shows:
+- Minimal player setup with Expo SDK 54
+- Local module resolution (using parent directory source)
+- Working Android build with proper configuration
+- Event handler implementation
+- Manual play() trigger for autoPlay-disabled playouts
+
+### Key Configuration Files
+
+- **[metro.config.js](./player-hello-world/metro.config.js)** - Metro configuration for local module resolution
+- **[app.json](./player-hello-world/app.json)** - Expo configuration with proper Android minSdkVersion (24)
+- **[App.tsx](./player-hello-world/App.tsx)** - Simple player implementation with event handlers
+
+### Build Requirements
+
+- Java 17 or later (required for Gradle 8.14.3)
+- Android SDK with minSdkVersion 24+
+- Expo CLI for building and running
+
+See [claude.md](./claude.md) for complete build configuration details.
 
 ## FAQ
 

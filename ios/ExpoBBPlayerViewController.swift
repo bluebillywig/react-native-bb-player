@@ -94,6 +94,10 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
         delegate?.bbPlayerViewController(self, didTriggerEvent: .adFinished)
     }
 
+    func bbNativePlayerView(didTriggerAdLoadStart playerView: BBNativePlayerView) {
+        delegate?.bbPlayerViewController(self, didTriggerEvent: .adLoadStart)
+    }
+
     func bbNativePlayerView(didTriggerAdLoaded playerView: BBNativePlayerView) {
         delegate?.bbPlayerViewController(self, didTriggerEvent: .adLoaded)
     }
@@ -220,5 +224,16 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
 
     func bbNativePlayerView(didTriggerVolumeChange playerView: BBNativePlayerView, volume: Double) {
         delegate?.bbPlayerViewController(self, didTriggerEvent: .volumeChange(volume))
+    }
+
+    func bbNativePlayerView(didTriggerTimeUpdate playerView: BBNativePlayerView, currentTime: Double) {
+        // iOS SDK Note: Time updates are sent with currentTime parameter
+        // We need to get duration from the player to match Android's event structure
+        let duration = playerView.player.duration ?? 0.0
+        delegate?.bbPlayerViewController(self, didTriggerEvent: .timeUpdate(currentTime: currentTime, duration: duration))
+    }
+
+    func bbNativePlayerView(didTriggerApiReady playerView: BBNativePlayerView) {
+        delegate?.bbPlayerViewController(self, didTriggerEvent: .apiReady)
     }
 }
