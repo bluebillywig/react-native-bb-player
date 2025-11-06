@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.FrameLayout
+import androidx.mediarouter.app.MediaRouteButton
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayer
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayerView
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayerViewDelegate
@@ -207,6 +208,52 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         if (::playerView.isInitialized) {
             playerView.player?.exitFullScreen()
         }
+    }
+
+    fun showCastPicker() {
+        if (::playerView.isInitialized) {
+            // Find the MediaRouteButton (cast button) in the player view hierarchy
+            // The cast button has the ID R.id.exo_cast_button from the ExoPlayer layout
+            try {
+                // Find the cast button by traversing the view hierarchy
+                val castButton = findCastButton(playerView)
+                if (castButton != null) {
+                    Log.d("BBPlayerView", "Found cast button, triggering click")
+                    castButton.performClick()
+                } else {
+                    Log.w("BBPlayerView", "Cast button not found in view hierarchy")
+                }
+            } catch (e: Exception) {
+                Log.e("BBPlayerView", "Error showing cast picker: ${e.message}")
+            }
+        }
+    }
+
+    private fun findCastButton(view: android.view.View): MediaRouteButton? {
+        // First try to find by resource ID
+        val castButtonId = view.resources.getIdentifier("exo_cast_button", "id", view.context.packageName)
+        if (castButtonId != 0) {
+            val button = view.findViewById<MediaRouteButton>(castButtonId)
+            if (button != null) {
+                return button
+            }
+        }
+
+        // If not found by ID, recursively search through view hierarchy
+        if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) {
+                val child = view.getChildAt(i)
+                if (child is MediaRouteButton) {
+                    return child
+                }
+                val result = findCastButton(child)
+                if (result != null) {
+                    return result
+                }
+            }
+        }
+
+        return null
     }
 
     fun destroy() {

@@ -138,6 +138,15 @@ export default function App() {
     }
   };
 
+  const handleShowCastPicker = async () => {
+    try {
+      await playerRef.current?.showCastPicker();
+      addEvent('showCastPicker');
+    } catch (error) {
+      console.error('Error showing cast picker:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
@@ -361,6 +370,9 @@ export default function App() {
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.button} onPress={handleFullscreen}>
               <Text style={styles.buttonText}>Fullscreen</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={handleShowCastPicker}>
+              <Text style={styles.buttonText}>Chromecast</Text>
             </TouchableOpacity>
           </View>
         </View>

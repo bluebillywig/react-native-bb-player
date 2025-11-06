@@ -370,13 +370,13 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func setMuted(_ muted: Bool) {
-    guard let player = playerController.playerView?.player else { return }
-    player.setMuted(muted: muted, userAction: true)
+    // Call setApiProperty directly to match setVolume pattern
+    playerController.playerView?.setApiProperty(property: .muted, value: muted)
   }
 
   func setVolume(_ volume: Double) {
-    guard let player = playerController.playerView?.player else { return }
-    player.setVolume(volume: volume, userAction: true)
+    // Call setApiProperty directly with Float to avoid Double->Float cast crash in SDK
+    playerController.playerView?.setApiProperty(property: .volume, value: Float(volume))
   }
 
   func loadWithClipId(_ clipId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
@@ -401,5 +401,13 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
 
   func loadWithProjectJson(_ projectJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
     playerController.playerView?.player.loadWithProjectJson(projectJson: projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  }
+
+  func showCastPicker() {
+    // Trigger the cast button programmatically to show device picker
+    if let castButton = playerController.chromeCastViewController?.castButton {
+      // Simulate a button tap by sending the touch events
+      castButton.sendActions(for: .touchUpInside)
+    }
   }
 }

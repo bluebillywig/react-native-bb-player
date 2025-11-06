@@ -70,6 +70,10 @@ class BBPlayerModule : Module() {
                 view.exitFullscreen()
             }
 
+            AsyncFunction("showCastPicker") { view: BBPlayerView ->
+                view.showCastPicker()
+            }
+
             AsyncFunction("destroy") { view: BBPlayerView ->
                 view.destroy()
             }

@@ -141,6 +141,10 @@ public class ExpoBBPlayerModule: Module {
         return view.loadWithProjectJson(projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo)
       }
 
+      AsyncFunction("showCastPicker") { (view: ExpoBBPlayerView) in
+        return view.showCastPicker()
+      }
+
       Events([
         "onDidFailWithError",
         "onDidRequestCollapse",

@@ -262,6 +262,41 @@ export function FullscreenPlayer() {
 }
 ```
 
+### Chromecast Support
+
+Open the Google Cast device picker to cast video to Chromecast devices:
+
+```tsx
+import React, { useRef } from 'react';
+import { View, Button } from 'react-native';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'expo-bb-player';
+
+export function ChromecastPlayer() {
+  const playerRef = useRef<ExpoBBPlayerViewType>(null);
+
+  const handleCast = async () => {
+    try {
+      await playerRef.current?.showCastPicker();
+    } catch (error) {
+      console.error('Cast picker error:', error);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ExpoBBPlayerView
+        ref={playerRef}
+        jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
+        style={{ flex: 1 }}
+      />
+      <Button title="Cast to Device" onPress={handleCast} />
+    </View>
+  );
+}
+```
+
+> **Note:** Chromecast functionality is available on both iOS and Android platforms.
+
 ### Multiple Players in a List
 
 Embed players in a ScrollView or FlatList:
@@ -407,6 +442,9 @@ collapse(): Promise<void>
 expand(): Promise<void>
 enterFullscreen(): Promise<void>
 exitFullscreen(): Promise<void>
+
+// Chromecast Control
+showCastPicker(): Promise<void>  // Opens the Google Cast device picker dialog
 
 // Load Content Dynamically
 loadWithClipId(clipId: string, initiator?: string, autoPlay?: boolean, seekTo?: number): Promise<void>
