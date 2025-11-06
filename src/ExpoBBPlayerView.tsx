@@ -86,10 +86,10 @@ const ExpoBBPlayerView = (props: ExpoBBPlayerViewProps) => {
         props.onDidTriggerStateChange?.(event.nativeEvent.state)
       }
       onDidTriggerModeChange={(event) =>
-        props.onDidTriggerModeChange?.(event.nativeEvent.payload)
+        props.onDidTriggerModeChange?.(event.nativeEvent.mode)
       }
       onDidTriggerDurationChange={(event) =>
-        props.onDidTriggerDurationChange?.(event.nativeEvent.payload)
+        props.onDidTriggerDurationChange?.(event.nativeEvent.duration)
       }
       onDidTriggerSeeked={(event) =>
         props.onDidTriggerSeeked?.(event.nativeEvent.payload)
@@ -98,10 +98,10 @@ const ExpoBBPlayerView = (props: ExpoBBPlayerViewProps) => {
         props.onDidTriggerVolumeChange?.(event.nativeEvent.volume)
       }
       onDidTriggerAutoPause={(event) =>
-        props.onDidTriggerAutoPause?.(event.nativeEvent.payload)
+        props.onDidTriggerAutoPause?.(event.nativeEvent.why)
       }
       onDidTriggerAutoPausePlay={(event) =>
-        props.onDidTriggerAutoPausePlay?.(event.nativeEvent.payload)
+        props.onDidTriggerAutoPausePlay?.(event.nativeEvent.why)
       }
       onDidFailWithError={(event) => {
         props.onDidFailWithError?.(event.nativeEvent.payload);
