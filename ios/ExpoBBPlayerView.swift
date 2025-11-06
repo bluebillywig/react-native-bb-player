@@ -302,7 +302,8 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func destroy() {
-    playerController.playerView?.player.destroy()
+    // iOS SDK Note: The iOS SDK doesn't have a destroy() method
+    // The player is automatically cleaned up when the view is removed
   }
 
   func pause() {
@@ -329,26 +330,26 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func loadWithClipId(_ clipId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerController.playerView?.player.loadWithClipId(clipId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+    playerController.playerView?.player.loadWithClipId(clipId: clipId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
   }
 
   func loadWithClipListId(_ clipListId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerController.playerView?.player.loadWithClipListId(clipListId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+    playerController.playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
   }
 
   func loadWithProjectId(_ projectId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerController.playerView?.player.loadWithProjectId(projectId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+    playerController.playerView?.player.loadWithProjectId(projectId: projectId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
   }
 
   func loadWithClipJson(_ clipJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerController.playerView?.player.loadWithClipJson(clipJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+    playerController.playerView?.player.loadWithClipJson(clipJson: clipJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
   }
 
   func loadWithClipListJson(_ clipListJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerController.playerView?.player.loadWithClipListJson(clipListJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+    playerController.playerView?.player.loadWithClipListJson(clipListJson: clipListJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
   }
 
   func loadWithProjectJson(_ projectJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerController.playerView?.player.loadWithProjectJson(projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+    playerController.playerView?.player.loadWithProjectJson(projectJson: projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
   }
 }
