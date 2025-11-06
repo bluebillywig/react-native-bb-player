@@ -682,6 +682,80 @@ export function InlinePlayerExample() {
 }
 ```
 
+### Overriding Native SDK Versions
+
+By default, `expo-bb-player` uses Blue Billywig Native Player SDK version **8.37.x** for both iOS and Android. The package uses flexible version constraints that automatically receive patch updates (e.g., 8.37.0 → 8.37.1).
+
+#### Current Default Versions
+
+- **iOS**: `~>8.37` (allows 8.37.x patch updates)
+- **Android**: `8.37.+` (allows 8.37.x patch updates)
+
+#### Why Override?
+
+You might want to override the native SDK version to:
+- Use a newer version with specific features or bug fixes
+- Lock to a specific version for stability
+- Test compatibility with upcoming SDK releases
+
+#### How to Override
+
+**For iOS (in your app's `Podfile`):**
+
+Add before `use_expo_modules!`:
+
+```ruby
+# Override Blue Billywig SDK version
+pod 'BlueBillywigNativePlayerKit-iOS', '8.40.0'  # Specific version
+# OR
+pod 'BlueBillywigNativePlayerKit-iOS', '~>8.40'  # Allow 8.40.x patches
+```
+
+**For Android (in your app's `android/app/build.gradle`):**
+
+Add in the `android` block:
+
+```kotlin
+configurations.all {
+  resolutionStrategy {
+    // Force specific version
+    force 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:8.40.0'
+    // OR use flexible constraint
+    force 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:8.40.+'
+  }
+}
+```
+
+**Complete Example:**
+
+```kotlin
+android {
+  // ... other config
+
+  configurations.all {
+    resolutionStrategy {
+      force 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:8.40.0'
+    }
+  }
+}
+```
+
+#### After Changing Versions
+
+**iOS:**
+```bash
+cd ios && pod install
+```
+
+**Android:**
+```bash
+cd android && ./gradlew clean
+```
+
+Then rebuild your app with `npx expo run:ios` or `npx expo run:android`.
+
+> **⚠️ Note**: When overriding SDK versions, ensure compatibility with the `expo-bb-player` package. Major version changes in the native SDKs may require updates to the wrapper code. Test thoroughly after upgrading.
+
 ## Troubleshooting
 
 ### Common Issues

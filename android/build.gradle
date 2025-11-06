@@ -23,5 +23,7 @@ repositories {
 
 dependencies {
   // Blue Billywig Native Player SDK
-  implementation 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:8.37.0'
+  // Flexible version constraint allows patch updates (8.37.x)
+  // Customers can override by using resolutionStrategy in their app's build.gradle
+  implementation 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:8.37.+'
 }
