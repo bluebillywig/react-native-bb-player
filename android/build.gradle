@@ -1,0 +1,27 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.bbplayer'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.bbplayer"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+}
+
+repositories {
+  mavenCentral()
+  maven {
+    url "https://maven.bluebillywig.com/releases"
+  }
+}
+
+dependencies {
+  // Blue Billywig Native Player SDK
+  implementation 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:8.37.0'
+}

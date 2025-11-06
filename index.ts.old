@@ -1,0 +1,20 @@
+import { requireNativeViewManager, ViewProps } from 'expo-modules-core';
+
+// Type definitions for BBPlayerView props
+export interface BBPlayerViewProps extends ViewProps {
+  jsonUrl?: string;
+  autoPlay?: boolean;
+  onPlayerSetup?: (event: { url?: string; target?: number }) => void;
+  onMediaClipLoaded?: (event: { title?: string; id?: string; target?: number }) => void;
+  onProjectLoaded?: (event: { id?: string; target?: number }) => void;
+  onPhaseChange?: (event: { phase?: string; target?: number }) => void;
+  onStateChange?: (event: { state?: string; target?: number }) => void;
+  onError?: (event: { error?: string; target?: number }) => void;
+  onMediaClipFailed?: (event: { target?: number }) => void;
+  onRequestOpenUrl?: (event: { url?: string; target?: number }) => void;
+}
+
+// Export the native view manager
+// This uses ExpoView with shouldUseAndroidLayout = true on Android,
+// which ensures native player controls work properly
+export const BBPlayerView = requireNativeViewManager<BBPlayerViewProps>('BBPlayer');
