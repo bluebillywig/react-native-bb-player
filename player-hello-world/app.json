@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Player Hello World",
+    "slug": "player-hello-world",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bluebillywig.playerhelloworld"
+    },
+    "android": {
+      "package": "com.bluebillywig.playerhelloworld"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          },
+          "android": {
+            "minSdkVersion": 21
+          }
+        }
+      ]
+    ]
+  }
+}
