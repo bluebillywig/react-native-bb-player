@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "player-api-example",
+    "slug": "player-api-example",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bluebillywig.playerapiexample"
+    },
+    "android": {
+      "package": "com.bluebillywig.playerapiexample",
+      "minSdkVersion": 24
+    }
+  }
+}

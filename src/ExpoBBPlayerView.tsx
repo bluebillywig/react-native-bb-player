@@ -43,17 +43,20 @@ type NativeExpoBBPlayerViewProps = Override<
       event: NativeSyntheticEvent<{ payload: string }>
     ) => void;
     onDidTriggerPhaseChange?: (
-      event: NativeSyntheticEvent<{ payload: Phase }>
+      event: NativeSyntheticEvent<{ phase: Phase }>
     ) => void;
     onDidTriggerProjectLoaded?: (event: NativeSyntheticEvent<Project>) => void;
     onDidTriggerSeeked?: (
       event: NativeSyntheticEvent<{ payload: number }>
     ) => void;
     onDidTriggerStateChange?: (
-      event: NativeSyntheticEvent<{ payload: State }>
+      event: NativeSyntheticEvent<{ state: State }>
     ) => void;
     onDidTriggerVolumeChange?: (
-      event: NativeSyntheticEvent<{ payload: number }>
+      event: NativeSyntheticEvent<{ volume: number; muted: boolean }>
+    ) => void;
+    onDidTriggerTimeUpdate?: (
+      event: NativeSyntheticEvent<{ currentTime: number; duration: number }>
     ) => void;
   }
 >;
@@ -77,10 +80,10 @@ const ExpoBBPlayerView = (props: ExpoBBPlayerViewProps) => {
       }}
       onDidTriggerPhaseChange={(event) => {
         console.log("onDidTriggerPhaseChange", event.nativeEvent);
-        props.onDidTriggerPhaseChange?.(event.nativeEvent.payload);
+        props.onDidTriggerPhaseChange?.(event.nativeEvent.phase);
       }}
       onDidTriggerStateChange={(event) =>
-        props.onDidTriggerStateChange?.(event.nativeEvent.payload)
+        props.onDidTriggerStateChange?.(event.nativeEvent.state)
       }
       onDidTriggerModeChange={(event) =>
         props.onDidTriggerModeChange?.(event.nativeEvent.payload)
@@ -92,7 +95,7 @@ const ExpoBBPlayerView = (props: ExpoBBPlayerViewProps) => {
         props.onDidTriggerSeeked?.(event.nativeEvent.payload)
       }
       onDidTriggerVolumeChange={(event) =>
-        props.onDidTriggerVolumeChange?.(event.nativeEvent.payload)
+        props.onDidTriggerVolumeChange?.(event.nativeEvent.volume)
       }
       onDidTriggerAutoPause={(event) =>
         props.onDidTriggerAutoPause?.(event.nativeEvent.payload)
@@ -108,6 +111,10 @@ const ExpoBBPlayerView = (props: ExpoBBPlayerViewProps) => {
       }}
       onDidSetupWithJsonUrl={(event) => {
         props.onDidSetupWithJsonUrl?.(event.nativeEvent.payload);
+      }}
+      onDidTriggerTimeUpdate={(event) => {
+        const { currentTime, duration } = event.nativeEvent;
+        props.onDidTriggerTimeUpdate?.(currentTime, duration);
       }}
     />
   );
