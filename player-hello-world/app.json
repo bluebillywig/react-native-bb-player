@@ -7,10 +7,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bluebillywig.playerhelloworld"
+      "bundleIdentifier": "com.bluebillywig.playerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerhelloworld"
     },
     "android": {
-      "package": "com.bluebillywig.playerhelloworld"
+      "package": "com.bluebillywig.playerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerhelloworld"
     },
     "plugins": [
       [
@@ -20,7 +20,7 @@
             "deploymentTarget": "15.1"
           },
           "android": {
-            "minSdkVersion": 21
+            "minSdkVersion": 24
           }
         }
       ]

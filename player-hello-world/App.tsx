@@ -17,22 +17,27 @@ export default function App() {
       <View style={styles.playerContainer}>
         <ExpoBBPlayerView
           ref={playerRef}
-          jsonUrl="https://demo.bbvms.com/p/default/c/1092091.json"
+          jsonUrl="https://demo.bbvms.com/p/default/c/6323522.json"
           options={{
             autoPlay: true,
             allowCollapseExpand: true,
           }}
-          onDidTriggerPlay={() => {
-            console.log('Video started playing');
+          onDidTriggerMediaClipLoaded={(clip) => {
+            console.log('Media clip loaded:', clip);
           }}
-          onDidTriggerPause={() => {
-            console.log('Video paused');
+          onDidTriggerPhaseChange={(phase) => {
+            console.log('Phase changed:', phase);
           }}
-          onDidTriggerEnded={() => {
-            console.log('Video ended');
+          onDidTriggerStateChange={(state) => {
+            console.log('State changed:', state);
           }}
           onDidFailWithError={(error) => {
             console.error('Player error:', error);
+          }}
+          onDidSetupWithJsonUrl={(url) => {
+            console.log('Setup with JSON URL:', url);
+            // Manually trigger play since autoPlay is disabled in playout config
+            playerRef.current?.play();
           }}
           style={styles.player}
         />

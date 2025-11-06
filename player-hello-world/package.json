@@ -9,17 +9,23 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "~52.0.0",
-    "expo-status-bar": "~2.0.0",
-    "expo-build-properties": "~0.13.2",
-    "react": "18.3.1",
-    "react-native": "0.76.5",
-    "expo-bb-player": "github:bluebillywig/expo-bb-player#v1.0.0"
+    "babel-preset-expo": "^54.0.6",
+    "expo": "^54.0.22",
+    "expo-build-properties": "~1.0.9",
+    "expo-modules-core": "~3.0.24",
+    "expo-status-bar": "~3.0.8",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
-    "@types/react": "~18.3.12",
+    "@types/react": "~19.1.10",
     "typescript": "^5.3.0"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "autolinking": {
+      "nativeModulesDir": ".."
+    }
+  }
 }
