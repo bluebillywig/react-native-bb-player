@@ -65,6 +65,7 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
     }
 
     func setupPlayer() {
+        NSLog("ExpoBBPlayer: setupPlayer called")
         playerView?.removeFromSuperview()
 
         // Use the SDK's factory method which properly sets up the view controller hierarchy
@@ -90,6 +91,9 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
             ])
 
             playerView.delegate = self
+            NSLog("ExpoBBPlayer: Player view created and delegate set to: \(String(describing: playerView.delegate))")
+        } else {
+            NSLog("ExpoBBPlayer: ERROR - playerView is nil after createPlayerView!")
         }
     }
 
@@ -196,7 +200,7 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
     }
 
     func bbNativePlayerView(didTriggerFullscreen playerView: BBNativePlayerView) {
-        print("ExpoBBPlayer: didTriggerFullscreen delegate called - ENTERING FULLSCREEN")
+        NSLog("ExpoBBPlayer: ⭐️ FULLSCREEN ENTRY DELEGATE CALLED ⭐️")
         delegate?.bbPlayerViewController(self, didTriggerEvent: .fullscreen)
     }
 
@@ -235,9 +239,47 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
     }
 
     func bbNativePlayerView(didTriggerRetractFullscreen playerView: BBNativePlayerView) {
-        print("ExpoBBPlayer: didTriggerRetractFullscreen delegate called")
-        // Refresh the view hierarchy to fix black screen after exiting fullscreen
-        refreshPlayerViewHierarchy()
+        NSLog("ExpoBBPlayer: ⭐️ FULLSCREEN EXIT DELEGATE CALLED ⭐️")
+
+        // The SDK's internal AVPlayerViewController needs time to restore itself
+        // Wait for the modal dismissal animation to complete
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self = self, let playerView = self.playerView else { return }
+
+            NSLog("ExpoBBPlayer: Refreshing view hierarchy after fullscreen exit")
+
+            // Force the CA layer to re-render by marking it as needing display
+            func forceLayerRedraw(_ view: UIView) {
+                // Remove and re-add the layer to force Core Animation to rebuild
+                let layer = view.layer
+                layer.setNeedsDisplay()
+                layer.displayIfNeeded()
+
+                // Force all sublayers to redraw
+                layer.sublayers?.forEach { sublayer in
+                    sublayer.setNeedsDisplay()
+                    sublayer.displayIfNeeded()
+                }
+
+                // Recursively process subviews
+                view.subviews.forEach { subview in
+                    forceLayerRedraw(subview)
+                }
+            }
+
+            forceLayerRedraw(playerView)
+
+            // Force immediate layout
+            playerView.setNeedsLayout()
+            playerView.layoutIfNeeded()
+            self.view.setNeedsLayout()
+            self.view.layoutIfNeeded()
+
+            // Log the player state for debugging
+            let player = playerView.player
+            NSLog("ExpoBBPlayer: Player state after fullscreen: \(String(describing: player.state?.name))")
+        }
+
         delegate?.bbPlayerViewController(self, didTriggerEvent: .retractFullscreen)
     }
 

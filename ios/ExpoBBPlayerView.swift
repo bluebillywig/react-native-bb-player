@@ -13,6 +13,7 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   private var currentDuration: Double = 0.0
   private var lastKnownTime: Double = 0.0
   private var playbackStartTimestamp: TimeInterval = 0
+  private var isInFullscreen: Bool = false
 
   // Override intrinsicContentSize to tell React Native this view wants to fill available space
   override var intrinsicContentSize: CGSize {
@@ -64,6 +65,7 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     super.didMoveToWindow()
 
     if window != nil {
+      NSLog("ExpoBBPlayer: ExpoBBPlayerView.didMoveToWindow - view added to window")
       // Ensure this view respects its frame from React Native layout
       self.clipsToBounds = false  // Allow settings overlay to render outside bounds
 
@@ -80,6 +82,7 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
 
       // Add playerController as a child view controller for proper fullscreen support
       if let parentVC = parentVC {
+        NSLog("ExpoBBPlayer: Found parent view controller: \(type(of: parentVC))")
         parentVC.addChild(playerController)
         addSubview(playerController.view)
 
@@ -95,17 +98,18 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
         playerController.didMove(toParent: parentVC)
         playerController.setViewSize = self.setViewSize
         playerController.delegate = self
+        NSLog("ExpoBBPlayer: Player controller added to parent VC, delegate set to ExpoBBPlayerView")
       } else {
-        print("ExpoBBPlayer: WARNING - Could not find parent view controller!")
+        NSLog("ExpoBBPlayer: WARNING - Could not find parent view controller!")
       }
 
     } else if window == nil {
-      isPlaying = false
-      stopTimeUpdates()
-      playerController.view.removeFromSuperview()
-      playerController.removeFromParent()
+      NSLog("ExpoBBPlayer: ExpoBBPlayerView.didMoveToWindow - view removed from window, isInFullscreen: \(isInFullscreen)")
 
-      playerController.delegate = nil
+      // Don't tear down the view controller hierarchy when the view is removed from the window.
+      // This happens during fullscreen transitions, and the SDK needs the hierarchy intact
+      // to properly restore the player after exiting fullscreen.
+      // React Native will handle actual cleanup when the component unmounts.
     }
   }
 
@@ -212,6 +216,7 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       onDidTriggerEnded()
 
     case .fullscreen:
+      isInFullscreen = true
       onDidTriggerFullscreen()
 
     case .mediaClipFailed:
@@ -244,6 +249,7 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       onDidTriggerProjectLoaded(projectData.toDictionary() as [String: Any])
 
     case .retractFullscreen:
+      isInFullscreen = false
       onDidTriggerRetractFullscreen()
 
     case .seeked(let seekOffset):
@@ -287,7 +293,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func setupPlayer() {
+    NSLog("ExpoBBPlayer: ExpoBBPlayerView.setupPlayer() called with jsonUrl: \(playerController.jsonUrl)")
     playerController.setupPlayer()
+    NSLog("ExpoBBPlayer: ExpoBBPlayerView.setupPlayer() completed")
   }
 
   func adMediaHeight() -> Int? {
