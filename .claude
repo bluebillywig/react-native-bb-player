@@ -1,0 +1,137 @@
+# .claude - Development instructions for expo-bb-player
+
+## Building and Running the Demo Apps
+
+### Example App (Full-featured example)
+
+Located in `example/` directory.
+
+**Android:**
+```bash
+cd example
+npm install
+expo run:android
+```
+
+**iOS:**
+```bash
+cd example
+npm install
+expo run:ios
+```
+
+### Player Hello World Demo
+
+Located in `player-hello-world/` directory.
+
+**Android:**
+```bash
+cd player-hello-world
+npm install
+expo run:android
+```
+
+**iOS:**
+```bash
+cd player-hello-world
+npm install
+expo run:ios
+```
+
+## Important Notes
+
+### Environment Setup
+
+**Required for Android:**
+- JAVA_HOME must be set to JDK 17
+- ANDROID_HOME must be set to Android SDK location
+- Android emulator or physical device connected
+
+Example:
+```bash
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.0.2.jdk/Contents/Home
+export ANDROID_HOME=~/Library/Android/sdk
+```
+
+**Required for iOS:**
+- Xcode installed (macOS only)
+- CocoaPods installed
+- iOS Simulator or physical device
+
+### Common Issues
+
+**Port 8081 already in use:**
+- This is normal if another Metro bundler is running
+- Expo will automatically skip the dev server and continue building
+- DO NOT use `--no-bundler` flag - it will break the app
+- The build will proceed normally and install the app
+
+**Android build fails with plugin conflicts:**
+- Clean and rebuild: `rm -rf android ios && expo run:android`
+- This regenerates native directories from scratch
+
+**First build is slow:**
+- Android builds take 3-5 minutes on first run
+- Gradle downloads dependencies and compiles everything
+- Subsequent builds are much faster (30-60 seconds)
+
+### Development Workflow
+
+**Making changes to the native module:**
+1. Make changes in `android/` or `ios/` directories
+2. Test in example app: `cd example && expo run:android`
+3. Rebuild when changing native code
+4. JavaScript changes hot-reload automatically
+
+**Testing changes in demo apps:**
+1. Demo apps pull expo-bb-player from GitHub
+2. For local testing, use npm link or change package.json to:
+   ```json
+   "expo-bb-player": "file:../"
+   ```
+3. Remember to change back before committing
+
+## Build Commands Reference
+
+### Standard build and run (recommended):
+```bash
+expo run:android  # Builds, installs, and launches on Android
+expo run:ios      # Builds, installs, and launches on iOS
+```
+
+### Development server only:
+```bash
+expo start        # Starts Metro bundler for hot-reload
+```
+
+### Prebuild (generate native directories):
+```bash
+expo prebuild     # Creates android/ and ios/ directories
+```
+
+### Direct Gradle build (if needed):
+```bash
+cd android
+./gradlew assembleDebug  # Builds APK only, doesn't install
+```
+
+## Project Structure
+
+```
+expo-bb-player/
+├── src/                    # TypeScript source
+├── android/                # Android native module
+├── ios/                    # iOS native module
+├── example/                # Full-featured example app
+├── player-hello-world/     # Simple hello world demo
+├── package.json
+└── README.md
+```
+
+## Publishing
+
+See PUBLISHING.md for instructions on:
+- Version bumping
+- Git tagging
+- GitHub releases
+- NPM publishing (future)

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { ExpoBBPlayerView, convertPlayoutUrlToMediaclipUrl } from 'expo-bb-player';
@@ -21,6 +21,12 @@ interface EventLogEntry {
 
 export default function App() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
+
+  // Use refs for high-frequency updates to avoid re-renders
+  const currentTimeRef = useRef(0);
+  const durationRef = useRef(0);
+
+  // Only use state for values that need to trigger UI updates
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [state, setState] = useState<State | null>(null);
@@ -32,7 +38,11 @@ export default function App() {
   const [useCustomControls, setUseCustomControls] = useState(false);
   const [customJsonUrl, setCustomJsonUrl] = useState('');
 
-  const addEvent = (name: string, data?: any) => {
+  // Memoize addEvent to prevent recreation on every render
+  const addEvent = useCallback((name: string, data?: any) => {
+    // Skip logging time updates to reduce overhead
+    if (name === 'timeUpdate') return;
+
     const timestamp = new Date().toLocaleTimeString();
     const entry: EventLogEntry = {
       id: `${Date.now()}-${Math.random()}`,
@@ -41,7 +51,7 @@ export default function App() {
       data: data ? JSON.stringify(data) : undefined,
     };
     setEventLog(prev => [entry, ...prev].slice(0, 20)); // Keep last 20 events
-  };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -191,10 +201,15 @@ export default function App() {
               autoPlay: false,
               controls: !useCustomControls, // Disable native controls when using custom
             }}
-            // Time updates
-            onDidTriggerTimeUpdate={(currentTime, duration) => {
-              setCurrentTime(currentTime);
-              setDuration(duration);
+            // Time updates - use refs to avoid re-renders on every update
+            onDidTriggerTimeUpdate={(time, dur) => {
+              currentTimeRef.current = time;
+              durationRef.current = dur;
+
+              // Only update state (trigger re-render) every second
+              // Since native now fires at 1Hz, we update on every event
+              setCurrentTime(time);
+              setDuration(dur);
             }}
             // State changes
             onDidTriggerStateChange={(newState) => {

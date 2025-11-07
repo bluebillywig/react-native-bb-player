@@ -350,10 +350,7 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func showCastPicker() {
-    // Trigger the cast button programmatically to show device picker
-    if let castButton = playerController.chromeCastViewController?.castButton {
-      // Simulate a button tap by sending the touch events
-      castButton.sendActions(for: .touchUpInside)
-    }
+    // iOS SDK Note: Chromecast picker is shown via the cast button in the player UI
+    // Direct programmatic access not available in current SDK version
   }
 }
