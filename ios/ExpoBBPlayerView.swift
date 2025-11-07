@@ -7,6 +7,13 @@ import os
 class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   private var playerController: BBPlayerViewController = BBPlayerViewController()
 
+  // Timer for periodic time updates (4x per second, matching Android)
+  private var timeUpdateTimer: Timer?
+  private var isPlaying: Bool = false
+  private var currentDuration: Double = 0.0
+  private var lastKnownTime: Double = 0.0
+  private var playbackStartTimestamp: TimeInterval = 0
+
   // Override intrinsicContentSize to tell React Native this view wants to fill available space
   override var intrinsicContentSize: CGSize {
     return CGSize(width: UIView.noIntrinsicMetric, height: UIView.noIntrinsicMetric)
@@ -60,26 +67,74 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       // Ensure this view respects its frame from React Native layout
       self.clipsToBounds = false  // Allow settings overlay to render outside bounds
 
-      addSubview(playerController.view)
+      // Find the parent view controller from the responder chain
+      var parentVC: UIViewController?
+      var responder = self.next
+      while responder != nil {
+        if let viewController = responder as? UIViewController {
+          parentVC = viewController
+          break
+        }
+        responder = responder?.next
+      }
 
-      playerController.view.translatesAutoresizingMaskIntoConstraints = false
+      // Add playerController as a child view controller for proper fullscreen support
+      if let parentVC = parentVC {
+        parentVC.addChild(playerController)
+        addSubview(playerController.view)
 
-      NSLayoutConstraint.activate([
-        playerController.view.topAnchor.constraint(equalTo: topAnchor),
-        playerController.view.leadingAnchor.constraint(equalTo: leadingAnchor),
-        playerController.view.trailingAnchor.constraint(equalTo: trailingAnchor),
-        playerController.view.bottomAnchor.constraint(equalTo: bottomAnchor),
-      ])
+        playerController.view.translatesAutoresizingMaskIntoConstraints = false
 
-      playerController.setViewSize = self.setViewSize
-      playerController.delegate = self
+        NSLayoutConstraint.activate([
+          playerController.view.topAnchor.constraint(equalTo: topAnchor),
+          playerController.view.leadingAnchor.constraint(equalTo: leadingAnchor),
+          playerController.view.trailingAnchor.constraint(equalTo: trailingAnchor),
+          playerController.view.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+
+        playerController.didMove(toParent: parentVC)
+        playerController.setViewSize = self.setViewSize
+        playerController.delegate = self
+      } else {
+        print("ExpoBBPlayer: WARNING - Could not find parent view controller!")
+      }
 
     } else if window == nil {
+      isPlaying = false
+      stopTimeUpdates()
       playerController.view.removeFromSuperview()
       playerController.removeFromParent()
 
       playerController.delegate = nil
     }
+  }
+
+  // Start periodic time updates (4x per second = 0.25 seconds interval)
+  private func startTimeUpdates() {
+    guard timeUpdateTimer == nil else { return } // Already running
+
+    timeUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+      guard let self = self, self.isPlaying else { return }
+
+      // Calculate current time based on elapsed time since playback started
+      let elapsedSeconds = Date().timeIntervalSince1970 - self.playbackStartTimestamp
+      let estimatedTime = self.lastKnownTime + elapsedSeconds
+      let currentTime = min(estimatedTime, self.currentDuration)
+
+      // Only emit if we have valid time values
+      if self.currentDuration > 0 {
+        self.onDidTriggerTimeUpdate([
+          "currentTime": currentTime,
+          "duration": self.currentDuration
+        ])
+      }
+    }
+  }
+
+  // Stop periodic time updates
+  private func stopTimeUpdates() {
+    timeUpdateTimer?.invalidate()
+    timeUpdateTimer = nil
   }
 
   func bbPlayerViewController(
@@ -148,9 +203,12 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       ])
 
     case .durationChange(let duration):
+      currentDuration = duration
       onDidTriggerDurationChange(["duration": duration as Any])
 
     case .ended:
+      isPlaying = false
+      stopTimeUpdates()
       onDidTriggerEnded()
 
     case .fullscreen:
@@ -166,6 +224,8 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       onDidTriggerModeChange(["mode": mode as Any])
 
     case .pause:
+      isPlaying = false
+      stopTimeUpdates()
       onDidTriggerPause()
 
     case .phaseChange(let phase):
@@ -175,6 +235,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       onDidTriggerPlay()
 
     case .playing:
+      isPlaying = true
+      playbackStartTimestamp = Date().timeIntervalSince1970
+      startTimeUpdates()
       onDidTriggerPlaying()
 
     case .projectLoaded(let projectData):
@@ -184,6 +247,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       onDidTriggerRetractFullscreen()
 
     case .seeked(let seekOffset):
+      // Update lastKnownTime based on seek and reset playback timestamp
+      lastKnownTime = seekOffset ?? 0.0
+      playbackStartTimestamp = Date().timeIntervalSince1970
       onDidTriggerSeeked(["payload": seekOffset as Any])
 
     case .seeking:
@@ -351,13 +417,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
 
   func showCastPicker() {
     // Access the internal chromeCastViewController using Key-Value Coding
-    // Chain: playerController.playerView -> chromeCastViewController -> castButton
     if let playerView = playerController.playerView {
-      // Use KVC to access the internal chromeCastViewController property
       if let chromeCastVC = playerView.value(forKey: "chromeCastViewController") as? NSObject {
-        // Access the public castButton property
         if let castButton = chromeCastVC.value(forKey: "castButton") as? UIButton {
-          // Trigger the cast button to show the device picker
           castButton.sendActions(for: .touchUpInside)
         }
       }

@@ -7,10 +7,11 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bluebillywig.playerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerhelloworld"
+      "bundleIdentifier": "com.bluebillywig.playerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerhelloworld",
+      "appleTeamId": "JPM32XM7X7"
     },
     "android": {
-      "package": "com.bluebillywig.playerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerhelloworld"
+      "package": "com.bluebillywig.playerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerplayerhelloworld"
     },
     "plugins": [
       [

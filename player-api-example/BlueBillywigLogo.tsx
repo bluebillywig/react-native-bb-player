@@ -5,7 +5,7 @@ export const BlueBillywigLogo = ({ height = 40 }: { height?: number }) => {
   return (
     <View style={styles.logoContainer}>
       <Text style={[styles.logoText, { fontSize: height * 0.6 }]}>
-        Blue<Text style={styles.logoAccent}>Billywig</Text>
+        <Text style={styles.logoAccent}>Blue Billywig</Text>
       </Text>
     </View>
   );

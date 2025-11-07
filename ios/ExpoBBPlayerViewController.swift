@@ -14,6 +14,38 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
 
     weak var delegate: BBPlayerViewControllerDelegate?
 
+    func refreshPlayerViewHierarchy() {
+        guard let playerView = playerView else {
+            print("ExpoBBPlayer: refreshPlayerViewHierarchy - no playerView")
+            return
+        }
+
+        print("ExpoBBPlayer: Starting view hierarchy refresh")
+
+        // Force all sublayers to redraw by traversing the entire layer hierarchy
+        func refreshLayerTree(_ layer: CALayer) {
+            layer.setNeedsDisplay()
+            layer.displayIfNeeded()
+            for sublayer in layer.sublayers ?? [] {
+                refreshLayerTree(sublayer)
+            }
+        }
+
+        // Refresh the entire layer tree of the player view
+        refreshLayerTree(playerView.layer)
+
+        // Force the player view and all its subviews to re-layout
+        playerView.setNeedsLayout()
+        playerView.layoutIfNeeded()
+
+        for subview in playerView.subviews {
+            subview.setNeedsLayout()
+            subview.layoutIfNeeded()
+        }
+
+        print("ExpoBBPlayer: View hierarchy refresh complete")
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
@@ -21,6 +53,7 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
             return
         }
 
+        // Report height changes back to React Native for layout
         let height = playerView?.bounds.size.height ?? 0
         let size = CGSize(width: Double.nan, height: height)
 
@@ -34,8 +67,10 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
     func setupPlayer() {
         playerView?.removeFromSuperview()
 
+        // Use the SDK's factory method which properly sets up the view controller hierarchy
         playerView = BBNativePlayer.createPlayerView(
-            uiViewController: self, frame: view.frame,
+            uiViewController: self,
+            frame: view.frame,
             jsonUrl: jsonUrl,
             options: options
         )
@@ -45,10 +80,14 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
 
             playerView.translatesAutoresizingMaskIntoConstraints = false
 
-            playerView.topAnchor.constraint(equalTo: view.topAnchor, constant: 0).isActive = true
-            playerView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 0).isActive =
-                true
-            playerView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
+            // Use full edge constraints to ensure playerView fills the view controller's view
+            // This is essential for fullscreen to work properly
+            NSLayoutConstraint.activate([
+                playerView.topAnchor.constraint(equalTo: view.topAnchor),
+                playerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                playerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                playerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
 
             playerView.delegate = self
         }
@@ -157,6 +196,7 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
     }
 
     func bbNativePlayerView(didTriggerFullscreen playerView: BBNativePlayerView) {
+        print("ExpoBBPlayer: didTriggerFullscreen delegate called - ENTERING FULLSCREEN")
         delegate?.bbPlayerViewController(self, didTriggerEvent: .fullscreen)
     }
 
@@ -195,7 +235,17 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
     }
 
     func bbNativePlayerView(didTriggerRetractFullscreen playerView: BBNativePlayerView) {
+        print("ExpoBBPlayer: didTriggerRetractFullscreen delegate called")
+        // Refresh the view hierarchy to fix black screen after exiting fullscreen
+        refreshPlayerViewHierarchy()
         delegate?.bbPlayerViewController(self, didTriggerEvent: .retractFullscreen)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if presentingViewController == nil {
+            print("ExpoBBPlayer: viewDidAppear after dismissing fullscreen")
+        }
     }
 
     func bbNativePlayerView(playerView: BBNativePlayerView, didTriggerSeeked seekOffset: Double) {
