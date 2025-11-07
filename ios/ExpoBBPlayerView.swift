@@ -7,13 +7,6 @@ import os
 class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   private var playerController: BBPlayerViewController = BBPlayerViewController()
 
-  // Timer for periodic time updates (4x per second, matching Android)
-  private var timeUpdateTimer: Timer?
-  private var isPlaying: Bool = false
-  private var currentDuration: Double = 0.0
-  private var lastKnownTime: Double = 0.0
-  private var playbackStartTimestamp: TimeInterval = 0
-
   // Override intrinsicContentSize to tell React Native this view wants to fill available space
   override var intrinsicContentSize: CGSize {
     return CGSize(width: UIView.noIntrinsicMetric, height: UIView.noIntrinsicMetric)
@@ -82,41 +75,11 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       playerController.delegate = self
 
     } else if window == nil {
-      isPlaying = false
-      stopTimeUpdates()
       playerController.view.removeFromSuperview()
       playerController.removeFromParent()
 
       playerController.delegate = nil
     }
-  }
-
-  // Start periodic time updates (4x per second = 0.25 seconds interval)
-  private func startTimeUpdates() {
-    guard timeUpdateTimer == nil else { return } // Already running
-
-    timeUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
-      guard let self = self, self.isPlaying else { return }
-
-      // Calculate current time based on elapsed time since playback started
-      let elapsedSeconds = Date().timeIntervalSince1970 - self.playbackStartTimestamp
-      let estimatedTime = self.lastKnownTime + elapsedSeconds
-      let currentTime = min(estimatedTime, self.currentDuration)
-
-      // Only emit if we have valid time values
-      if self.currentDuration > 0 {
-        self.onDidTriggerTimeUpdate([
-          "currentTime": currentTime,
-          "duration": self.currentDuration
-        ])
-      }
-    }
-  }
-
-  // Stop periodic time updates
-  private func stopTimeUpdates() {
-    timeUpdateTimer?.invalidate()
-    timeUpdateTimer = nil
   }
 
   func bbPlayerViewController(
@@ -185,12 +148,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       ])
 
     case .durationChange(let duration):
-      currentDuration = duration
       onDidTriggerDurationChange(["duration": duration as Any])
 
     case .ended:
-      isPlaying = false
-      stopTimeUpdates()
       onDidTriggerEnded()
 
     case .fullscreen:
@@ -206,8 +166,6 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       onDidTriggerModeChange(["mode": mode as Any])
 
     case .pause:
-      isPlaying = false
-      stopTimeUpdates()
       onDidTriggerPause()
 
     case .phaseChange(let phase):
@@ -217,9 +175,6 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       onDidTriggerPlay()
 
     case .playing:
-      isPlaying = true
-      playbackStartTimestamp = Date().timeIntervalSince1970
-      startTimeUpdates()
       onDidTriggerPlaying()
 
     case .projectLoaded(let projectData):
@@ -229,9 +184,6 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       onDidTriggerRetractFullscreen()
 
     case .seeked(let seekOffset):
-      // Update lastKnownTime based on seek and reset playback timestamp
-      lastKnownTime = seekOffset ?? 0.0
-      playbackStartTimestamp = Date().timeIntervalSince1970
       onDidTriggerSeeked(["payload": seekOffset as Any])
 
     case .seeking:
@@ -253,12 +205,6 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       onDidTriggerVolumeChange([
         "volume": volume,
         "muted": (volume == 0.0)
-      ])
-
-    case .timeUpdate(let currentTime, let duration):
-      onDidTriggerTimeUpdate([
-        "currentTime": currentTime,
-        "duration": duration
       ])
 
     case .apiReady:

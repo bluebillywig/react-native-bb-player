@@ -385,7 +385,8 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         }
     }
 
-    // Start periodic time updates (4x per second = 250ms interval)
+    // Start periodic time updates (1x per second = 1000ms interval)
+    // Reduced from 4Hz to 1Hz to minimize bridge traffic and improve performance
     private fun startTimeUpdates() {
         if (timeUpdateRunnable != null) {
             return // Already running
@@ -407,14 +408,14 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
                         ))
                     }
 
-                    // Schedule next update
-                    timeUpdateHandler.postDelayed(this, 250)
+                    // Schedule next update at 1Hz instead of 4Hz
+                    timeUpdateHandler.postDelayed(this, 1000)
                 }
             }
         }
 
         // Start the timer
-        timeUpdateHandler.postDelayed(timeUpdateRunnable!!, 250)
+        timeUpdateHandler.postDelayed(timeUpdateRunnable!!, 1000)
     }
 
     // Stop periodic time updates
