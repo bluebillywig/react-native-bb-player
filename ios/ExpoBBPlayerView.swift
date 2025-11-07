@@ -425,12 +425,32 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
 
   func showCastPicker() {
     // Access the internal chromeCastViewController using Key-Value Coding
-    if let playerView = playerController.playerView {
-      if let chromeCastVC = playerView.value(forKey: "chromeCastViewController") as? NSObject {
-        if let castButton = chromeCastVC.value(forKey: "castButton") as? UIButton {
-          castButton.sendActions(for: .touchUpInside)
-        }
+    guard let playerView = playerController.playerView else {
+      NSLog("ExpoBBPlayer: showCastPicker failed - playerView is nil")
+      return
+    }
+
+    // Wrap KVC access in a do-catch to handle exceptions from Kotlin/Native SDK
+    do {
+      // Safely access chromeCastViewController using KVC
+      guard let chromeCastVC = playerView.value(forKey: "chromeCastViewController") as? NSObject else {
+        NSLog("ExpoBBPlayer: showCastPicker failed - chromeCastViewController not found")
+        return
       }
+
+      // Safely access castButton
+      guard let castButton = chromeCastVC.value(forKey: "castButton") as? UIButton else {
+        NSLog("ExpoBBPlayer: showCastPicker failed - castButton not found")
+        return
+      }
+
+      // Trigger the button action on the main thread
+      DispatchQueue.main.async {
+        NSLog("ExpoBBPlayer: Triggering Chromecast button")
+        castButton.sendActions(for: .touchUpInside)
+      }
+    } catch {
+      NSLog("ExpoBBPlayer: showCastPicker failed with exception: \(error)")
     }
   }
 }
