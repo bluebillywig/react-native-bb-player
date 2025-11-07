@@ -350,7 +350,17 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func showCastPicker() {
-    // iOS SDK Note: Chromecast picker is shown via the cast button in the player UI
-    // Direct programmatic access not available in current SDK version
+    // Access the internal chromeCastViewController using Key-Value Coding
+    // Chain: playerController.playerView -> chromeCastViewController -> castButton
+    if let playerView = playerController.playerView {
+      // Use KVC to access the internal chromeCastViewController property
+      if let chromeCastVC = playerView.value(forKey: "chromeCastViewController") as? NSObject {
+        // Access the public castButton property
+        if let castButton = chromeCastVC.value(forKey: "castButton") as? UIButton {
+          // Trigger the cast button to show the device picker
+          castButton.sendActions(for: .touchUpInside)
+        }
+      }
+    }
   }
 }
