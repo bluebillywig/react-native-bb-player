@@ -7,12 +7,13 @@ import os
 class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   private var playerController: BBPlayerViewController = BBPlayerViewController()
 
-  // Timer for periodic time updates (4x per second, matching Android)
+  // Timer for periodic time updates (1x per second for efficiency)
   private var timeUpdateTimer: Timer?
   private var isPlaying: Bool = false
   private var currentDuration: Double = 0.0
   private var lastKnownTime: Double = 0.0
   private var playbackStartTimestamp: TimeInterval = 0
+  private var lastEmittedTime: Double = 0.0
   private var isInFullscreen: Bool = false
 
   // Override intrinsicContentSize to tell React Native this view wants to fill available space
@@ -106,6 +107,12 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     } else if window == nil {
       NSLog("ExpoBBPlayer: ExpoBBPlayerView.didMoveToWindow - view removed from window, isInFullscreen: \(isInFullscreen)")
 
+      // Stop time update timer to save CPU/battery when view is not visible
+      // Skip this during fullscreen transitions to avoid interrupting playback
+      if !isInFullscreen {
+        stopTimeUpdates()
+      }
+
       // Don't tear down the view controller hierarchy when the view is removed from the window.
       // This happens during fullscreen transitions, and the SDK needs the hierarchy intact
       // to properly restore the player after exiting fullscreen.
@@ -113,11 +120,11 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     }
   }
 
-  // Start periodic time updates (4x per second = 0.25 seconds interval)
+  // Start periodic time updates (1x per second for better performance)
   private func startTimeUpdates() {
     guard timeUpdateTimer == nil else { return } // Already running
 
-    timeUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+    timeUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
       guard let self = self, self.isPlaying else { return }
 
       // Calculate current time based on elapsed time since playback started
@@ -125,8 +132,10 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       let estimatedTime = self.lastKnownTime + elapsedSeconds
       let currentTime = min(estimatedTime, self.currentDuration)
 
-      // Only emit if we have valid time values
-      if self.currentDuration > 0 {
+      // Only emit if we have valid time values and time changed significantly (>0.5s)
+      // This reduces unnecessary bridge calls and React re-renders
+      if self.currentDuration > 0 && abs(currentTime - self.lastEmittedTime) >= 0.5 {
+        self.lastEmittedTime = currentTime
         self.onDidTriggerTimeUpdate([
           "currentTime": currentTime,
           "duration": self.currentDuration
@@ -242,6 +251,7 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     case .playing:
       isPlaying = true
       playbackStartTimestamp = Date().timeIntervalSince1970
+      lastEmittedTime = 0.0  // Reset to ensure immediate time update on play
       startTimeUpdates()
       onDidTriggerPlaying()
 
@@ -256,6 +266,7 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       // Update lastKnownTime based on seek and reset playback timestamp
       lastKnownTime = seekOffset ?? 0.0
       playbackStartTimestamp = Date().timeIntervalSince1970
+      lastEmittedTime = 0.0  // Reset to ensure immediate time update after seek
       onDidTriggerSeeked(["payload": seekOffset as Any])
 
     case .seeking:
@@ -424,33 +435,20 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func showCastPicker() {
-    // Access the internal chromeCastViewController using Key-Value Coding
     guard let playerView = playerController.playerView else {
       NSLog("ExpoBBPlayer: showCastPicker failed - playerView is nil")
       return
     }
 
-    // Wrap KVC access in a do-catch to handle exceptions from Kotlin/Native SDK
-    do {
-      // Safely access chromeCastViewController using KVC
-      guard let chromeCastVC = playerView.value(forKey: "chromeCastViewController") as? NSObject else {
-        NSLog("ExpoBBPlayer: showCastPicker failed - chromeCastViewController not found")
-        return
-      }
-
-      // Safely access castButton
-      guard let castButton = chromeCastVC.value(forKey: "castButton") as? UIButton else {
-        NSLog("ExpoBBPlayer: showCastPicker failed - castButton not found")
-        return
-      }
-
-      // Trigger the button action on the main thread
+    // Access the cast button from BBNativePlayerView using KVC
+    // This button triggers the SDK's cast device selection UI
+    if let castButton = playerView.value(forKey: "castButton") as? UIButton {
       DispatchQueue.main.async {
-        NSLog("ExpoBBPlayer: Triggering Chromecast button")
+        NSLog("ExpoBBPlayer: Triggering cast button programmatically")
         castButton.sendActions(for: .touchUpInside)
       }
-    } catch {
-      NSLog("ExpoBBPlayer: showCastPicker failed with exception: \(error)")
+    } else {
+      NSLog("ExpoBBPlayer: showCastPicker failed - castButton not found")
     }
   }
 }

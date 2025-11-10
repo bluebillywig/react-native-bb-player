@@ -206,10 +206,12 @@ export default function App() {
               currentTimeRef.current = time;
               durationRef.current = dur;
 
-              // Only update state (trigger re-render) every second
-              // Since native now fires at 1Hz, we update on every event
-              setCurrentTime(time);
-              setDuration(dur);
+              // Only trigger re-render when time changes by at least 1 second
+              // This reduces React re-renders while keeping UI updated
+              if (Math.floor(time) !== Math.floor(currentTime)) {
+                setCurrentTime(time);
+                setDuration(dur);
+              }
             }}
             // State changes
             onDidTriggerStateChange={(newState) => {
