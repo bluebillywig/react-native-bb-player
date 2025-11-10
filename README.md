@@ -31,6 +31,7 @@ Native video player for React Native - powered by Blue Billywig's iOS (AVPlayer)
 - [Usage Examples](#usage-examples)
 - [API Reference](#api-reference)
 - [Advanced Guides](#advanced-guides)
+- [Performance Optimization](#performance-optimization)
 - [Troubleshooting](#troubleshooting)
 - [Hello World Demo App](#hello-world-demo-app)
 
@@ -895,6 +896,227 @@ cd android && ./gradlew clean
 Then rebuild your app with `npx expo run:ios` or `npx expo run:android`.
 
 > **⚠️ Note**: When overriding SDK versions, ensure compatibility with the `expo-bb-player` package. Major version changes in the native SDKs may require updates to the wrapper code. Test thoroughly after upgrading.
+
+## Performance Optimization
+
+The `expo-bb-player` is designed for optimal performance, but there are several strategies to minimize CPU usage and battery drain in your application.
+
+### Time Updates (Opt-In)
+
+By default, the player does **not** emit `onDidTriggerTimeUpdate` events to reduce CPU overhead. Time updates require a native timer that fires every second, which can impact battery life and performance, especially on mobile devices.
+
+#### When to Enable Time Updates
+
+Enable time updates only when you need them for:
+- Custom progress bars or scrubbers
+- Real-time time display in custom controls
+- Time-based analytics or features
+
+#### How to Enable Time Updates
+
+Use the `enableTimeUpdates` prop:
+
+```tsx
+import { ExpoBBPlayerView } from 'expo-bb-player';
+
+export function PlayerWithTimeUpdates() {
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [showCustomControls, setShowCustomControls] = useState(false);
+
+  return (
+    <ExpoBBPlayerView
+      ref={playerRef}
+      jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
+      // Only enable time updates when custom controls are visible
+      enableTimeUpdates={showCustomControls}
+      onDidTriggerTimeUpdate={(time, dur) => {
+        setCurrentTime(time);
+        setDuration(dur);
+      }}
+      options={{
+        controls: !showCustomControls, // Disable native controls when using custom
+      }}
+    />
+  );
+}
+```
+
+#### Polling Current Time (Alternative)
+
+If you only need the current time occasionally (e.g., when the user interacts), use the `currentTime()` method instead:
+
+```tsx
+const playerRef = useRef<ExpoBBPlayerViewType>(null);
+
+const handleGetTime = async () => {
+  const time = await playerRef.current?.currentTime();
+  console.log('Current time:', time);
+};
+
+return (
+  <View>
+    <ExpoBBPlayerView
+      ref={playerRef}
+      jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
+      // enableTimeUpdates NOT set - no timer overhead
+    />
+    <Button title="Get Current Time" onPress={handleGetTime} />
+  </View>
+);
+```
+
+### Event Logging Overhead
+
+In development and demo applications, be cautious with event logging and state updates. Each player event that triggers a React state update causes a re-render.
+
+#### Bad Practice (Heavy CPU Usage)
+
+```tsx
+// This triggers state updates on EVERY player event
+const [eventLog, setEventLog] = useState([]);
+
+return (
+  <ExpoBBPlayerView
+    onDidTriggerPlay={() => setEventLog([...eventLog, 'play'])}
+    onDidTriggerPause={() => setEventLog([...eventLog, 'pause'])}
+    onDidTriggerStateChange={(state) => setEventLog([...eventLog, state])}
+    onDidTriggerPhaseChange={(phase) => setEventLog([...eventLog, phase])}
+    // ... many more event handlers causing state updates
+  />
+);
+```
+
+#### Good Practice (Minimal CPU Usage)
+
+```tsx
+// Only log events when explicitly needed for debugging
+const [enableEventLogging, setEnableEventLogging] = useState(false);
+const [eventLog, setEventLog] = useState([]);
+
+const addEvent = useCallback((name: string, data?: any) => {
+  if (!enableEventLogging) return; // Early return when disabled
+
+  setEventLog(prev => [
+    { name, data, timestamp: Date.now() },
+    ...prev
+  ].slice(0, 20));
+}, [enableEventLogging]);
+
+return (
+  <View>
+    <Switch
+      value={enableEventLogging}
+      onValueChange={setEnableEventLogging}
+    />
+    <ExpoBBPlayerView
+      onDidTriggerPlay={() => addEvent('play')}
+      onDidTriggerPause={() => addEvent('pause')}
+      // Events are no-ops when logging is disabled
+    />
+  </View>
+);
+```
+
+### Native vs Custom Controls
+
+Using native player controls (default) is more efficient than building custom controls with JavaScript:
+
+```tsx
+// Most efficient - native controls handle everything
+<ExpoBBPlayerView
+  jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
+  options={{ controls: true }}  // Default
+/>
+
+// Less efficient - requires time updates and React re-renders
+<ExpoBBPlayerView
+  jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
+  enableTimeUpdates={true}
+  options={{ controls: false }}
+  onDidTriggerTimeUpdate={(time, dur) => {
+    setCurrentTime(time);  // React state update every second
+    setDuration(dur);
+  }}
+/>
+```
+
+### Release Build Optimizations
+
+The native iOS and Android modules automatically optimize logging in Release builds:
+
+**iOS (`ExpoBBPlayerView.swift`):**
+```swift
+#if DEBUG
+  // In debug builds, log everything
+  NSLog("ExpoBBPlayer: \(message)")
+#else
+  // In release builds, only log warnings and errors
+  if level == .warning || level == .error {
+    NSLog("ExpoBBPlayer: \(message)")
+  }
+#endif
+```
+
+**Android (`ExpoBBPlayerView.kt`):**
+```kotlin
+private fun log(message: String, level: LogLevel = LogLevel.DEBUG) {
+    if (BuildConfig.DEBUG || level == LogLevel.WARNING || level == LogLevel.ERROR) {
+        Log.d(TAG, message)
+    }
+}
+```
+
+Always test performance on **Release builds** on **physical devices**, not Debug builds on simulators.
+
+### General Performance Best Practices
+
+1. **Minimize State Updates**: Only use state for values that need to trigger UI updates
+   ```tsx
+   // Use refs for high-frequency updates
+   const currentTimeRef = useRef(0);
+
+   // Use state only for UI that changes less frequently
+   const [state, setState] = useState<State>('IDLE');
+   ```
+
+2. **Memoize Event Handlers**: Use `useCallback` to prevent recreation
+   ```tsx
+   const handlePlay = useCallback(async () => {
+     await playerRef.current?.play();
+   }, []);
+   ```
+
+3. **Batch State Updates**: Combine multiple state updates when possible
+   ```tsx
+   // Bad: Multiple state updates
+   setState(newState);
+   setPhase(newPhase);
+   setVolume(newVolume);
+
+   // Better: Single state update
+   setPlayerInfo({ state: newState, phase: newPhase, volume: newVolume });
+   ```
+
+4. **Use Native Controls When Possible**: The native player UI is more efficient than custom JavaScript controls
+
+5. **Test on Physical Devices**: Simulators/emulators don't accurately represent real-world performance, especially for video playback
+
+6. **Profile Your App**: Use React DevTools Profiler and native performance tools to identify bottlenecks
+   - iOS: Instruments (CPU, Memory)
+   - Android: Android Profiler (CPU, Memory, Energy)
+
+### Performance Checklist
+
+Before deploying to production:
+
+- [ ] `enableTimeUpdates` is only enabled when needed
+- [ ] Event handlers don't trigger unnecessary state updates
+- [ ] Event logging is disabled or opt-in
+- [ ] Using native controls unless custom controls are required
+- [ ] Testing on Release builds, not Debug builds
+- [ ] Testing on physical devices, not simulators
+- [ ] Profiled the app for CPU and memory usage
 
 ## Troubleshooting
 

@@ -183,6 +183,25 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         }
     }
 
+    fun seekRelative(offsetInSeconds: Double) {
+        if (::playerView.isInitialized) {
+            // Calculate current time based on playback state (similar to getCurrentTime)
+            val currentTime = if (isPlaying && playbackStartTimestamp > 0) {
+                val elapsedSeconds = (System.currentTimeMillis() - playbackStartTimestamp) / 1000.0
+                val estimatedTime = lastKnownTime + elapsedSeconds
+                kotlin.math.min(estimatedTime, currentDuration)
+            } else {
+                lastKnownTime
+            }
+
+            // Calculate new position and clamp to valid range [0, duration]
+            val newPosition = kotlin.math.max(0.0, kotlin.math.min(currentDuration, currentTime + offsetInSeconds))
+
+            // Seek to the new position
+            playerView.player?.seek(newPosition)
+        }
+    }
+
     fun setVolume(volume: Double) {
         if (::playerView.isInitialized) {
             playerView.setApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.volume, volume)

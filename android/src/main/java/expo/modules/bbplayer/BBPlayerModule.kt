@@ -46,6 +46,10 @@ class BBPlayerModule : Module() {
                 view.seek(offsetInSeconds)
             }
 
+            AsyncFunction("seekRelative") { view: BBPlayerView, offsetInSeconds: Double ->
+                view.seekRelative(offsetInSeconds)
+            }
+
             AsyncFunction("setVolume") { view: BBPlayerView, volume: Double ->
                 view.setVolume(volume)
             }

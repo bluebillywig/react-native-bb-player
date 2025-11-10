@@ -524,6 +524,25 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     playerController.playerView?.player.seek(offsetInSeconds: offsetInSeconds as NSNumber)
   }
 
+  func seekRelative(_ offsetInSeconds: Double) {
+    // Calculate current time based on playback state (similar to currentTime() method)
+    let currentTime: Double
+    if isPlaying && playbackStartTimestamp > 0 {
+      let elapsedSeconds = Date().timeIntervalSince1970 - playbackStartTimestamp
+      let estimatedTime = lastKnownTime + elapsedSeconds
+      currentTime = min(estimatedTime, currentDuration)
+    } else {
+      // When paused or not playing, use last known time
+      currentTime = lastKnownTime
+    }
+
+    // Calculate new position and clamp to valid range [0, duration]
+    let newPosition = max(0, min(currentDuration, currentTime + offsetInSeconds))
+
+    // Seek to the new position using the standard seek method
+    playerController.playerView?.player.seek(offsetInSeconds: newPosition as NSNumber)
+  }
+
   func setMuted(_ muted: Bool) {
     // Call setApiProperty directly to match setVolume pattern
     playerController.playerView?.setApiProperty(property: .muted, value: muted)

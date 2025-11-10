@@ -37,6 +37,7 @@ export type ExpoBBPlayerViewType = {
   pause: () => Promise<void>;
   play: () => Promise<void>;
   seek: (position: number) => Promise<void>;
+  seekRelative: (offsetSeconds: number) => Promise<void>;
   setMuted: (muted: boolean) => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
   destroy: () => Promise<void>;

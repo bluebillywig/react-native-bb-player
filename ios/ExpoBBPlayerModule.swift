@@ -113,6 +113,10 @@ public class ExpoBBPlayerModule: Module {
         return view.seek(offsetInSeconds)
       }
 
+      AsyncFunction("seekRelative") { (view: ExpoBBPlayerView, offsetInSeconds: Double) in
+        return view.seekRelative(offsetInSeconds)
+      }
+
       AsyncFunction("setMuted") { (view: ExpoBBPlayerView, muted: Bool) in
         return view.setMuted(muted)
       }

@@ -36,10 +36,14 @@ export default function App() {
   const [eventLog, setEventLog] = useState<EventLogEntry[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [useCustomControls, setUseCustomControls] = useState(false);
+  const [enableEventLogging, setEnableEventLogging] = useState(false);
   const [customJsonUrl, setCustomJsonUrl] = useState('');
 
   // Memoize addEvent to prevent recreation on every render
   const addEvent = useCallback((name: string, data?: any) => {
+    // Skip all event logging if disabled (performance optimization)
+    if (!enableEventLogging) return;
+
     // Skip logging time updates to reduce overhead
     if (name === 'timeUpdate') return;
 
@@ -51,7 +55,7 @@ export default function App() {
       data: data ? JSON.stringify(data) : undefined,
     };
     setEventLog(prev => [entry, ...prev].slice(0, 20)); // Keep last 20 events
-  }, []);
+  }, [enableEventLogging]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -76,6 +80,16 @@ export default function App() {
     try {
       await playerRef.current?.seek(seconds);
       addEvent('seek', { position: seconds });
+    } catch (error) {
+      console.error('Error seeking:', error);
+    }
+  };
+
+  const handleSeekRelative = async (offsetSeconds: number) => {
+    try {
+      // Use native seekRelative method - more efficient than polling time + seeking
+      await playerRef.current?.seekRelative(offsetSeconds);
+      addEvent('seekRelative', { offset: offsetSeconds });
     } catch (error) {
       console.error('Error seeking:', error);
     }
@@ -282,7 +296,7 @@ export default function App() {
             <View style={styles.customControlsButtons}>
               <TouchableOpacity
                 style={styles.customControlButton}
-                onPress={() => handleSeek(Math.max(0, currentTime - 10))}
+                onPress={() => handleSeekRelative(-10)}
               >
                 <Text style={styles.customControlButtonText}>-10s</Text>
               </TouchableOpacity>
@@ -296,7 +310,7 @@ export default function App() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.customControlButton}
-                onPress={() => handleSeek(Math.min(duration, currentTime + 10))}
+                onPress={() => handleSeekRelative(10)}
               >
                 <Text style={styles.customControlButtonText}>+10s</Text>
               </TouchableOpacity>
@@ -322,7 +336,7 @@ export default function App() {
             <TouchableOpacity style={styles.button} onPress={() => handleSeek(0)}>
               <Text style={styles.buttonText}>Restart</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={() => handleSeek(currentTime + 10)}>
+            <TouchableOpacity style={styles.button} onPress={() => handleSeekRelative(10)}>
               <Text style={styles.buttonText}>+10s</Text>
             </TouchableOpacity>
           </View>
@@ -395,9 +409,24 @@ export default function App() {
 
         {/* Event Log */}
         <View style={styles.eventLogSection}>
-          <Text style={styles.sectionTitle}>Event Log (Last 20 Events)</Text>
+          <View style={styles.eventLogHeader}>
+            <Text style={styles.sectionTitle}>Event Log (Last 20 Events)</Text>
+            <TouchableOpacity
+              style={[styles.button, styles.toggleButton, enableEventLogging && styles.buttonActive]}
+              onPress={() => setEnableEventLogging(!enableEventLogging)}
+            >
+              <Text style={styles.buttonText}>{enableEventLogging ? 'Enabled' : 'Disabled'}</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.helperText}>
+            {enableEventLogging
+              ? 'Event logging is active (may impact performance)'
+              : 'Event logging is disabled for better performance'}
+          </Text>
           <View style={styles.eventLog}>
-            {eventLog.length === 0 ? (
+            {!enableEventLogging ? (
+              <Text style={styles.eventLogEmpty}>Event logging disabled for performance optimization</Text>
+            ) : eventLog.length === 0 ? (
               <Text style={styles.eventLogEmpty}>No events yet...</Text>
             ) : (
               eventLog.map((event) => (
@@ -532,6 +561,15 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 8,
     marginBottom: 16,
+  },
+  eventLogHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  toggleButton: {
+    minWidth: 90,
   },
   eventLog: {
     backgroundColor: '#f9f9f9',
