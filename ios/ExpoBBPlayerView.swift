@@ -69,7 +69,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     super.didMoveToWindow()
 
     if window != nil {
+      #if DEBUG
       NSLog("ExpoBBPlayer: ExpoBBPlayerView.didMoveToWindow - view added to window")
+      #endif
       // Ensure this view respects its frame from React Native layout
       self.clipsToBounds = false  // Allow settings overlay to render outside bounds
 
@@ -86,7 +88,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
 
       // Add playerController as a child view controller for proper fullscreen support
       if let parentVC = parentVC {
+        #if DEBUG
         NSLog("ExpoBBPlayer: Found parent view controller: \(type(of: parentVC))")
+        #endif
         parentVC.addChild(playerController)
         addSubview(playerController.view)
 
@@ -102,13 +106,17 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
         playerController.didMove(toParent: parentVC)
         playerController.setViewSize = self.setViewSize
         playerController.delegate = self
+        #if DEBUG
         NSLog("ExpoBBPlayer: Player controller added to parent VC, delegate set to ExpoBBPlayerView")
+        #endif
       } else {
         NSLog("ExpoBBPlayer: WARNING - Could not find parent view controller!")
       }
 
     } else if window == nil {
+      #if DEBUG
       NSLog("ExpoBBPlayer: ExpoBBPlayerView.didMoveToWindow - view removed from window, isInFullscreen: \(isInFullscreen)")
+      #endif
 
       // Stop time update timer to save CPU/battery when view is not visible
       // Skip this during fullscreen transitions to avoid interrupting playback
@@ -313,7 +321,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       return
     }
 
+    #if DEBUG
     NSLog("ExpoBBPlayer: Creating independent GCKUICastButton (SDK confirmed initialized)")
+    #endif
 
     // Create an independent GCKUICastButton separate from the SDK
     // This button will interact with the Google Cast SDK's session manager
@@ -332,12 +342,16 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     castButton.isUserInteractionEnabled = false  // Can't be tapped
     addSubview(castButton)
 
+    #if DEBUG
     NSLog("ExpoBBPlayer: Successfully created and added independent GCKUICastButton to view hierarchy")
+    #endif
   }
 
   // Safe handler for cast button taps - uses an independent GCKUICastButton
   @objc private func handleCastButtonTap() {
+    #if DEBUG
     NSLog("ExpoBBPlayer: Cast button tapped")
+    #endif
 
     // CRITICAL: Verify Google Cast SDK is initialized before proceeding
     if !GCKCastContext.isSharedInstanceInitialized() {
@@ -357,7 +371,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
 
     // Trigger the button to show the cast device picker
     // When a device is selected, GCKSessionManager will notify the SDK
+    #if DEBUG
     NSLog("ExpoBBPlayer: Triggering independent GCKUICastButton to show cast picker")
+    #endif
     castButton.sendActions(for: .touchUpInside)
   }
 
@@ -370,9 +386,13 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func setupPlayer() {
+    #if DEBUG
     NSLog("ExpoBBPlayer: ExpoBBPlayerView.setupPlayer() called with jsonUrl: \(playerController.jsonUrl)")
+    #endif
     playerController.setupPlayer()
+    #if DEBUG
     NSLog("ExpoBBPlayer: ExpoBBPlayerView.setupPlayer() completed")
+    #endif
   }
 
   func adMediaHeight() -> Int? {
@@ -501,7 +521,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func showCastPicker() {
+    #if DEBUG
     NSLog("ExpoBBPlayer: showCastPicker called")
+    #endif
 
     // CRITICAL: Verify Google Cast SDK is initialized before proceeding
     if !GCKCastContext.isSharedInstanceInitialized() {
@@ -522,7 +544,9 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     // Trigger the independent cast button to show the cast device picker
     // This works with the SDK because they both use the shared GCKSessionManager
     DispatchQueue.main.async {
+      #if DEBUG
       NSLog("ExpoBBPlayer: showCastPicker triggering independent GCKUICastButton")
+      #endif
       castButton.sendActions(for: .touchUpInside)
     }
   }
