@@ -720,6 +720,108 @@ export function InlinePlayerExample() {
 }
 ```
 
+### Chromecast Integration
+
+The `expo-bb-player` package includes full Google Cast (Chromecast) support on both iOS and Android platforms. The integration works seamlessly with the Blue Billywig SDK, which automatically handles cast session management and media playback on cast devices.
+
+#### How It Works
+
+The Chromecast integration leverages the Google Cast SDK's singleton architecture:
+
+1. **Shared Session Manager**: All cast buttons (both from the SDK and your app) share the same `GCKSessionManager` instance
+2. **Automatic Detection**: The Blue Billywig SDK listens to Cast SDK notifications and automatically handles session changes
+3. **Seamless Handoff**: When you create a cast session via `showCastPicker()`, the SDK detects it and handles the media transfer automatically
+
+#### Platform Support
+
+| Platform | Status | Implementation |
+|----------|--------|----------------|
+| **iOS** | ✅ Fully Supported | Google Cast SDK for iOS |
+| **Android** | ✅ Fully Supported | Google Cast SDK for Android |
+
+#### Basic Usage
+
+```tsx
+import React, { useRef } from 'react';
+import { View, Button } from 'react-native';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'expo-bb-player';
+
+export function ChromecastExample() {
+  const playerRef = useRef<ExpoBBPlayerViewType>(null);
+
+  const handleCast = async () => {
+    try {
+      await playerRef.current?.showCastPicker();
+    } catch (error) {
+      console.error('Cast picker error:', error);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ExpoBBPlayerView
+        ref={playerRef}
+        jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
+        options={{ autoPlay: true }}
+        style={{ flex: 1 }}
+      />
+      <Button title="Cast to Device" onPress={handleCast} />
+    </View>
+  );
+}
+```
+
+#### Implementation Details
+
+**iOS Implementation:**
+- Uses an independent `GCKUICastButton` that's positioned off-screen and made transparent
+- The button remains in the view hierarchy to present cast device picker dialogs
+- Implements lazy initialization with explicit Google Cast SDK initialization checks
+- Safe error handling prevents crashes if SDK isn't ready
+
+**Android Implementation:**
+- Directly integrates with the Google Cast SDK
+- Presents the native cast device picker dialog
+- Handles session management through the SDK's built-in mechanisms
+
+**Safety Mechanisms:**
+Both platforms implement several safety checks:
+- Verifies `GCKCastContext` is initialized before creating any cast UI
+- Uses lazy initialization to avoid timing issues during app startup
+- Gracefully handles cases where Cast SDK may not be ready
+- Logs errors (in debug builds) without crashing the app
+
+#### Receiver App ID
+
+The Blue Billywig SDK is configured with Google Cast receiver app ID `1F61A3A5`. This is managed by the native SDK and requires no additional configuration.
+
+#### Testing Chromecast
+
+To test Chromecast functionality:
+
+1. **Ensure you have a Chromecast device** on the same network as your test device
+2. **For iOS**: Test on a physical device (Cast SDK has limited simulator support)
+3. **For Android**: Works on both emulators and physical devices (if network allows)
+4. **Call `showCastPicker()`** to open the device selection dialog
+5. **Select your device** from the list to start casting
+
+#### Troubleshooting
+
+**Cast button does nothing:**
+- Ensure Google Cast SDK is initialized (wait for `onDidTriggerApiReady` event)
+- Check that your device is on the same network as the Chromecast
+- Verify network allows mDNS/multicast (required for device discovery)
+
+**No devices found:**
+- Check Wi-Fi network allows device discovery
+- Some enterprise/guest networks block mDNS traffic
+- Ensure Chromecast is powered on and connected to the same network
+
+**Cast session disconnects:**
+- Check network stability
+- Ensure media URLs are accessible from the Chromecast device
+- Verify DRM settings (if applicable) support Cast receivers
+
 ### Overriding Native SDK Versions
 
 By default, `expo-bb-player` uses Blue Billywig Native Player SDK version **8.37.x** for both iOS and Android. The package uses flexible version constraints that automatically receive patch updates (e.g., 8.37.0 → 8.37.1).
