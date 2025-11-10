@@ -3,6 +3,7 @@ import ExpoModulesCore
 import WebKit
 import bbnativeshared
 import os
+import GoogleCast
 
 class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   private var playerController: BBPlayerViewController = BBPlayerViewController()
@@ -15,6 +16,8 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   private var playbackStartTimestamp: TimeInterval = 0
   private var lastEmittedTime: Double = 0.0
   private var isInFullscreen: Bool = false
+  // Independent Google Cast button for showing the cast picker
+  private var independentCastButton: GCKUICastButton?
 
   // Override intrinsicContentSize to tell React Native this view wants to fill available space
   override var intrinsicContentSize: CGSize {
@@ -148,6 +151,11 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   private func stopTimeUpdates() {
     timeUpdateTimer?.invalidate()
     timeUpdateTimer = nil
+  }
+
+  // Clean up timers
+  deinit {
+    stopTimeUpdates()
   }
 
   func bbPlayerViewController(
@@ -291,8 +299,66 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       ])
 
     case .apiReady:
+      // Note: We create the independent cast button lazily when needed, not during init
+      // This avoids timing issues with Google Cast SDK initialization
       onDidTriggerApiReady()
     }
+  }
+
+  // Setup independent cast button that works alongside the SDK
+  private func setupIndependentCastButton() {
+    // CRITICAL: Check if Google Cast SDK is initialized before creating button
+    if !GCKCastContext.isSharedInstanceInitialized() {
+      NSLog("ExpoBBPlayer: ERROR - Cannot create cast button: Google Cast SDK not initialized yet")
+      return
+    }
+
+    NSLog("ExpoBBPlayer: Creating independent GCKUICastButton (SDK confirmed initialized)")
+
+    // Create an independent GCKUICastButton separate from the SDK
+    // This button will interact with the Google Cast SDK's session manager
+    // The Blue Billywig SDK already listens to GCKSessionManager notifications
+    // so it will automatically detect and handle any cast sessions we create
+    independentCastButton = GCKUICastButton(frame: CGRect(x: -1000, y: -1000, width: 1, height: 1))
+
+    guard let castButton = independentCastButton else {
+      NSLog("ExpoBBPlayer: ERROR - Failed to create independent cast button")
+      return
+    }
+
+    // Add it to the view hierarchy but keep it invisible and offscreen
+    // We need it in the hierarchy so it can present dialogs, but we don't want to see it
+    castButton.alpha = 0.0  // Completely transparent
+    castButton.isUserInteractionEnabled = false  // Can't be tapped
+    addSubview(castButton)
+
+    NSLog("ExpoBBPlayer: Successfully created and added independent GCKUICastButton to view hierarchy")
+  }
+
+  // Safe handler for cast button taps - uses an independent GCKUICastButton
+  @objc private func handleCastButtonTap() {
+    NSLog("ExpoBBPlayer: Cast button tapped")
+
+    // CRITICAL: Verify Google Cast SDK is initialized before proceeding
+    if !GCKCastContext.isSharedInstanceInitialized() {
+      NSLog("ExpoBBPlayer: ERROR - Cast button tapped but Google Cast SDK not initialized yet")
+      return
+    }
+
+    // Create the button lazily on first use
+    if independentCastButton == nil {
+      setupIndependentCastButton()
+    }
+
+    guard let castButton = independentCastButton else {
+      NSLog("ExpoBBPlayer: ERROR - Failed to create independent cast button")
+      return
+    }
+
+    // Trigger the button to show the cast device picker
+    // When a device is selected, GCKSessionManager will notify the SDK
+    NSLog("ExpoBBPlayer: Triggering independent GCKUICastButton to show cast picker")
+    castButton.sendActions(for: .touchUpInside)
   }
 
   func setJsonUrl(_ url: String) {
@@ -435,20 +501,29 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func showCastPicker() {
-    guard let playerView = playerController.playerView else {
-      NSLog("ExpoBBPlayer: showCastPicker failed - playerView is nil")
+    NSLog("ExpoBBPlayer: showCastPicker called")
+
+    // CRITICAL: Verify Google Cast SDK is initialized before proceeding
+    if !GCKCastContext.isSharedInstanceInitialized() {
+      NSLog("ExpoBBPlayer: ERROR - showCastPicker called but Google Cast SDK not initialized yet")
       return
     }
 
-    // Access the cast button from BBNativePlayerView using KVC
-    // This button triggers the SDK's cast device selection UI
-    if let castButton = playerView.value(forKey: "castButton") as? UIButton {
-      DispatchQueue.main.async {
-        NSLog("ExpoBBPlayer: Triggering cast button programmatically")
-        castButton.sendActions(for: .touchUpInside)
-      }
-    } else {
-      NSLog("ExpoBBPlayer: showCastPicker failed - castButton not found")
+    // Create the button lazily if it doesn't exist yet
+    if independentCastButton == nil {
+      setupIndependentCastButton()
+    }
+
+    guard let castButton = independentCastButton else {
+      NSLog("ExpoBBPlayer: ERROR - independentCastButton is nil in showCastPicker")
+      return
+    }
+
+    // Trigger the independent cast button to show the cast device picker
+    // This works with the SDK because they both use the shared GCKSessionManager
+    DispatchQueue.main.async {
+      NSLog("ExpoBBPlayer: showCastPicker triggering independent GCKUICastButton")
+      castButton.sendActions(for: .touchUpInside)
     }
   }
 }
