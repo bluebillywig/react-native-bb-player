@@ -304,11 +304,8 @@ export default function App() {
           </View>
         )}
 
-        {/* Time Display */}
+        {/* Player State Display */}
         <View style={styles.timeDisplay}>
-          <Text style={styles.timeText}>
-            {formatTime(currentTime)} / {formatTime(duration)}
-          </Text>
           <View style={styles.stateDisplay}>
             <Text style={styles.stateText}>State: {state || 'N/A'}</Text>
             <Text style={styles.stateText}>Phase: {phase || 'N/A'}</Text>
