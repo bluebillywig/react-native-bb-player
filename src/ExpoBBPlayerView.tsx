@@ -1,5 +1,5 @@
 import { requireNativeView } from "expo";
-import type React from "react";
+import React from "react";
 import type { NativeSyntheticEvent } from "react-native";
 
 import type { ExpoBBPlayerViewProps } from "./ExpoBBPlayer.types";
@@ -64,7 +64,7 @@ type NativeExpoBBPlayerViewProps = Override<
 const NativeView: React.ComponentType<NativeExpoBBPlayerViewProps> =
   requireNativeView("ExpoBBPlayer");
 
-const ExpoBBPlayerView = (props: ExpoBBPlayerViewProps) => {
+const ExpoBBPlayerView = React.memo((props: ExpoBBPlayerViewProps) => {
   return (
     <NativeView
       {...props}
@@ -74,14 +74,12 @@ const ExpoBBPlayerView = (props: ExpoBBPlayerViewProps) => {
       onDidTriggerProjectLoaded={(event) =>
         props.onDidTriggerProjectLoaded?.(event.nativeEvent)
       }
-      onDidTriggerMediaClipLoaded={(event) => {
-        console.log("onDidTriggerMediaClipLoaded", event.nativeEvent);
-        props.onDidTriggerMediaClipLoaded?.(event.nativeEvent);
-      }}
-      onDidTriggerPhaseChange={(event) => {
-        console.log("onDidTriggerPhaseChange", event.nativeEvent);
-        props.onDidTriggerPhaseChange?.(event.nativeEvent.phase);
-      }}
+      onDidTriggerMediaClipLoaded={(event) =>
+        props.onDidTriggerMediaClipLoaded?.(event.nativeEvent)
+      }
+      onDidTriggerPhaseChange={(event) =>
+        props.onDidTriggerPhaseChange?.(event.nativeEvent.phase)
+      }
       onDidTriggerStateChange={(event) =>
         props.onDidTriggerStateChange?.(event.nativeEvent.state)
       }
@@ -118,6 +116,8 @@ const ExpoBBPlayerView = (props: ExpoBBPlayerViewProps) => {
       }}
     />
   );
-};
+});
+
+ExpoBBPlayerView.displayName = "ExpoBBPlayerView";
 
 export default ExpoBBPlayerView;

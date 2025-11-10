@@ -17,6 +17,14 @@ import com.bluebillywig.bbnativeshared.model.Project
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
+import expo.modules.bbplayer.BuildConfig
+
+// Debug logging helper - only logs in debug builds
+private inline fun debugLog(tag: String, message: () -> String) {
+    if (BuildConfig.DEBUG) {
+        Log.d(tag, message())
+    }
+}
 
 /**
  * Expo-based View for Blue Billywig Native Player
@@ -104,18 +112,18 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     private val onDidTriggerAllAdsCompleted by EventDispatcher<Unit>()
 
     fun setJsonUrl(url: String) {
-        Log.d("BBPlayerView", "setJsonUrl: $url")
+        debugLog("BBPlayerView") { "setJsonUrl: $url" }
         this.jsonUrl = url
     }
 
     fun setAutoPlay(autoPlay: Boolean) {
-        Log.d("BBPlayerView", "setAutoPlay: $autoPlay")
+        debugLog("BBPlayerView") { "setAutoPlay: $autoPlay" }
         this.options["autoPlay"] = autoPlay
     }
 
     fun setEnableTimeUpdates(enabled: Boolean) {
         enableTimeUpdates = enabled
-        Log.d("BBPlayerView", "Time updates ${if (enabled) "enabled" else "disabled"}")
+        debugLog("BBPlayerView") { "Time updates ${if (enabled) "enabled" else "disabled"}" }
 
         // If disabling while timer is running, stop it
         if (!enabled && timeUpdateRunnable != null) {
@@ -128,10 +136,10 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     }
 
     fun setupPlayer() {
-        Log.d("BBPlayerView", "setupPlayer called - jsonUrl: $jsonUrl, options: $options")
+        debugLog("BBPlayerView") { "setupPlayer called - jsonUrl: $jsonUrl, options: $options" }
 
         if (playerSetup) {
-            Log.d("BBPlayerView", "Player already setup, removing old player")
+            debugLog("BBPlayerView") { "Player already setup, removing old player" }
             removePlayer()
         }
 
@@ -140,7 +148,7 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
             return
         }
 
-        Log.d("BBPlayerView", "Creating BBNativePlayerView with factory method")
+        debugLog("BBPlayerView") { "Creating BBNativePlayerView with factory method" }
         playerView = BBNativePlayer.createPlayerView(currentActivity, jsonUrl, options)
         playerView.delegate = this@BBPlayerView
 
@@ -148,11 +156,11 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         addView(playerView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         playerSetup = true
-        Log.d("BBPlayerView", "Player setup complete")
+        debugLog("BBPlayerView") { "Player setup complete" }
     }
 
     private fun removePlayer() {
-        Log.d("BBPlayerView", "removePlayer called")
+        debugLog("BBPlayerView") { "removePlayer called" }
         playerSetup = false
         isPlaying = false
         stopTimeUpdates()
@@ -185,14 +193,8 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
 
     fun seekRelative(offsetInSeconds: Double) {
         if (::playerView.isInitialized) {
-            // Calculate current time based on playback state (similar to getCurrentTime)
-            val currentTime = if (isPlaying && playbackStartTimestamp > 0) {
-                val elapsedSeconds = (System.currentTimeMillis() - playbackStartTimestamp) / 1000.0
-                val estimatedTime = lastKnownTime + elapsedSeconds
-                kotlin.math.min(estimatedTime, currentDuration)
-            } else {
-                lastKnownTime
-            }
+            // Use the shared time calculation helper
+            val currentTime = calculateEstimatedCurrentTime()
 
             // Calculate new position and clamp to valid range [0, duration]
             val newPosition = kotlin.math.max(0.0, kotlin.math.min(currentDuration, currentTime + offsetInSeconds))
@@ -252,7 +254,7 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
                 // Find the cast button by traversing the view hierarchy
                 val castButton = findCastButton(playerView)
                 if (castButton != null) {
-                    Log.d("BBPlayerView", "Found cast button, triggering click")
+                    debugLog("BBPlayerView") { "Found cast button, triggering click" }
                     castButton.performClick()
                 } else {
                     Log.w("BBPlayerView", "Cast button not found in view hierarchy")
@@ -333,6 +335,20 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         return if (::playerView.isInitialized) {
             playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.clipData) as? MediaClip
         } else null
+    }
+
+    /**
+     * Calculate estimated current time based on playback state
+     * Consolidates duplicate time calculation logic used in seekRelative and timeUpdateRunnable
+     */
+    private fun calculateEstimatedCurrentTime(): Double {
+        return if (isPlaying && playbackStartTimestamp > 0) {
+            val elapsedSeconds = (System.currentTimeMillis() - playbackStartTimestamp) / 1000.0
+            val estimatedTime = lastKnownTime + elapsedSeconds
+            kotlin.math.min(estimatedTime, currentDuration)
+        } else {
+            lastKnownTime
+        }
     }
 
     fun getCurrentTime(): Double? {
@@ -436,10 +452,8 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         timeUpdateRunnable = object : Runnable {
             override fun run() {
                 if (::playerView.isInitialized && isPlaying) {
-                    // Calculate current time based on elapsed time since playback started
-                    val elapsedSeconds = (System.currentTimeMillis() - playbackStartTimestamp) / 1000.0
-                    val estimatedTime = lastKnownTime + elapsedSeconds
-                    val currentTime = kotlin.math.min(estimatedTime, currentDuration)
+                    // Use the shared time calculation helper
+                    val currentTime = calculateEstimatedCurrentTime()
 
                     // Only emit if we have valid time values
                     if (currentDuration > 0) {
@@ -469,17 +483,17 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
 
     // BBNativePlayerViewDelegate implementations
     override fun didSetupWithJsonUrl(view: BBNativePlayerView, url: String?) {
-        Log.d("BBPlayerView", "didSetupWithJsonUrl: $url")
+        debugLog("BBPlayerView") { "didSetupWithJsonUrl: $url" }
 
         // Debug: Check if controls are enabled
         val playoutData = view.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.playoutData)
-        Log.d("BBPlayerView", "Playout data: $playoutData")
+        debugLog("BBPlayerView") { "Playout data: $playoutData" }
 
         onDidSetupWithJsonUrl(mapOf("url" to url))
     }
 
     override fun didTriggerMediaClipLoaded(view: BBNativePlayerView, clipData: MediaClip?) {
-        Log.d("BBPlayerView", "didTriggerMediaClipLoaded: ${clipData?.title}")
+        debugLog("BBPlayerView") { "didTriggerMediaClipLoaded: ${clipData?.title}" }
         onDidTriggerMediaClipLoaded(mapOf(
             "title" to clipData?.title,
             "id" to clipData?.id
@@ -487,17 +501,17 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     }
 
     override fun didTriggerProjectLoaded(view: BBNativePlayerView, projectData: Project?) {
-        Log.d("BBPlayerView", "didTriggerProjectLoaded: ${projectData?.id}")
+        debugLog("BBPlayerView") { "didTriggerProjectLoaded: ${projectData?.id}" }
         onDidTriggerProjectLoaded(mapOf("id" to projectData?.id))
     }
 
     override fun didTriggerPhaseChange(view: BBNativePlayerView, phase: Phase?) {
-        Log.d("BBPlayerView", "didTriggerPhaseChange: ${phase?.name}")
+        debugLog("BBPlayerView") { "didTriggerPhaseChange: ${phase?.name}" }
         onDidTriggerPhaseChange(mapOf("phase" to phase?.name))
     }
 
     override fun didTriggerStateChange(view: BBNativePlayerView, state: State?) {
-        Log.d("BBPlayerView", "didTriggerStateChange: ${state?.name}")
+        debugLog("BBPlayerView") { "didTriggerStateChange: ${state?.name}" }
         onDidTriggerStateChange(mapOf("state" to state?.name))
     }
 
@@ -523,12 +537,12 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     }
 
     override fun didRequestOpenUrl(view: BBNativePlayerView, url: String?) {
-        Log.d("BBPlayerView", "didRequestOpenUrl: $url")
+        debugLog("BBPlayerView") { "didRequestOpenUrl: $url" }
         onDidRequestOpenUrl(mapOf("url" to url))
     }
 
     override fun didTriggerCanPlay(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerCanPlay - autoPlay: ${options["autoPlay"]}")
+        debugLog("BBPlayerView") { "didTriggerCanPlay - autoPlay: ${options["autoPlay"]}" }
 
         // Emit event
         onDidTriggerCanPlay(Unit)
@@ -536,21 +550,21 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         // If autoPlay was requested, start playback when player is ready
         val autoPlay = options["autoPlay"] as? Boolean ?: false
         if (autoPlay) {
-            Log.d("BBPlayerView", "Calling play() for autoplay")
+            debugLog("BBPlayerView") { "Calling play() for autoplay" }
             view.player?.play()
         } else {
-            Log.d("BBPlayerView", "AutoPlay is false, not calling play()")
+            debugLog("BBPlayerView") { "AutoPlay is false, not calling play()" }
         }
     }
 
     // Additional critical delegate implementations for bidirectional communication
     override fun didTriggerPlay(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerPlay")
+        debugLog("BBPlayerView") { "didTriggerPlay" }
         onDidTriggerPlay(Unit)
     }
 
     override fun didTriggerPlaying(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerPlaying - starting periodic time updates")
+        debugLog("BBPlayerView") { "didTriggerPlaying - starting periodic time updates" }
         isPlaying = true
         playbackStartTimestamp = System.currentTimeMillis()
         startTimeUpdates()
@@ -558,26 +572,26 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     }
 
     override fun didTriggerPause(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerPause - stopping periodic time updates")
+        debugLog("BBPlayerView") { "didTriggerPause - stopping periodic time updates" }
         isPlaying = false
         stopTimeUpdates()
         onDidTriggerPause(Unit)
     }
 
     override fun didTriggerEnded(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerEnded - stopping periodic time updates")
+        debugLog("BBPlayerView") { "didTriggerEnded - stopping periodic time updates" }
         isPlaying = false
         stopTimeUpdates()
         onDidTriggerEnded(Unit)
     }
 
     override fun didTriggerSeeking(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerSeeking")
+        debugLog("BBPlayerView") { "didTriggerSeeking" }
         onDidTriggerSeeking(Unit)
     }
 
     override fun didTriggerSeeked(view: BBNativePlayerView, seekOffset: Double?) {
-        Log.d("BBPlayerView", "didTriggerSeeked: $seekOffset")
+        debugLog("BBPlayerView") { "didTriggerSeeked: $seekOffset" }
         // Update lastKnownTime based on seek and reset playback timestamp
         lastKnownTime = seekOffset ?: 0.0
         playbackStartTimestamp = System.currentTimeMillis()
@@ -586,22 +600,17 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
             "seekOffset" to seekOffset,
             "currentTime" to lastKnownTime
         ))
-
-        // Also fire time update after seek
-        onDidTriggerTimeUpdate(mapOf(
-            "currentTime" to lastKnownTime,
-            "duration" to currentDuration
-        ))
+        // Note: Removed redundant onDidTriggerTimeUpdate - currentTime already in seeked event
     }
 
     override fun didTriggerDurationChange(view: BBNativePlayerView, duration: Double?) {
-        Log.d("BBPlayerView", "didTriggerDurationChange: $duration")
+        debugLog("BBPlayerView") { "didTriggerDurationChange: $duration" }
         currentDuration = duration ?: 0.0
         onDidTriggerDurationChange(mapOf("duration" to currentDuration))
     }
 
     override fun didTriggerVolumeChange(view: BBNativePlayerView, volume: Double?) {
-        Log.d("BBPlayerView", "didTriggerVolumeChange: $volume")
+        debugLog("BBPlayerView") { "didTriggerVolumeChange: $volume" }
         // Infer muted state from volume (volume == 0 means muted)
         val muted = (volume ?: 0.0) == 0.0
         onDidTriggerVolumeChange(mapOf(
@@ -611,48 +620,48 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     }
 
     override fun didTriggerStall(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerStall")
+        debugLog("BBPlayerView") { "didTriggerStall" }
         onDidTriggerStall(Unit)
     }
 
     // Additional missing delegate implementations
     override fun didTriggerModeChange(view: BBNativePlayerView, mode: String?) {
-        Log.d("BBPlayerView", "didTriggerModeChange: $mode")
+        debugLog("BBPlayerView") { "didTriggerModeChange: $mode" }
         onDidTriggerModeChange(mapOf("mode" to mode))
     }
 
     override fun didTriggerAutoPause(view: BBNativePlayerView, why: String?) {
-        Log.d("BBPlayerView", "didTriggerAutoPause: $why")
+        debugLog("BBPlayerView") { "didTriggerAutoPause: $why" }
         onDidTriggerAutoPause(mapOf("why" to why))
     }
 
     override fun didTriggerAutoPausePlay(view: BBNativePlayerView, why: String?) {
-        Log.d("BBPlayerView", "didTriggerAutoPausePlay: $why")
+        debugLog("BBPlayerView") { "didTriggerAutoPausePlay: $why" }
         onDidTriggerAutoPausePlay(mapOf("why" to why))
     }
 
     override fun didTriggerFullscreen(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerFullscreen")
+        debugLog("BBPlayerView") { "didTriggerFullscreen" }
         onDidTriggerFullscreen(Unit)
     }
 
     override fun didTriggerRetractFullscreen(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerRetractFullscreen")
+        debugLog("BBPlayerView") { "didTriggerRetractFullscreen" }
         onDidTriggerRetractFullscreen(Unit)
     }
 
     override fun didRequestCollapse(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didRequestCollapse")
+        debugLog("BBPlayerView") { "didRequestCollapse" }
         onDidRequestCollapse(Unit)
     }
 
     override fun didRequestExpand(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didRequestExpand")
+        debugLog("BBPlayerView") { "didRequestExpand" }
         onDidRequestExpand(Unit)
     }
 
     override fun didTriggerCustomStatistics(view: BBNativePlayerView, ident: String, ev: String, aux: Map<String, String>) {
-        Log.d("BBPlayerView", "didTriggerCustomStatistics: ident=$ident, ev=$ev")
+        debugLog("BBPlayerView") { "didTriggerCustomStatistics: ident=$ident, ev=$ev" }
         onDidTriggerCustomStatistics(mapOf(
             "ident" to ident,
             "ev" to ev,
@@ -661,33 +670,33 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     }
 
     override fun didTriggerViewStarted(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerViewStarted")
+        debugLog("BBPlayerView") { "didTriggerViewStarted" }
         onDidTriggerViewStarted(Unit)
     }
 
     override fun didTriggerViewFinished(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerViewFinished")
+        debugLog("BBPlayerView") { "didTriggerViewFinished" }
         onDidTriggerViewFinished(Unit)
     }
 
     override fun didTriggerApiReady(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerApiReady")
+        debugLog("BBPlayerView") { "didTriggerApiReady" }
         onDidTriggerApiReady(Unit)
     }
 
     // Ad delegate implementations
     override fun didTriggerAdLoadStart(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerAdLoadStart")
+        debugLog("BBPlayerView") { "didTriggerAdLoadStart" }
         onDidTriggerAdLoadStart(Unit)
     }
 
     override fun didTriggerAdLoaded(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerAdLoaded")
+        debugLog("BBPlayerView") { "didTriggerAdLoaded" }
         onDidTriggerAdLoaded(Unit)
     }
 
     override fun didTriggerAdNotFound(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerAdNotFound")
+        debugLog("BBPlayerView") { "didTriggerAdNotFound" }
         onDidTriggerAdNotFound(Unit)
     }
 
@@ -697,37 +706,37 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     }
 
     override fun didTriggerAdStarted(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerAdStarted")
+        debugLog("BBPlayerView") { "didTriggerAdStarted" }
         onDidTriggerAdStarted(Unit)
     }
 
     override fun didTriggerAdQuartile1(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerAdQuartile1")
+        debugLog("BBPlayerView") { "didTriggerAdQuartile1" }
         onDidTriggerAdQuartile1(Unit)
     }
 
     override fun didTriggerAdQuartile2(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerAdQuartile2")
+        debugLog("BBPlayerView") { "didTriggerAdQuartile2" }
         onDidTriggerAdQuartile2(Unit)
     }
 
     override fun didTriggerAdQuartile3(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerAdQuartile3")
+        debugLog("BBPlayerView") { "didTriggerAdQuartile3" }
         onDidTriggerAdQuartile3(Unit)
     }
 
     override fun didTriggerAdFinished(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerAdFinished")
+        debugLog("BBPlayerView") { "didTriggerAdFinished" }
         onDidTriggerAdFinished(Unit)
     }
 
     override fun didTriggerAllAdsCompleted(view: BBNativePlayerView) {
-        Log.d("BBPlayerView", "didTriggerAllAdsCompleted")
+        debugLog("BBPlayerView") { "didTriggerAllAdsCompleted" }
         onDidTriggerAllAdsCompleted(Unit)
     }
 
     override fun onDetachedFromWindow() {
-        Log.d("BBPlayerView", "onDetachedFromWindow - cleaning up player")
+        debugLog("BBPlayerView") { "onDetachedFromWindow - cleaning up player" }
         removePlayer()
         super.onDetachedFromWindow()
     }

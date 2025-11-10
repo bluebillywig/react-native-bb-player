@@ -436,9 +436,11 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     return nil
   }
 
-  func currentTime() -> Double? {
-    // Calculate estimated current time based on playback state
-    // iOS SDK doesn't expose direct currentTime property, so we estimate it
+  // MARK: - Private Helper Methods
+
+  /// Calculate estimated current time based on playback state
+  /// iOS SDK doesn't expose direct currentTime property, so we estimate it
+  private func calculateCurrentTime() -> Double {
     if isPlaying && playbackStartTimestamp > 0 {
       let elapsedSeconds = Date().timeIntervalSince1970 - playbackStartTimestamp
       let estimatedTime = lastKnownTime + elapsedSeconds
@@ -447,6 +449,10 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       // When paused or not playing, return last known time
       return lastKnownTime
     }
+  }
+
+  func currentTime() -> Double? {
+    return calculateCurrentTime()
   }
 
   func duration() -> Double? {
@@ -525,16 +531,8 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func seekRelative(_ offsetInSeconds: Double) {
-    // Calculate current time based on playback state (similar to currentTime() method)
-    let currentTime: Double
-    if isPlaying && playbackStartTimestamp > 0 {
-      let elapsedSeconds = Date().timeIntervalSince1970 - playbackStartTimestamp
-      let estimatedTime = lastKnownTime + elapsedSeconds
-      currentTime = min(estimatedTime, currentDuration)
-    } else {
-      // When paused or not playing, use last known time
-      currentTime = lastKnownTime
-    }
+    // Use the shared time calculation helper
+    let currentTime = calculateCurrentTime()
 
     // Calculate new position and clamp to valid range [0, duration]
     let newPosition = max(0, min(currentDuration, currentTime + offsetInSeconds))
