@@ -13,6 +13,10 @@ public class ExpoBBPlayerModule: Module {
         view.setOptions(options)
       }
 
+      Prop("enableTimeUpdates") { (view, enabled: Bool) in
+        view.setEnableTimeUpdates(enabled)
+      }
+
       OnViewDidUpdateProps { view in
         view.setupPlayer()
       }
@@ -31,6 +35,10 @@ public class ExpoBBPlayerModule: Module {
 
       AsyncFunction("controls") { (view: ExpoBBPlayerView) in
         return view.controls()
+      }
+
+      AsyncFunction("currentTime") { (view: ExpoBBPlayerView) in
+        return view.currentTime()
       }
 
       AsyncFunction("duration") { (view: ExpoBBPlayerView) in

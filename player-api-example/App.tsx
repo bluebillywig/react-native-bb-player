@@ -201,6 +201,8 @@ export default function App() {
               autoPlay: false,
               controls: !useCustomControls, // Disable native controls when using custom
             }}
+            // Only enable time updates when custom controls need them
+            enableTimeUpdates={useCustomControls}
             // Time updates - use refs to avoid re-renders on every update
             onDidTriggerTimeUpdate={(time, dur) => {
               currentTimeRef.current = time;

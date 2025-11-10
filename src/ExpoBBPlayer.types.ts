@@ -15,6 +15,7 @@ export type ExpoBBPlayerViewType = {
   adMediaWidth: () => Promise<number>;
   adMediaClip: () => Promise<MediaClip>;
   controls: () => Promise<boolean>;
+  currentTime: () => Promise<number>;
   duration: () => Promise<number>;
   inView: () => Promise<boolean>;
   mode: () => Promise<string>;
@@ -83,6 +84,7 @@ export type ExpoBBPlayerViewProps = {
   ref: RefObject<ExpoBBPlayerViewType | null>;
   options?: Record<string, unknown>;
   jsonUrl?: string;
+  enableTimeUpdates?: boolean;
   onDidFailWithError?: (error: string) => void;
   onDidRequestCollapse?: () => void;
   onDidRequestExpand?: () => void;

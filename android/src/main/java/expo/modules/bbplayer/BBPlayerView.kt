@@ -46,13 +46,14 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         setBackgroundColor(android.graphics.Color.BLACK)
     }
 
-    // Timer for periodic time updates (4x per second)
+    // Timer for periodic time updates (opt-in for performance)
     private val timeUpdateHandler = Handler(Looper.getMainLooper())
     private var timeUpdateRunnable: Runnable? = null
     private var isPlaying = false
     private var currentDuration: Double = 0.0
     private var lastKnownTime: Double = 0.0
     private var playbackStartTimestamp: Long = 0
+    private var enableTimeUpdates: Boolean = false  // Default: disabled for better performance
 
     // Event dispatchers for React Native events
     private val onDidSetupWithJsonUrl by EventDispatcher<Map<String, String?>>()
@@ -110,6 +111,20 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
     fun setAutoPlay(autoPlay: Boolean) {
         Log.d("BBPlayerView", "setAutoPlay: $autoPlay")
         this.options["autoPlay"] = autoPlay
+    }
+
+    fun setEnableTimeUpdates(enabled: Boolean) {
+        enableTimeUpdates = enabled
+        Log.d("BBPlayerView", "Time updates ${if (enabled) "enabled" else "disabled"}")
+
+        // If disabling while timer is running, stop it
+        if (!enabled && timeUpdateRunnable != null) {
+            stopTimeUpdates()
+        }
+        // If enabling while playing, start it
+        else if (enabled && isPlaying && timeUpdateRunnable == null) {
+            startTimeUpdates()
+        }
     }
 
     fun setupPlayer() {
@@ -301,6 +316,12 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         } else null
     }
 
+    fun getCurrentTime(): Double? {
+        return if (::playerView.isInitialized) {
+            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.currentTime) as? Double
+        } else null
+    }
+
     fun getDuration(): Double? {
         return if (::playerView.isInitialized) {
             playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.duration) as? Double
@@ -385,11 +406,12 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         }
     }
 
-    // Start periodic time updates (1x per second = 1000ms interval)
+    // Start periodic time updates (1x per second, only if enabled)
     // Reduced from 4Hz to 1Hz to minimize bridge traffic and improve performance
     private fun startTimeUpdates() {
-        if (timeUpdateRunnable != null) {
-            return // Already running
+        // Skip if time updates are disabled or timer already running
+        if (!enableTimeUpdates || timeUpdateRunnable != null) {
+            return
         }
 
         timeUpdateRunnable = object : Runnable {

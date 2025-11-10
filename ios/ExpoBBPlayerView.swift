@@ -37,11 +37,12 @@ private func log(_ message: String, level: LogLevel = .debug) {
 class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   private var playerController: BBPlayerViewController = BBPlayerViewController()
 
-  // Timer for periodic time updates (1x per second for efficiency)
+  // Timer for periodic time updates (opt-in for performance)
   private var timeUpdateTimer: Timer?
   private var isPlaying: Bool = false
   private var currentDuration: Double = 0.0
   private var lastKnownTime: Double = 0.0
+  private var enableTimeUpdates: Bool = false  // Default: disabled for better performance
   private var playbackStartTimestamp: TimeInterval = 0
   private var lastEmittedTime: Double = 0.0
   private var isInFullscreen: Bool = false
@@ -152,9 +153,10 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     }
   }
 
-  // Start periodic time updates (1x per second for better performance)
+  // Start periodic time updates (1x per second, only if enabled)
   private func startTimeUpdates() {
-    guard timeUpdateTimer == nil else { return } // Already running
+    // Skip if time updates are disabled or timer already running
+    guard enableTimeUpdates, timeUpdateTimer == nil else { return }
 
     timeUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
       guard let self = self, self.isPlaying else { return }
@@ -398,6 +400,20 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     playerController.options = options
   }
 
+  func setEnableTimeUpdates(_ enabled: Bool) {
+    enableTimeUpdates = enabled
+    log("Time updates \(enabled ? "enabled" : "disabled")")
+
+    // If disabling while timer is running, stop it
+    if !enabled && timeUpdateTimer != nil {
+      stopTimeUpdates()
+    }
+    // If enabling while playing, start it
+    else if enabled && isPlaying && timeUpdateTimer == nil {
+      startTimeUpdates()
+    }
+  }
+
   func setupPlayer() {
     log("ExpoBBPlayerView.setupPlayer() called with jsonUrl: \(playerController.jsonUrl)")
     playerController.setupPlayer()
@@ -418,6 +434,10 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
 
   func controls() -> Bool? {
     return nil
+  }
+
+  func currentTime() -> Double? {
+    return playerController.playerView?.player.currentTime
   }
 
   func duration() -> Double? {

@@ -24,6 +24,10 @@ class BBPlayerModule : Module() {
                 view.setAutoPlay(autoPlay)
             }
 
+            Prop("enableTimeUpdates") { view: BBPlayerView, enabled: Boolean ->
+                view.setEnableTimeUpdates(enabled)
+            }
+
             // Setup player when props are updated
             OnViewDidUpdateProps { view ->
                 view.setupPlayer()
@@ -101,6 +105,10 @@ class BBPlayerModule : Module() {
 
             AsyncFunction("projectData") { view: BBPlayerView ->
                 view.getProjectData()
+            }
+
+            AsyncFunction("currentTime") { view: BBPlayerView ->
+                view.getCurrentTime()
             }
 
             AsyncFunction("duration") { view: BBPlayerView ->
