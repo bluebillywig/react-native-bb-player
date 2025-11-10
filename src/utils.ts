@@ -25,7 +25,9 @@ export function convertPlayoutUrlToMediaclipUrl(url: string): string {
     return url;
   } catch (error) {
     // If URL parsing fails, return the original URL
-    console.warn('Failed to parse URL:', error);
+    if (__DEV__) {
+      console.warn('Failed to parse URL:', error);
+    }
     return url;
   }
 }

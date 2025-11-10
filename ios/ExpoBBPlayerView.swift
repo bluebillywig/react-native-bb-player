@@ -184,9 +184,11 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
     timeUpdateTimer = nil
   }
 
-  // Clean up timers
+  // Clean up timers and views to prevent memory leaks
   deinit {
     stopTimeUpdates()
+    independentCastButton?.removeFromSuperview()
+    independentCastButton = nil
   }
 
   func bbPlayerViewController(
@@ -291,6 +293,7 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       isPlaying = true
       playbackStartTimestamp = Date().timeIntervalSince1970
       lastEmittedTime = 0.0  // Reset to ensure immediate time update on play
+      lastKnownTime = calculateCurrentTime()  // Update to ensure accuracy between events
       startTimeUpdates()
       onDidTriggerPlaying()
 

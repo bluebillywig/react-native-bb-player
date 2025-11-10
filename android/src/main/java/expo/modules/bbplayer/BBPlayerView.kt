@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.FrameLayout
+import androidx.collection.ArrayMap
 import androidx.mediarouter.app.MediaRouteButton
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayer
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayerView
@@ -44,7 +45,7 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         get() = appContext.currentActivity ?: throw IllegalStateException("No current activity")
 
     private var jsonUrl: String = ""
-    private var options = HashMap<String, Any?>()
+    private var options = ArrayMap<String, Any?>()  // ArrayMap is more memory-efficient than HashMap for small collections
     private var playerSetup: Boolean = false
 
     private lateinit var playerView: BBNativePlayerView
@@ -737,6 +738,8 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
 
     override fun onDetachedFromWindow() {
         debugLog("BBPlayerView") { "onDetachedFromWindow - cleaning up player" }
+        stopTimeUpdates()
+        timeUpdateHandler.removeCallbacksAndMessages(null)  // Remove all pending callbacks to prevent memory leaks
         removePlayer()
         super.onDetachedFromWindow()
     }
