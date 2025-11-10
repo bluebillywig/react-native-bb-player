@@ -437,7 +437,16 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func currentTime() -> Double? {
-    return playerController.playerView?.player.currentTime
+    // Calculate estimated current time based on playback state
+    // iOS SDK doesn't expose direct currentTime property, so we estimate it
+    if isPlaying && playbackStartTimestamp > 0 {
+      let elapsedSeconds = Date().timeIntervalSince1970 - playbackStartTimestamp
+      let estimatedTime = lastKnownTime + elapsedSeconds
+      return min(estimatedTime, currentDuration)
+    } else {
+      // When paused or not playing, return last known time
+      return lastKnownTime
+    }
   }
 
   func duration() -> Double? {
