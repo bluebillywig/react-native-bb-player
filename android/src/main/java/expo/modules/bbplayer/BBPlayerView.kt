@@ -354,7 +354,7 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
 
     fun getCurrentTime(): Double? {
         return if (::playerView.isInitialized) {
-            playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.currentTime) as? Double
+            calculateEstimatedCurrentTime()
         } else null
     }
 

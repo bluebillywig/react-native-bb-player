@@ -14,6 +14,19 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
 
     weak var delegate: BBPlayerViewControllerDelegate?
 
+    // MARK: - Orientation Support
+
+    /// Allow all orientations for fullscreen video playback
+    /// This ensures the player can rotate to landscape in fullscreen mode
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .all
+    }
+
+    /// Allow auto-rotation for fullscreen playback
+    override var shouldAutorotate: Bool {
+        return true
+    }
+
     func refreshPlayerViewHierarchy() {
         guard let playerView = playerView else {
             print("ExpoBBPlayer: refreshPlayerViewHierarchy - no playerView")
