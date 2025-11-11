@@ -16,13 +16,13 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
 
     // MARK: - Orientation Support
 
-    /// Allow all orientations for fullscreen video playback
-    /// This ensures the player can rotate to landscape in fullscreen mode
+    /// Keep the main view controller locked to portrait orientation
+    /// The SDK's modal fullscreen player will handle its own landscape orientation independently
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        return .all
+        return .portrait
     }
 
-    /// Allow auto-rotation for fullscreen playback
+    /// Allow auto-rotation
     override var shouldAutorotate: Bool {
         return true
     }
@@ -214,6 +214,14 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
 
     func bbNativePlayerView(didTriggerFullscreen playerView: BBNativePlayerView) {
         NSLog("ExpoBBPlayer: ⭐️ FULLSCREEN ENTRY DELEGATE CALLED ⭐️")
+
+        // Notify the app to enable landscape orientation
+        NotificationCenter.default.post(
+            name: NSNotification.Name("BBPlayerFullscreenStateChanged"),
+            object: nil,
+            userInfo: ["isFullscreen": true]
+        )
+
         delegate?.bbPlayerViewController(self, didTriggerEvent: .fullscreen)
     }
 
@@ -253,6 +261,13 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
 
     func bbNativePlayerView(didTriggerRetractFullscreen playerView: BBNativePlayerView) {
         NSLog("ExpoBBPlayer: ⭐️ FULLSCREEN EXIT DELEGATE CALLED ⭐️")
+
+        // Notify the app to disable landscape orientation
+        NotificationCenter.default.post(
+            name: NSNotification.Name("BBPlayerFullscreenStateChanged"),
+            object: nil,
+            userInfo: ["isFullscreen": false]
+        )
 
         // The SDK's internal AVPlayerViewController needs time to restore itself
         // Wait for the modal dismissal animation to complete
