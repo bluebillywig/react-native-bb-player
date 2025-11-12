@@ -21,7 +21,9 @@ __tests__
 npm-debug.log*
 *.bak
 
-# Documentation that shouldn't be published
+# Internal scripts and documentation
+/scripts/
+SPRINT_RELEASE_CHECKLIST.md
 PUBLISHING.md
 CLAUDE.md
 claude.md
