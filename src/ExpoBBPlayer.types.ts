@@ -32,6 +32,7 @@ export type ExpoBBPlayerViewType = {
   collapse: () => Promise<void>;
   expand: () => Promise<void>;
   enterFullscreen: () => Promise<void>;
+  enterFullscreenLandscape: () => Promise<void>;
   exitFullscreen: () => Promise<void>;
   showCastPicker: () => Promise<void>;
   pause: () => Promise<void>;

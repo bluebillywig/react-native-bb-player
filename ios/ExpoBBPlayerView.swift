@@ -507,6 +507,14 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func enterFullscreen() {
+    enterFullscreenWithLandscapeForce(forceLandscape: false)
+  }
+
+  func enterFullscreenLandscape() {
+    enterFullscreenWithLandscapeForce(forceLandscape: true)
+  }
+
+  private func enterFullscreenWithLandscapeForce(forceLandscape: Bool) {
     // CRITICAL FIX: Set goingFullScreen flag on BBNativePlayerViewController
     // The SDK's BBNativePlayerViewController.supportedInterfaceOrientations only returns
     // .allButUpsideDown when goingFullScreen == true. Without this, the fullscreen modal
@@ -518,6 +526,14 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
         log("Set goingFullScreen = true on BBNativePlayerViewController before enterFullScreen", level: .info)
       } else {
         log("WARNING: Could not access bbNativePlayerViewController to set goingFullScreen flag", level: .warning)
+      }
+    }
+
+    // Temporarily set forceFullscreenLandscape option if requested
+    if forceLandscape {
+      if let playerView = playerController.playerView?.player as? NSObject {
+        playerView.setValue(true, forKey: "_forceFullscreenLandscape")
+        log("Set _forceFullscreenLandscape = true for immediate landscape rotation", level: .info)
       }
     }
 

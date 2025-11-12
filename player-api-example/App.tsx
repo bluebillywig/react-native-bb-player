@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import * as ScreenOrientation from 'expo-screen-orientation';
 import { ExpoBBPlayerView, convertPlayoutUrlToMediaclipUrl } from 'expo-bb-player';
 import type { ExpoBBPlayerViewType, Phase, State, MediaClip } from 'expo-bb-player';
 import { BlueBillywigLogo } from './BlueBillywigLogo';
@@ -181,32 +180,14 @@ export default function App() {
 
   const handleFullscreenLandscape = async () => {
     try {
-      if (!currentMediaClip) {
-        await handleFullscreen();
-        return;
-      }
-
-      const isWidescreen = isWidescreenVideo(currentMediaClip);
-
-      if (isWidescreen) {
-        // For widescreen videos, lock to landscape orientation and enter fullscreen
-        // On Android, we need to explicitly lock orientation
-        // On iOS, the native fullscreen player handles orientation automatically
-        if (Platform.OS === 'android') {
-          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-        }
-        await playerRef.current?.enterFullscreen();
-        addEvent('enterFullscreenLandscape', {
-          isWidescreen,
-          aspectRatio: currentMediaClip.width && currentMediaClip.height
-            ? (currentMediaClip.width / currentMediaClip.height).toFixed(2)
-            : 'unknown'
-        });
-      } else {
-        // For non-widescreen videos, just enter fullscreen normally
-        await handleFullscreen();
-        addEvent('enterFullscreenLandscape', { isWidescreen: false, note: 'Not widescreen, using normal fullscreen' });
-      }
+      // Use the native enterFullscreenLandscape method which forces immediate landscape rotation
+      await playerRef.current?.enterFullscreenLandscape();
+      addEvent('enterFullscreenLandscape', {
+        isWidescreen: currentMediaClip ? isWidescreenVideo(currentMediaClip) : null,
+        aspectRatio: currentMediaClip?.width && currentMediaClip?.height
+          ? (currentMediaClip.width / currentMediaClip.height).toFixed(2)
+          : 'unknown'
+      });
     } catch (error) {
       console.error('Error entering fullscreen landscape:', error);
     }
@@ -264,7 +245,6 @@ export default function App() {
             options={{
               autoPlay: false,
               controls: !useCustomControls, // Disable native controls when using custom
-              forceFullscreenLandscape: true, // Enable landscape rotation in fullscreen
             }}
             // Only enable time updates when custom controls need them
             enableTimeUpdates={useCustomControls}
@@ -298,15 +278,7 @@ export default function App() {
             onDidTriggerSeeked={(position) => addEvent('seeked', { position })}
             // Fullscreen events
             onDidTriggerFullscreen={() => addEvent('fullscreen')}
-            onDidTriggerRetractFullscreen={async () => {
-              addEvent('retractFullscreen');
-              // Unlock orientation when exiting fullscreen
-              try {
-                await ScreenOrientation.unlockAsync();
-              } catch (error) {
-                console.error('Error unlocking orientation:', error);
-              }
-            }}
+            onDidTriggerRetractFullscreen={() => addEvent('retractFullscreen')}
             // Media loading
             onDidTriggerMediaClipLoaded={(clip) => {
               setCurrentMediaClip(clip);
