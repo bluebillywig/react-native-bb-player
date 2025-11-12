@@ -6,6 +6,10 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.create_tag.outputs.RELEASE_TAG }}
+      release_version: ${{ steps.validate.outputs.RELEASE_VERSION }}
+      upload_url: ${{ steps.create_github_release.outputs.upload_url }}
 
     steps:
       - name: Checkout code
@@ -20,6 +24,7 @@ jobs:
           git config --global user.email "actions@github.com"
 
       - name: Validate release branch
+        id: validate
         run: |
           CURRENT_BRANCH="${GITHUB_REF##refs/heads/}"
 
@@ -27,6 +32,7 @@ jobs:
             RELEASE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
             RELEASE_BRANCH="release/v${RELEASE_VERSION}"
             echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
+            echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
             echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >> $GITHUB_ENV
             echo "Creating release from branch: $RELEASE_BRANCH"
           else
@@ -48,57 +54,46 @@ jobs:
 
       - name: Get previous tag for changelog
         run: |
-          # Find the previous release tag
           PREV_TAG=$(git describe --tags --abbrev=0 --match='v*.*.*' 2>/dev/null || echo "")
-
           if [ -z "$PREV_TAG" ]; then
-            # No previous tag, use first commit
             PREV_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
-
           echo "FROM_TAG=${PREV_TAG}" >> $GITHUB_ENV
           echo "Generating changelog from: $PREV_TAG"
 
       - name: Extract changelog section
         id: changelog
         run: |
-          # Extract the changelog section for this version
           VERSION="${{ env.RELEASE_VERSION }}"
-
           if [ -f CHANGELOG.md ]; then
             CHANGELOG=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d')
-
             if [ -z "$CHANGELOG" ]; then
               CHANGELOG="See CHANGELOG.md for details"
             fi
           else
             CHANGELOG="Version $VERSION release"
           fi
-
-          # Save to file to handle multiline
           echo "$CHANGELOG" > /tmp/changelog.txt
-
           echo "CHANGELOG_FILE=/tmp/changelog.txt" >> $GITHUB_ENV
 
       - name: Create tag
+        id: create_tag
         run: |
           git tag "${{ env.RELEASE_TAG }}"
           git push origin "${{ env.RELEASE_TAG }}"
+          echo "RELEASE_TAG=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
           echo "✅ Created and pushed tag: ${{ env.RELEASE_TAG }}"
 
       - name: Extract native SDK versions
         id: sdk_versions
         run: |
-          # Extract iOS SDK version from podspec
           IOS_VERSION=$(grep "s.dependency 'BlueBillywigNativePlayerKit-iOS'" ReactNativeBBPlayer.podspec | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+")
-
-          # Extract Android SDK version from build.gradle
           ANDROID_VERSION=$(grep "com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk" android/build.gradle | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+")
-
           echo "IOS_SDK_VERSION=${IOS_VERSION}" >> $GITHUB_ENV
           echo "ANDROID_SDK_VERSION=${ANDROID_VERSION}" >> $GITHUB_ENV
 
       - name: Create GitHub Release
+        id: create_github_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -130,6 +125,16 @@ jobs:
             }
             ```
 
+            ## Download Demo App
+
+            📱 Try the demo app to test video playback:
+            - [player-api-example.apk](https://github.com/bluebillywig/react-native-bb-player/releases/download/${{ env.RELEASE_TAG }}/player-api-example-${{ env.RELEASE_VERSION }}.apk) - Android demo app
+
+            ## Package Files
+
+            📦 Direct package download:
+            - [react-native-bb-player-${{ env.RELEASE_VERSION }}.tgz](https://github.com/bluebillywig/react-native-bb-player/releases/download/${{ env.RELEASE_TAG }}/react-native-bb-player-${{ env.RELEASE_VERSION }}.tgz)
+
             ## Documentation
             - [README](https://github.com/bluebillywig/react-native-bb-player/blob/${{ env.RELEASE_TAG }}/README.md)
             - [CHANGELOG](https://github.com/bluebillywig/react-native-bb-player/blob/${{ env.RELEASE_TAG }}/CHANGELOG.md)
@@ -137,18 +142,172 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Summary
+  build-android-demo:
+    name: Build Android demo app
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.release_tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        working-directory: player-api-example
+        run: npm ci
+
+      - name: Prebuild Android project
+        working-directory: player-api-example
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build Android release APK
+        working-directory: player-api-example/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APK with version
         run: |
-          echo "## ✅ Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          VERSION="${{ needs.create-release.outputs.release_version }}"
+          mv player-api-example/android/app/build/outputs/apk/release/app-release.apk \
+             player-api-example-${VERSION}.apk
+
+      - name: Upload APK to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./player-api-example-${{ needs.create-release.outputs.release_version }}.apk
+          asset_name: player-api-example-${{ needs.create-release.outputs.release_version }}.apk
+          asset_content_type: application/vnd.android.package-archive
+
+  create-npm-package:
+    name: Create npm package tarball
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.release_tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Create npm package
+        run: |
+          npm pack
+          VERSION="${{ needs.create-release.outputs.release_version }}"
+          mv react-native-bb-player-*.tgz react-native-bb-player-${VERSION}.tgz
+
+      - name: Upload package to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./react-native-bb-player-${{ needs.create-release.outputs.release_version }}.tgz
+          asset_name: react-native-bb-player-${{ needs.create-release.outputs.release_version }}.tgz
+          asset_content_type: application/gzip
+
+  generate-docs:
+    name: Generate documentation bundle
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.release_tag }}
+
+      - name: Create documentation bundle
+        run: |
+          VERSION="${{ needs.create-release.outputs.release_version }}"
+          mkdir -p docs-bundle
+          cp README.md docs-bundle/
+          cp CHANGELOG.md docs-bundle/
+          cp FULLSCREEN.md docs-bundle/
+          cp LICENSE docs-bundle/
+
+          # Create a combined documentation file
+          cat > docs-bundle/DOCUMENTATION.md << 'EOF'
+          # react-native-bb-player Documentation
+
+          Version: ${{ needs.create-release.outputs.release_version }}
+
+          ## Contents
+
+          - [README.md](README.md) - Getting started and API reference
+          - [CHANGELOG.md](CHANGELOG.md) - Version history and changes
+          - [FULLSCREEN.md](FULLSCREEN.md) - Fullscreen implementation guide
+          - [LICENSE](LICENSE) - MIT License
+
+          ## Quick Links
+
+          - [GitHub Repository](https://github.com/bluebillywig/react-native-bb-player)
+          - [npm Package](https://www.npmjs.com/package/react-native-bb-player)
+          - [Issues](https://github.com/bluebillywig/react-native-bb-player/issues)
+          - [Releases](https://github.com/bluebillywig/react-native-bb-player/releases)
+
+          ## Native SDK Versions
+
+          This version includes:
+          - iOS: BlueBillywigNativePlayerKit-iOS ${{ needs.create-release.outputs.ios_sdk_version }}
+          - Android: bbnativeplayersdk ${{ needs.create-release.outputs.android_sdk_version }}
+          EOF
+
+          # Create tarball
+          tar -czf react-native-bb-player-docs-${VERSION}.tar.gz -C docs-bundle .
+
+      - name: Upload documentation bundle to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./react-native-bb-player-docs-${{ needs.create-release.outputs.release_version }}.tar.gz
+          asset_name: react-native-bb-player-docs-${{ needs.create-release.outputs.release_version }}.tar.gz
+          asset_content_type: application/gzip
+
+  summary:
+    name: Release summary
+    needs: [create-release, build-android-demo, create-npm-package, generate-docs]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## ✅ Release ${{ needs.create-release.outputs.release_tag }} Created!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag**: \`${{ env.RELEASE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch**: \`${{ env.RELEASE_BRANCH }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: \`${{ needs.create-release.outputs.release_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: \`${{ needs.create-release.outputs.release_tag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Native SDKs" >> $GITHUB_STEP_SUMMARY
-          echo "- iOS: \`${{ env.IOS_SDK_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Android: \`${{ env.ANDROID_SDK_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Release Assets" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Android demo APK" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ npm package tarball" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Documentation bundle" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Verify the release on [GitHub Releases](https://github.com/bluebillywig/react-native-bb-player/releases)" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [View Release](https://github.com/bluebillywig/react-native-bb-player/releases/tag/${{ needs.create-release.outputs.release_tag }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Download Demo APK](https://github.com/bluebillywig/react-native-bb-player/releases/download/${{ needs.create-release.outputs.release_tag }}/player-api-example-${{ needs.create-release.outputs.release_version }}.apk)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Test the demo APK on Android devices" >> $GITHUB_STEP_SUMMARY
           echo "2. Optionally publish to npm: \`npm publish\`" >> $GITHUB_STEP_SUMMARY
           echo "3. Announce the release to your team/customers" >> $GITHUB_STEP_SUMMARY

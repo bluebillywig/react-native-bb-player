@@ -24,6 +24,7 @@ npm-debug.log*
 # Internal scripts and documentation
 /scripts/
 SPRINT_RELEASE_CHECKLIST.md
+RELEASE_ARTIFACTS.md
 PUBLISHING.md
 CLAUDE.md
 claude.md

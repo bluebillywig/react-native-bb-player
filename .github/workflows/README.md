@@ -1,10 +1,28 @@
 # GitHub Workflows
 
-This directory contains automated workflows for release management of react-native-bb-player.
+This directory contains automated workflows for release management and testing of react-native-bb-player.
 
 ## Workflows
 
-### 1. Create Release Branch (`create-release-branch.yaml`)
+### 1. Build and Test (`build-and-test.yaml`)
+
+**Purpose**: Builds and tests the player-api-example demo app on every PR and release branch push.
+
+**Trigger**:
+- Pull requests to `master` or `release/**`
+- Pushes to `release/**` branches
+- Manual workflow dispatch
+
+**What it does**:
+1. **Android Build**: Builds release APK of demo app
+2. **iOS Build**: Builds iOS app for simulator (unsigned)
+3. **TypeScript Check**: Validates TypeScript types
+
+**Artifacts**: Uploads Android APK as workflow artifact (30-day retention)
+
+---
+
+### 2. Create Release Branch (`create-release-branch.yaml`)
 
 **Purpose**: Automatically detects the latest iOS and Android native SDK versions and creates a release branch with updated dependencies.
 
@@ -51,24 +69,30 @@ version: 8.39.0
 
 ---
 
-### 2. Create Release Tag (`create-release-tag.yaml`)
+### 3. Create Release Tag (`create-release-tag.yaml`)
 
-**Purpose**: Creates a release tag and GitHub release from a release branch.
+**Purpose**: Creates a release tag, builds artifacts, and publishes a GitHub release with downloadable assets.
 
 **Trigger**: Manual workflow dispatch from GitHub Actions UI (must be run from a release branch)
 
 **Parameters**: None (automatically uses the current branch)
 
 **What it does**:
-1. Validates that you're on a `release/v{x}.{y}.{z}` branch
-2. Creates a git tag: `v{x}.{y}.{z}`
-3. Extracts changelog from `CHANGELOG.md`
-4. Extracts native SDK versions from podspec and gradle files
-5. Creates a GitHub Release with:
+1. **Creates Release**: Validates branch, creates tag, generates changelog
+2. **Builds Android Demo**: Compiles player-api-example APK (~70 MB)
+3. **Creates npm Package**: Generates .tgz tarball (~40 KB)
+4. **Generates Documentation**: Bundles all docs into .tar.gz (~50 KB)
+5. **Publishes GitHub Release** with:
    - Release notes from changelog
    - Native SDK version information
    - Installation instructions
    - Links to documentation
+6. **Uploads Public Artifacts**:
+   - `player-api-example-{version}.apk` - Android demo app
+   - `react-native-bb-player-{version}.tgz` - npm package
+   - `react-native-bb-player-docs-{version}.tar.gz` - Documentation bundle
+
+**Build Time**: ~10-15 minutes (parallel builds)
 
 **Usage**:
 1. Ensure you're on a release branch (e.g., `release/v8.38.0`)
