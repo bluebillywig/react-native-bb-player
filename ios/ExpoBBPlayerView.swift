@@ -507,6 +507,20 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func enterFullscreen() {
+    // CRITICAL FIX: Set goingFullScreen flag on BBNativePlayerViewController
+    // The SDK's BBNativePlayerViewController.supportedInterfaceOrientations only returns
+    // .allButUpsideDown when goingFullScreen == true. Without this, the fullscreen modal
+    // is stuck in portrait orientation.
+    if let playerView = playerController.playerView?.player as? NSObject {
+      // Access the private bbNativePlayerViewController using Key-Value Coding
+      if let bbViewController = playerView.value(forKey: "bbNativePlayerViewController") as? NSObject {
+        bbViewController.setValue(true, forKey: "goingFullScreen")
+        log("Set goingFullScreen = true on BBNativePlayerViewController before enterFullScreen", level: .info)
+      } else {
+        log("WARNING: Could not access bbNativePlayerViewController to set goingFullScreen flag", level: .warning)
+      }
+    }
+
     // iOS SDK Note: The iOS SDK uses enterFullScreen() method
     playerController.playerView?.player.enterFullScreen()
   }

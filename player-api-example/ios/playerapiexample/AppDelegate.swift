@@ -2,11 +2,6 @@ import Expo
 import React
 import ReactAppDependencyProvider
 
-// Global state for orientation control - shared between AppDelegate and player
-class OrientationLock {
-  static var isFullscreen = false
-}
-
 @UIApplicationMain
 public class AppDelegate: ExpoAppDelegate {
   var window: UIWindow?
@@ -35,15 +30,6 @@ public class AppDelegate: ExpoAppDelegate {
 #endif
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-
-  // Control supported interface orientations at the app level
-  // This ensures main screen stays portrait while allowing fullscreen modal to rotate
-  public override func application(
-    _ application: UIApplication,
-    supportedInterfaceOrientationsFor window: UIWindow?
-  ) -> UIInterfaceOrientationMask {
-    return OrientationLock.isFullscreen ? .allButUpsideDown : .portrait
   }
 
   // Linking API
