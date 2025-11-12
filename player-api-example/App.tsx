@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { ExpoBBPlayerView, convertPlayoutUrlToMediaclipUrl } from 'expo-bb-player';
-import type { ExpoBBPlayerViewType, Phase, State, MediaClip } from 'expo-bb-player';
+import { ExpoBBPlayerView, convertPlayoutUrlToMediaclipUrl } from 'react-native-bb-player';
+import type { ExpoBBPlayerViewType, Phase, State, MediaClip } from 'react-native-bb-player';
 import { BlueBillywigLogo } from './BlueBillywigLogo';
 
 // Demo video URLs

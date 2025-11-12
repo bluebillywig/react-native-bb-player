@@ -1,5 +1,5 @@
 {
-  "name": "expo-bb-player",
+  "name": "react-native-bb-player",
   "version": "1.0.0",
   "description": "Blue Billywig Native Video Player for React Native - iOS AVPlayer and Android ExoPlayer integration",
   "main": "src/index.ts",
@@ -16,7 +16,7 @@
     "ios",
     "android",
     "README.md",
-    "ExpoBBPlayer.podspec",
+    "ReactNativeBBPlayer.podspec",
     "expo-module.config.json"
   ],
   "keywords": [
@@ -35,13 +35,13 @@
   ],
   "author": "Blue Billywig",
   "license": "ISC",
-  "homepage": "https://github.com/bluebillywig/expo-bb-player#readme",
+  "homepage": "https://github.com/bluebillywig/react-native-bb-player#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bluebillywig/expo-bb-player.git"
+    "url": "https://github.com/bluebillywig/react-native-bb-player.git"
   },
   "bugs": {
-    "url": "https://github.com/bluebillywig/expo-bb-player/issues"
+    "url": "https://github.com/bluebillywig/react-native-bb-player/issues"
   },
   "peerDependencies": {
     "expo": "*",

@@ -1,10 +1,10 @@
-# expo-bb-player
+# react-native-bb-player
 
 Native video player for React Native - powered by Blue Billywig's iOS (AVPlayer) and Android (ExoPlayer) SDKs.
 
 ## Overview
 
-`expo-bb-player` provides a production-ready, native video player component for React Native. It wraps Blue Billywig's native iOS and Android player SDKs, giving you:
+`react-native-bb-player` provides a production-ready, native video player component for React Native. It wraps Blue Billywig's native iOS and Android player SDKs, giving you:
 
 - ✅ **True native playback** - iOS AVPlayer and Android ExoPlayer (no WebView)
 - ✅ **Full-featured player** - Ads, analytics, DRM, Picture-in-Picture support
@@ -46,7 +46,7 @@ Native video player for React Native - powered by Blue Billywig's iOS (AVPlayer)
 ### For Expo Apps
 
 ```bash
-npx expo install expo-bb-player
+npx expo install react-native-bb-player
 
 # Then prebuild (generates native directories)
 npx expo prebuild
@@ -65,11 +65,11 @@ This automatically configures your project. See [Expo documentation](https://doc
 #### Step 2: Install the Package
 
 ```bash
-npm install expo-bb-player
+npm install react-native-bb-player
 # or
-yarn add expo-bb-player
+yarn add react-native-bb-player
 # or
-pnpm add expo-bb-player
+pnpm add react-native-bb-player
 ```
 
 #### Step 3: iOS Setup
@@ -99,7 +99,7 @@ Here's the simplest way to get started:
 ```tsx
 import React, { useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'expo-bb-player';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'react-native-bb-player';
 
 export default function App() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
 Minimal setup to play a video:
 
 ```tsx
-import { ExpoBBPlayerView } from 'expo-bb-player';
+import { ExpoBBPlayerView } from 'react-native-bb-player';
 
 export function BasicPlayer() {
   return (
@@ -155,7 +155,7 @@ Control playback programmatically:
 ```tsx
 import React, { useRef } from 'react';
 import { View, Button } from 'react-native';
-import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'expo-bb-player';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'react-native-bb-player';
 
 export function ControlledPlayer() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
@@ -196,7 +196,7 @@ Listen to player events:
 ```tsx
 import React, { useState } from 'react';
 import { View, Text } from 'react-native';
-import { ExpoBBPlayerView, type State, type Phase } from 'expo-bb-player';
+import { ExpoBBPlayerView, type State, type Phase } from 'react-native-bb-player';
 
 export function EventListenerExample() {
   const [playerState, setPlayerState] = useState<State>('IDLE');
@@ -234,7 +234,7 @@ Launch player in fullscreen mode:
 
 ```tsx
 import React, { useRef, useEffect } from 'react';
-import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'expo-bb-player';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'react-native-bb-player';
 
 export function FullscreenPlayer() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
@@ -270,7 +270,7 @@ Open the Google Cast device picker to cast video to Chromecast devices:
 ```tsx
 import React, { useRef } from 'react';
 import { View, Button } from 'react-native';
-import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'expo-bb-player';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'react-native-bb-player';
 
 export function ChromecastPlayer() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
@@ -305,7 +305,7 @@ Embed players in a ScrollView or FlatList:
 ```tsx
 import React from 'react';
 import { ScrollView, View, Text } from 'react-native';
-import { ExpoBBPlayerView } from 'expo-bb-player';
+import { ExpoBBPlayerView } from 'react-native-bb-player';
 
 const videos = [
   { id: '1', url: 'https://demo.bbvms.com/p/default/c/4701337.json', title: 'Video 1' },
@@ -340,7 +340,7 @@ Handle errors gracefully:
 ```tsx
 import React, { useState } from 'react';
 import { View, Text, Button } from 'react-native';
-import { ExpoBBPlayerView } from 'expo-bb-player';
+import { ExpoBBPlayerView } from 'react-native-bb-player';
 
 export function ErrorHandlingExample() {
   const [error, setError] = useState<string | null>(null);
@@ -378,7 +378,7 @@ Show a loading indicator while the player initializes:
 ```tsx
 import React, { useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { ExpoBBPlayerView } from 'expo-bb-player';
+import { ExpoBBPlayerView } from 'react-native-bb-player';
 
 export function LoadingExample() {
   const [isLoading, setIsLoading] = useState(true);
@@ -512,7 +512,7 @@ Load different videos without recreating the component:
 ```tsx
 import React, { useRef, useState } from 'react';
 import { View, Button } from 'react-native';
-import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'expo-bb-player';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'react-native-bb-player';
 
 export function ProgrammaticLoading() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
@@ -547,7 +547,7 @@ Build your own player controls UI:
 ```tsx
 import React, { useRef, useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text, Slider } from 'react-native';
-import { ExpoBBPlayerView, type ExpoBBPlayerViewType, type State } from 'expo-bb-player';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType, type State } from 'react-native-bb-player';
 
 export function CustomControls() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
@@ -642,7 +642,7 @@ Track video analytics:
 
 ```tsx
 import React, { useEffect } from 'react';
-import { ExpoBBPlayerView } from 'expo-bb-player';
+import { ExpoBBPlayerView } from 'react-native-bb-player';
 import analytics from '@react-native-firebase/analytics';  // Example
 
 export function AnalyticsExample() {
@@ -685,7 +685,7 @@ Properly manage player in a scrollable container:
 ```tsx
 import React, { useRef } from 'react';
 import { ScrollView, View, Text } from 'react-native';
-import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'expo-bb-player';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'react-native-bb-player';
 
 export function InlinePlayerExample() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
@@ -723,7 +723,7 @@ export function InlinePlayerExample() {
 
 ### Chromecast Integration
 
-The `expo-bb-player` package includes full Google Cast (Chromecast) support on both iOS and Android platforms. The integration works seamlessly with the Blue Billywig SDK, which automatically handles cast session management and media playback on cast devices.
+The `react-native-bb-player` package includes full Google Cast (Chromecast) support on both iOS and Android platforms. The integration works seamlessly with the Blue Billywig SDK, which automatically handles cast session management and media playback on cast devices.
 
 #### How It Works
 
@@ -745,7 +745,7 @@ The Chromecast integration leverages the Google Cast SDK's singleton architectur
 ```tsx
 import React, { useRef } from 'react';
 import { View, Button } from 'react-native';
-import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'expo-bb-player';
+import { ExpoBBPlayerView, type ExpoBBPlayerViewType } from 'react-native-bb-player';
 
 export function ChromecastExample() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
@@ -825,7 +825,7 @@ To test Chromecast functionality:
 
 ### Overriding Native SDK Versions
 
-By default, `expo-bb-player` uses Blue Billywig Native Player SDK version **8.37.x** for both iOS and Android. The package uses flexible version constraints that automatically receive patch updates (e.g., 8.37.0 → 8.37.1).
+By default, `react-native-bb-player` uses Blue Billywig Native Player SDK version **8.37.x** for both iOS and Android. The package uses flexible version constraints that automatically receive patch updates (e.g., 8.37.0 → 8.37.1).
 
 #### Current Default Versions
 
@@ -895,11 +895,11 @@ cd android && ./gradlew clean
 
 Then rebuild your app with `npx expo run:ios` or `npx expo run:android`.
 
-> **⚠️ Note**: When overriding SDK versions, ensure compatibility with the `expo-bb-player` package. Major version changes in the native SDKs may require updates to the wrapper code. Test thoroughly after upgrading.
+> **⚠️ Note**: When overriding SDK versions, ensure compatibility with the `react-native-bb-player` package. Major version changes in the native SDKs may require updates to the wrapper code. Test thoroughly after upgrading.
 
 ## Performance Optimization
 
-The `expo-bb-player` is designed for optimal performance, but there are several strategies to minimize CPU usage and battery drain in your application.
+The `react-native-bb-player` is designed for optimal performance, but there are several strategies to minimize CPU usage and battery drain in your application.
 
 ### Time Updates (Opt-In)
 
@@ -917,7 +917,7 @@ Enable time updates only when you need them for:
 Use the `enableTimeUpdates` prop:
 
 ```tsx
-import { ExpoBBPlayerView } from 'expo-bb-player';
+import { ExpoBBPlayerView } from 'react-native-bb-player';
 
 export function PlayerWithTimeUpdates() {
   const [currentTime, setCurrentTime] = useState(0);
@@ -1122,10 +1122,10 @@ Before deploying to production:
 
 ### Common Issues
 
-#### "Module not found: expo-bb-player"
+#### "Module not found: react-native-bb-player"
 
 **Solution**:
-1. Ensure the package is installed: `npm install expo-bb-player`
+1. Ensure the package is installed: `npm install react-native-bb-player`
 2. For bare React Native: Run `npx expo prebuild` or `cd ios && pod install`
 3. Rebuild the app completely
 
@@ -1312,8 +1312,8 @@ This package is designed to be published as a standalone npm package.
 ### Repository Structure
 
 When published as a standalone package, this module is at:
-- **GitHub**: https://github.com/bluebillywig/expo-bb-player
-- **npm**: `expo-bb-player`
+- **GitHub**: https://github.com/bluebillywig/react-native-bb-player
+- **npm**: `react-native-bb-player`
 
 ## Support
 
@@ -1323,7 +1323,7 @@ When published as a standalone package, this module is at:
 - Blue Billywig Docs: https://bluebillywig.com/docs
 
 ### Issues
-- GitHub Issues: https://github.com/bluebillywig/expo-bb-player/issues
+- GitHub Issues: https://github.com/bluebillywig/react-native-bb-player/issues
 - Include:
   - React Native version
   - Expo SDK version (if applicable)

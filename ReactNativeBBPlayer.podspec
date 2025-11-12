@@ -3,13 +3,13 @@ require 'json'
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
 Pod::Spec.new do |s|
-  s.name           = 'ExpoBBPlayer'
+  s.name           = 'ReactNativeBBPlayer'
   s.version        = package['version']
   s.summary        = package['description']
-  s.description    = 'Expo Module for Blue Billywig Native Player SDK'
+  s.description    = 'React Native Module for Blue Billywig Native Player SDK'
   s.license        = package['license']
   s.author         = 'Blue Billywig'
-  s.homepage       = 'https://github.com/bluebillywig/channel'
+  s.homepage       = 'https://github.com/bluebillywig/react-native-bb-player'
   s.platforms      = { :ios => '13.4', :tvos => '13.4' }
   s.swift_version  = '5.4'
   s.source         = { :path => '.' }

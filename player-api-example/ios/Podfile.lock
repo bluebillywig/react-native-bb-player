@@ -11,7 +11,7 @@ PODS:
   - BlueBillywigNativeShared-iOS (8.37.0)
   - EXConstants (18.0.10):
     - ExpoModulesCore
-  - Expo (54.0.22):
+  - Expo (54.0.23):
     - ExpoModulesCore
     - hermes-engine
     - RCTRequired
@@ -48,7 +48,7 @@ PODS:
     - ExpoModulesCore
   - ExpoKeepAwake (15.0.7):
     - ExpoModulesCore
-  - ExpoModulesCore (3.0.24):
+  - ExpoModulesCore (3.0.25):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1729,6 +1729,9 @@ PODS:
     - React-perflogger (= 0.81.5)
     - React-utils (= 0.81.5)
     - ReactNativeDependencies
+  - ReactNativeBBPlayer (1.0.0):
+    - BlueBillywigNativePlayerKit-iOS (= 8.37.0)
+    - ExpoModulesCore
   - ReactNativeDependencies (0.81.5)
   - Yoga (0.0.0)
 
@@ -1808,6 +1811,7 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios`)
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - ReactNativeBBPlayer (from `../..`)
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -1969,6 +1973,8 @@ EXTERNAL SOURCES:
     :path: build/generated/ios
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  ReactNativeBBPlayer:
+    :path: "../.."
   ReactNativeDependencies:
     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
   Yoga:
@@ -1978,13 +1984,13 @@ SPEC CHECKSUMS:
   BlueBillywigNativePlayerKit-iOS: 3f7f6d0bf91d95191f19de4dc9fd232976d3d645
   BlueBillywigNativeShared-iOS: e35e34e316434cad3005ba6a0cd1698723ae9e52
   EXConstants: fd688cef4e401dcf798a021cfb5d87c890c30ba3
-  Expo: 6194a78e573849c28ab2f14fb3dce1b525ee4d6d
+  Expo: fb09185d798c2876a4c5ca89a5c6b8b72b6dbecf
   ExpoAsset: 9ba6fbd677fb8e241a3899ac00fa735bc911eadf
-  ExpoBBPlayer: cc4c98a4271d1dc8af2beb0d6beafa4ea962bd04
+  ExpoBBPlayer: 0fae13650fbc154629ab838bf5392d85bff7bc58
   ExpoFileSystem: b79eadbda7b7f285f378f95f959cc9313a1c9c61
   ExpoFont: cf9d90ec1d3b97c4f513211905724c8171f82961
   ExpoKeepAwake: 1a2e820692e933c94a565ec3fbbe38ac31658ffe
-  ExpoModulesCore: 87979cd52381b29e81e9cb7fa0fd5c4ae494d83e
+  ExpoModulesCore: aa1a8e103d41de84baa5d7c6b98314e2230f1eef
   ExpoScreenOrientation: ef9ab3fb85c8a8ff57d52aa169b750aca03f0f4c
   FBLazyVector: e95a291ad2dadb88e42b06e0c5fb8262de53ec12
   google-cast-sdk-dynamic-xcframework-ios-bb: 364e828e1fadc2a761b98cabfc7cd8290d2fab7f
@@ -2054,6 +2060,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 1bcd3527ac0390a1c898c114f81ff954be35ed79
   ReactCodegen: 7d4593f7591f002d137fe40cef3f6c11f13c88cc
   ReactCommon: 08810150b1206cc44aecf5f6ae19af32f29151a8
+  ReactNativeBBPlayer: aefcfbf4f106416e49cd02ee4034ce4dd8caa202
   ReactNativeDependencies: 71ce9c28beb282aa720ea7b46980fff9669f428a
   Yoga: 5934998fbeaef7845dbf698f698518695ab4cd1a
 

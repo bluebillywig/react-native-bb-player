@@ -1,6 +1,6 @@
 # Fullscreen Implementation Guide
 
-This document explains how fullscreen functionality works in the expo-bb-player SDK and how to implement it correctly in your React Native application.
+This document explains how fullscreen functionality works in the react-native-bb-player SDK and how to implement it correctly in your React Native application.
 
 ## Overview
 
@@ -67,8 +67,8 @@ Here's a complete example showing both fullscreen methods:
 ```typescript
 import React, { useRef, useState } from 'react';
 import { TouchableOpacity, Text } from 'react-native';
-import { ExpoBBPlayerView } from 'expo-bb-player';
-import type { ExpoBBPlayerViewType, MediaClip } from 'expo-bb-player';
+import { ExpoBBPlayerView } from 'react-native-bb-player';
+import type { ExpoBBPlayerViewType, MediaClip } from 'react-native-bb-player';
 
 export default function VideoPlayer() {
   const playerRef = useRef<ExpoBBPlayerViewType>(null);
