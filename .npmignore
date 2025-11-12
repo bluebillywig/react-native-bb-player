@@ -12,3 +12,16 @@ __tests__
 /android/src/test/
 /android/build/
 /example/
+/player-api-example/
+/player-hello-world/
+
+# Build artifacts
+/ios/build/
+*.log
+npm-debug.log*
+*.bak
+
+# Documentation that shouldn't be published
+PUBLISHING.md
+CLAUDE.md
+claude.md
