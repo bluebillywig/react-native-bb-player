@@ -94,6 +94,13 @@ public class ExpoBBPlayerModule: Module {
       }
 
       AsyncFunction("enterFullscreen") { (view: ExpoBBPlayerView) in
+        // CRITICAL: Set orientation state BEFORE SDK's fullscreen code runs
+        // The SDK's forceFullscreenLandscape calls requestGeometryUpdate immediately,
+        // so AppDelegate must already be returning .allButUpsideDown
+        if let orientationLockClass = NSClassFromString("playerapiexample.OrientationLock") as? NSObject.Type {
+          orientationLockClass.setValue(true, forKey: "isFullscreen")
+          NSLog("ExpoBBPlayer: enterFullscreen - Set OrientationLock.isFullscreen = true BEFORE SDK call")
+        }
         return view.enterFullscreen()
       }
 

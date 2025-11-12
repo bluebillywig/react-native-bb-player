@@ -2,15 +2,17 @@ import Expo
 import React
 import ReactAppDependencyProvider
 
+// Global state for orientation control - shared between AppDelegate and player
+class OrientationLock {
+  static var isFullscreen = false
+}
+
 @UIApplicationMain
 public class AppDelegate: ExpoAppDelegate {
   var window: UIWindow?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
-
-  // Track fullscreen state for dynamic orientation support
-  static var isPlayerInFullscreen: Bool = false
 
   public override func application(
     _ application: UIApplication,
@@ -32,27 +34,16 @@ public class AppDelegate: ExpoAppDelegate {
       launchOptions: launchOptions)
 #endif
 
-    // Listen for fullscreen state changes from the player
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(handleFullscreenStateChanged(_:)),
-      name: NSNotification.Name("BBPlayerFullscreenStateChanged"),
-      object: nil
-    )
-
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  @objc func handleFullscreenStateChanged(_ notification: Notification) {
-    if let isFullscreen = notification.userInfo?["isFullscreen"] as? Bool {
-      AppDelegate.isPlayerInFullscreen = isFullscreen
-
-      // Force iOS to re-evaluate the supported interface orientations
-      // This ensures the device rotates back to portrait when exiting fullscreen
-      DispatchQueue.main.async {
-        UIViewController.attemptRotationToDeviceOrientation()
-      }
-    }
+  // Control supported interface orientations at the app level
+  // This ensures main screen stays portrait while allowing fullscreen modal to rotate
+  public override func application(
+    _ application: UIApplication,
+    supportedInterfaceOrientationsFor window: UIWindow?
+  ) -> UIInterfaceOrientationMask {
+    return OrientationLock.isFullscreen ? .allButUpsideDown : .portrait
   }
 
   // Linking API
@@ -72,16 +63,6 @@ public class AppDelegate: ExpoAppDelegate {
   ) -> Bool {
     let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
     return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result
-  }
-
-  // Dynamic orientation support based on player state
-  public override func application(
-    _ application: UIApplication,
-    supportedInterfaceOrientationsFor window: UIWindow?
-  ) -> UIInterfaceOrientationMask {
-    // When the player is in fullscreen, allow all orientations
-    // Otherwise, only allow portrait orientation
-    return AppDelegate.isPlayerInFullscreen ? .all : .portrait
   }
 }
 

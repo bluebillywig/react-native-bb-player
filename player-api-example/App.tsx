@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { ExpoBBPlayerView, convertPlayoutUrlToMediaclipUrl } from 'expo-bb-player';
-import type { ExpoBBPlayerViewType, Phase, State } from 'expo-bb-player';
+import type { ExpoBBPlayerViewType, Phase, State, MediaClip } from 'expo-bb-player';
 import { BlueBillywigLogo } from './BlueBillywigLogo';
 
 // Demo video URLs
@@ -38,6 +39,7 @@ export default function App() {
   const [useCustomControls, setUseCustomControls] = useState(false);
   const [enableEventLogging, setEnableEventLogging] = useState(false);
   const [customJsonUrl, setCustomJsonUrl] = useState('');
+  const [currentMediaClip, setCurrentMediaClip] = useState<MediaClip | null>(null);
 
   // Memoize addEvent to prevent recreation on every render
   const addEvent = useCallback((name: string, data?: any) => {
@@ -153,12 +155,60 @@ export default function App() {
     }
   };
 
+  // Helper function to check if video is widescreen
+  const isWidescreenVideo = (clip: MediaClip | null): boolean => {
+    if (!clip) return false;
+
+    const width = clip.width || clip.originalWidth;
+    const height = clip.height || clip.originalHeight;
+
+    if (!width || !height) return false;
+
+    const aspectRatio = width / height;
+    // Consider widescreen if aspect ratio is >= 1.5 (typical widescreen formats)
+    // 16:9 = 1.77, 16:10 = 1.6, 21:9 = 2.33
+    return aspectRatio >= 1.5;
+  };
+
   const handleFullscreen = async () => {
     try {
       await playerRef.current?.enterFullscreen();
       addEvent('enterFullscreen');
     } catch (error) {
       console.error('Error entering fullscreen:', error);
+    }
+  };
+
+  const handleFullscreenLandscape = async () => {
+    try {
+      if (!currentMediaClip) {
+        await handleFullscreen();
+        return;
+      }
+
+      const isWidescreen = isWidescreenVideo(currentMediaClip);
+
+      if (isWidescreen) {
+        // For widescreen videos, lock to landscape orientation and enter fullscreen
+        // On Android, we need to explicitly lock orientation
+        // On iOS, the native fullscreen player handles orientation automatically
+        if (Platform.OS === 'android') {
+          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        }
+        await playerRef.current?.enterFullscreen();
+        addEvent('enterFullscreenLandscape', {
+          isWidescreen,
+          aspectRatio: currentMediaClip.width && currentMediaClip.height
+            ? (currentMediaClip.width / currentMediaClip.height).toFixed(2)
+            : 'unknown'
+        });
+      } else {
+        // For non-widescreen videos, just enter fullscreen normally
+        await handleFullscreen();
+        addEvent('enterFullscreenLandscape', { isWidescreen: false, note: 'Not widescreen, using normal fullscreen' });
+      }
+    } catch (error) {
+      console.error('Error entering fullscreen landscape:', error);
     }
   };
 
@@ -214,6 +264,7 @@ export default function App() {
             options={{
               autoPlay: false,
               controls: !useCustomControls, // Disable native controls when using custom
+              forceFullscreenLandscape: true, // Enable landscape rotation in fullscreen
             }}
             // Only enable time updates when custom controls need them
             enableTimeUpdates={useCustomControls}
@@ -245,8 +296,27 @@ export default function App() {
             onDidTriggerPlaying={() => addEvent('playing')}
             onDidTriggerSeeking={() => addEvent('seeking')}
             onDidTriggerSeeked={(position) => addEvent('seeked', { position })}
+            // Fullscreen events
+            onDidTriggerFullscreen={() => addEvent('fullscreen')}
+            onDidTriggerRetractFullscreen={async () => {
+              addEvent('retractFullscreen');
+              // Unlock orientation when exiting fullscreen
+              try {
+                await ScreenOrientation.unlockAsync();
+              } catch (error) {
+                console.error('Error unlocking orientation:', error);
+              }
+            }}
             // Media loading
-            onDidTriggerMediaClipLoaded={(clip) => addEvent('mediaClipLoaded', { id: clip.id })}
+            onDidTriggerMediaClipLoaded={(clip) => {
+              setCurrentMediaClip(clip);
+              addEvent('mediaClipLoaded', {
+                id: clip.id,
+                width: clip.width || clip.originalWidth,
+                height: clip.height || clip.originalHeight,
+                isWidescreen: isWidescreenVideo(clip)
+              });
+            }}
             onDidTriggerProjectLoaded={(project) => addEvent('projectLoaded', { id: project.id })}
             // Setup
             onDidSetupWithJsonUrl={(url) => {
@@ -397,9 +467,26 @@ export default function App() {
         {/* Other Controls */}
         <View style={styles.controlsSection}>
           <Text style={styles.sectionTitle}>Other Controls</Text>
+          {currentMediaClip && (
+            <Text style={styles.helperText}>
+              Current video: {isWidescreenVideo(currentMediaClip) ? 'Widescreen' : 'Standard'}
+              {currentMediaClip.width && currentMediaClip.height
+                ? ` (${currentMediaClip.width}x${currentMediaClip.height}, ${(currentMediaClip.width / currentMediaClip.height).toFixed(2)}:1)`
+                : ''}
+            </Text>
+          )}
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.button} onPress={handleFullscreen}>
               <Text style={styles.buttonText}>Fullscreen</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                isWidescreenVideo(currentMediaClip) && styles.buttonActive
+              ]}
+              onPress={handleFullscreenLandscape}
+            >
+              <Text style={styles.buttonText}>Fullscreen Landscape</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={handleShowCastPicker}>
               <Text style={styles.buttonText}>Chromecast</Text>

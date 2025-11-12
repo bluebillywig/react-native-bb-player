@@ -16,16 +16,20 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
 
     // MARK: - Orientation Support
 
-    /// Keep the main view controller locked to portrait orientation
-    /// The SDK's modal fullscreen player will handle its own landscape orientation independently
+    /// Always support all orientations at the view controller level
+    /// The AppDelegate enforces portrait-only for the main screen
+    /// This allows the fullscreen modal to rotate freely
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        return .portrait
+        return .allButUpsideDown
     }
 
     /// Allow auto-rotation
     override var shouldAutorotate: Bool {
         return true
     }
+
+    /// Don't override preferredInterfaceOrientationForPresentation
+    /// Let the fullscreen modal (AVPlayerViewController) use its own preferred orientation
 
     func refreshPlayerViewHierarchy() {
         guard let playerView = playerView else {
@@ -215,12 +219,29 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
     func bbNativePlayerView(didTriggerFullscreen playerView: BBNativePlayerView) {
         NSLog("ExpoBBPlayer: ⭐️ FULLSCREEN ENTRY DELEGATE CALLED ⭐️")
 
-        // Notify the app to enable landscape orientation
-        NotificationCenter.default.post(
-            name: NSNotification.Name("BBPlayerFullscreenStateChanged"),
-            object: nil,
-            userInfo: ["isFullscreen": true]
-        )
+        // Enable landscape orientation for fullscreen using shared global state
+        if let orientationLockClass = NSClassFromString("playerapiexample.OrientationLock") as? NSObject.Type {
+            orientationLockClass.setValue(true, forKey: "isFullscreen")
+            NSLog("ExpoBBPlayer: Set OrientationLock.isFullscreen = true")
+        }
+
+        // Try to find and configure the presented AVPlayerViewController
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self = self else { return }
+
+            // Find the presented view controller (should be AVPlayerViewController)
+            if let presentedVC = self.presentedViewController {
+                NSLog("ExpoBBPlayer: Found presented VC: \(type(of: presentedVC))")
+
+                // Force attempt rotation on the presented VC
+                if #available(iOS 16.0, *) {
+                    presentedVC.setNeedsUpdateOfSupportedInterfaceOrientations()
+                }
+                UIViewController.attemptRotationToDeviceOrientation()
+            } else {
+                NSLog("ExpoBBPlayer: No presented VC found")
+            }
+        }
 
         delegate?.bbPlayerViewController(self, didTriggerEvent: .fullscreen)
     }
@@ -262,12 +283,23 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
     func bbNativePlayerView(didTriggerRetractFullscreen playerView: BBNativePlayerView) {
         NSLog("ExpoBBPlayer: ⭐️ FULLSCREEN EXIT DELEGATE CALLED ⭐️")
 
-        // Notify the app to disable landscape orientation
-        NotificationCenter.default.post(
-            name: NSNotification.Name("BBPlayerFullscreenStateChanged"),
-            object: nil,
-            userInfo: ["isFullscreen": false]
-        )
+        // CRITICAL: Disable landscape orientation FIRST using shared global state
+        if let orientationLockClass = NSClassFromString("playerapiexample.OrientationLock") as? NSObject.Type {
+            orientationLockClass.setValue(false, forKey: "isFullscreen")
+            NSLog("ExpoBBPlayer: Set OrientationLock.isFullscreen = false")
+        }
+
+        // Force rotation back to portrait
+        if #available(iOS 16.0, *) {
+            if let windowScene = view.window?.windowScene {
+                windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
+            }
+        } else {
+            UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+        }
+
+        // Always attempt rotation to update orientation constraints
+        UIViewController.attemptRotationToDeviceOrientation()
 
         // The SDK's internal AVPlayerViewController needs time to restore itself
         // Wait for the modal dismissal animation to complete
@@ -276,28 +308,20 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
 
             NSLog("ExpoBBPlayer: Refreshing view hierarchy after fullscreen exit")
 
-            // Force the CA layer to re-render by marking it as needing display
-            func forceLayerRedraw(_ view: UIView) {
-                // Remove and re-add the layer to force Core Animation to rebuild
-                let layer = view.layer
-                layer.setNeedsDisplay()
-                layer.displayIfNeeded()
+            // Reset any transforms that might be lingering from fullscreen
+            // Only reset view transforms, avoid touching layers to prevent visual glitches
+            func resetTransforms(_ view: UIView) {
+                view.transform = .identity
 
-                // Force all sublayers to redraw
-                layer.sublayers?.forEach { sublayer in
-                    sublayer.setNeedsDisplay()
-                    sublayer.displayIfNeeded()
-                }
-
-                // Recursively process subviews
+                // Recursively reset subviews
                 view.subviews.forEach { subview in
-                    forceLayerRedraw(subview)
+                    resetTransforms(subview)
                 }
             }
 
-            forceLayerRedraw(playerView)
+            resetTransforms(playerView)
 
-            // Force immediate layout
+            // Force layout update
             playerView.setNeedsLayout()
             playerView.layoutIfNeeded()
             self.view.setNeedsLayout()
