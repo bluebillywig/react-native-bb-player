@@ -50,6 +50,10 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
 
     private lateinit var playerView: BBNativePlayerView
 
+    // Track if we should force landscape orientation on fullscreen
+    private var shouldForceLandscape = false
+    private var wasLandscapeFullscreen = false
+
     init {
         // Default to black background (playout data may override with bgColor)
         setBackgroundColor(android.graphics.Color.BLACK)
@@ -237,35 +241,21 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
 
     fun enterFullscreen() {
         if (::playerView.isInitialized) {
+            shouldForceLandscape = false
             playerView.player?.enterFullScreen()
         }
     }
 
     fun enterFullscreenLandscape() {
         if (::playerView.isInitialized) {
-            // Force landscape orientation
-            try {
-                currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                debugLog("BBPlayerView") { "Set orientation to SENSOR_LANDSCAPE before enterFullScreen" }
-            } catch (e: Exception) {
-                Log.w("BBPlayerView", "Failed to set landscape orientation: ${e.message}")
-            }
-
-            // Enter fullscreen
+            // Set flag to force landscape when fullscreen event fires
+            shouldForceLandscape = true
             playerView.player?.enterFullScreen()
         }
     }
 
     fun exitFullscreen() {
         if (::playerView.isInitialized) {
-            // Reset orientation to unspecified (follow app/system default)
-            try {
-                currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                debugLog("BBPlayerView") { "Reset orientation to UNSPECIFIED after exitFullScreen" }
-            } catch (e: Exception) {
-                Log.w("BBPlayerView", "Failed to reset orientation: ${e.message}")
-            }
-
             playerView.player?.exitFullScreen()
         }
     }
@@ -666,11 +656,36 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
 
     override fun didTriggerFullscreen(view: BBNativePlayerView) {
         debugLog("BBPlayerView") { "didTriggerFullscreen" }
+
+        // If enterFullscreenLandscape was called, set landscape orientation now
+        if (shouldForceLandscape) {
+            try {
+                currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                wasLandscapeFullscreen = true
+                debugLog("BBPlayerView") { "Set orientation to SENSOR_LANDSCAPE after fullscreen entered" }
+            } catch (e: Exception) {
+                Log.w("BBPlayerView", "Failed to set landscape orientation: ${e.message}")
+            }
+            shouldForceLandscape = false // Reset flag
+        }
+
         onDidTriggerFullscreen(Unit)
     }
 
     override fun didTriggerRetractFullscreen(view: BBNativePlayerView) {
         debugLog("BBPlayerView") { "didTriggerRetractFullscreen" }
+
+        // Only reset orientation if we had forced landscape
+        if (wasLandscapeFullscreen) {
+            try {
+                currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                debugLog("BBPlayerView") { "Reset orientation to UNSPECIFIED after fullscreen exited" }
+            } catch (e: Exception) {
+                Log.w("BBPlayerView", "Failed to reset orientation: ${e.message}")
+            }
+            wasLandscapeFullscreen = false
+        }
+
         onDidTriggerRetractFullscreen(Unit)
     }
 
