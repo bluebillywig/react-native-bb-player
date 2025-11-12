@@ -302,6 +302,15 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
 
     case .retractFullscreen:
       isInFullscreen = false
+
+      // Force rotation back to portrait when exiting fullscreen
+      if #available(iOS 16.0, *) {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+          windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
+          log("Requested portrait rotation on retractFullscreen event", level: .info)
+        }
+      }
+
       onDidTriggerRetractFullscreen()
 
     case .seeked(let seekOffset):
@@ -559,6 +568,14 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
   }
 
   func exitFullscreen() {
+    // Force rotation back to portrait before exiting fullscreen
+    if #available(iOS 16.0, *) {
+      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+        windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
+        log("Requested portrait rotation before exitFullscreen", level: .info)
+      }
+    }
+
     // iOS SDK Note: The iOS SDK uses exitFullScreen() method
     playerController.playerView?.player.exitFullScreen()
   }
