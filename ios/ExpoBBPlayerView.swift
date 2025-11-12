@@ -529,16 +529,33 @@ class ExpoBBPlayerView: ExpoView, BBPlayerViewControllerDelegate {
       }
     }
 
-    // Temporarily set forceFullscreenLandscape option if requested
-    if forceLandscape {
-      if let playerView = playerController.playerView?.player as? NSObject {
-        playerView.setValue(true, forKey: "_forceFullscreenLandscape")
-        log("Set _forceFullscreenLandscape = true for immediate landscape rotation", level: .info)
-      }
-    }
-
     // iOS SDK Note: The iOS SDK uses enterFullScreen() method
     playerController.playerView?.player.enterFullScreen()
+
+    // For landscape mode, force rotation after fullscreen is presented
+    if forceLandscape {
+      // Use a small delay to ensure fullscreen modal is presented before rotating
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+        if #available(iOS 16.0, *) {
+          if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape))
+            log("Requested landscape rotation", level: .info)
+
+            // Also update the supported orientations for the fullscreen view controller
+            if let playerView = self?.playerController.playerView?.player as? NSObject {
+              if let bbViewController = playerView.value(forKey: "bbNativePlayerViewController") as? NSObject {
+                if let avPlayerVC = bbViewController.value(forKey: "avPlayerViewController") as? UIViewController {
+                  avPlayerVC.setNeedsUpdateOfSupportedInterfaceOrientations()
+                  log("Updated supported orientations for AVPlayerViewController", level: .info)
+                }
+              }
+            }
+          }
+        } else {
+          log("WARNING: requestGeometryUpdate requires iOS 16+, landscape rotation not available", level: .warning)
+        }
+      }
+    }
   }
 
   func exitFullscreen() {
