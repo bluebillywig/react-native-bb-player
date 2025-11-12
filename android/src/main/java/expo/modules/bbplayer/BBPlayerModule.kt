@@ -74,6 +74,10 @@ class BBPlayerModule : Module() {
                 view.enterFullscreen()
             }
 
+            AsyncFunction("enterFullscreenLandscape") { view: BBPlayerView ->
+                view.enterFullscreenLandscape()
+            }
+
             AsyncFunction("exitFullscreen") { view: BBPlayerView ->
                 view.exitFullscreen()
             }

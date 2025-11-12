@@ -241,8 +241,31 @@ class BBPlayerView(context: Context, appContext: AppContext) : ExpoView(context,
         }
     }
 
+    fun enterFullscreenLandscape() {
+        if (::playerView.isInitialized) {
+            // Force landscape orientation
+            try {
+                currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                debugLog("BBPlayerView") { "Set orientation to SENSOR_LANDSCAPE before enterFullScreen" }
+            } catch (e: Exception) {
+                Log.w("BBPlayerView", "Failed to set landscape orientation: ${e.message}")
+            }
+
+            // Enter fullscreen
+            playerView.player?.enterFullScreen()
+        }
+    }
+
     fun exitFullscreen() {
         if (::playerView.isInitialized) {
+            // Reset orientation to unspecified (follow app/system default)
+            try {
+                currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                debugLog("BBPlayerView") { "Reset orientation to UNSPECIFIED after exitFullScreen" }
+            } catch (e: Exception) {
+                Log.w("BBPlayerView", "Failed to reset orientation: ${e.message}")
+            }
+
             playerView.player?.exitFullScreen()
         }
     }
