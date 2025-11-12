@@ -1,0 +1,175 @@
+name: Create release branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release branch version [auto|latest|{x}.{y}.{z}]'
+        required: true
+        default: 'latest'
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set commit credentials
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Get latest iOS SDK version from CocoaPods
+        id: ios_version
+        run: |
+          # Query CocoaPods trunk for latest version
+          IOS_VERSION=$(curl -s https://cdn.cocoapods.org/Specs/BlueBillywigNativePlayerKit-iOS/ | \
+            grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | \
+            sort -V | \
+            tail -1)
+
+          if [ -z "$IOS_VERSION" ]; then
+            echo "::error::Could not detect latest iOS SDK version"
+            exit 1
+          fi
+
+          echo "IOS_SDK_VERSION=$IOS_VERSION" >> $GITHUB_ENV
+          echo "Found iOS SDK version: $IOS_VERSION"
+
+      - name: Get latest Android SDK version from Maven
+        id: android_version
+        run: |
+          # Query Maven for latest version
+          ANDROID_VERSION=$(curl -s https://maven.bluebillywig.com/releases/com/bluebillywig/bbnativeplayersdk/bbnativeplayersdk/maven-metadata.xml | \
+            grep -o '<version>[0-9]\+\.[0-9]\+\.[0-9]\+</version>' | \
+            grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | \
+            sort -V | \
+            tail -1)
+
+          if [ -z "$ANDROID_VERSION" ]; then
+            echo "::error::Could not detect latest Android SDK version"
+            exit 1
+          fi
+
+          echo "ANDROID_SDK_VERSION=$ANDROID_VERSION" >> $GITHUB_ENV
+          echo "Found Android SDK version: $ANDROID_VERSION"
+
+      - name: Determine release version
+        run: |
+          INPUT_VERSION="${{ github.event.inputs.version }}"
+
+          # If 'latest', use the iOS/Android SDK version
+          if [ "$INPUT_VERSION" == "latest" ]; then
+            # Use iOS version as the release version (should match Android)
+            RELEASE_VERSION="${{ env.IOS_SDK_VERSION }}"
+
+            # Verify iOS and Android versions match
+            if [ "${{ env.IOS_SDK_VERSION }}" != "${{ env.ANDROID_SDK_VERSION }}" ]; then
+              echo "::warning::iOS version (${{ env.IOS_SDK_VERSION }}) and Android version (${{ env.ANDROID_SDK_VERSION }}) don't match. Using iOS version."
+            fi
+          # If 'auto', auto-increment from latest release branch
+          elif [ "$INPUT_VERSION" == "auto" ]; then
+            LATEST_RELEASE_BRANCH=$(git for-each-ref --sort=-version:refname --format='%(refname:short)' 'refs/remotes/origin/release/v*' | head -1)
+
+            if [ -z "$LATEST_RELEASE_BRANCH" ]; then
+              echo "::error::No release branch found for auto-increment. Use 'latest' or specify version."
+              exit 1
+            fi
+
+            if [[ "$LATEST_RELEASE_BRANCH" =~ release/v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              MAJOR="${BASH_REMATCH[1]}"
+              MINOR="${BASH_REMATCH[2]}"
+              PATCH="${BASH_REMATCH[3]}"
+              PATCH=$((PATCH + 1))
+              RELEASE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            else
+              echo "::error::Cannot parse version from latest release branch: $LATEST_RELEASE_BRANCH"
+              exit 1
+            fi
+          # Otherwise, use specified version
+          else
+            if [[ "$INPUT_VERSION" =~ ^(v)?([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              RELEASE_VERSION="${BASH_REMATCH[2]}.${BASH_REMATCH[3]}.${BASH_REMATCH[4]}"
+            else
+              echo "::error::Invalid version format. Use {x}.{y}.{z}"
+              exit 1
+            fi
+          fi
+
+          RELEASE_BRANCH="release/v${RELEASE_VERSION}"
+
+          # Check if branch already exists
+          if git rev-parse -q --verify "origin/${RELEASE_BRANCH}" >/dev/null; then
+            echo "::error::Release branch ${RELEASE_BRANCH} already exists"
+            exit 1
+          fi
+
+          echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
+          echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >> $GITHUB_ENV
+          echo "Creating release branch ${RELEASE_BRANCH} with native SDKs: iOS ${{ env.IOS_SDK_VERSION }}, Android ${{ env.ANDROID_SDK_VERSION }}"
+
+      - name: Create release branch
+        run: |
+          git checkout -b "${{ env.RELEASE_BRANCH }}" master
+
+      - name: Update package.json version
+        run: |
+          sed -i 's/"version": ".*"/"version": "${{ env.RELEASE_VERSION }}"/' package.json
+          echo "Updated package.json to version ${{ env.RELEASE_VERSION }}"
+
+      - name: Update iOS podspec
+        run: |
+          sed -i "s/s.dependency 'BlueBillywigNativePlayerKit-iOS', '= .*'/s.dependency 'BlueBillywigNativePlayerKit-iOS', '= ${{ env.IOS_SDK_VERSION }}'/" ReactNativeBBPlayer.podspec
+          echo "Updated iOS SDK to ${{ env.IOS_SDK_VERSION }}"
+
+      - name: Update Android build.gradle
+        run: |
+          sed -i "s/com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:.*/com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:${{ env.ANDROID_SDK_VERSION }}'/" android/build.gradle
+          echo "Updated Android SDK to ${{ env.ANDROID_SDK_VERSION }}"
+
+      - name: Update CHANGELOG.md
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          cat > CHANGELOG_NEW.md << EOF
+          ## [${{ env.RELEASE_VERSION }}] - ${TODAY}
+
+          ### Updated
+          - iOS Native SDK to ${{ env.IOS_SDK_VERSION }}
+          - Android Native SDK to ${{ env.ANDROID_SDK_VERSION }}
+
+          ### Changes
+          - See native SDK release notes for detailed changes
+
+          EOF
+
+          if [ -f CHANGELOG.md ]; then
+            cat CHANGELOG.md >> CHANGELOG_NEW.md
+            mv CHANGELOG_NEW.md CHANGELOG.md
+          else
+            mv CHANGELOG_NEW.md CHANGELOG.md
+          fi
+
+      - name: Commit changes
+        run: |
+          git add package.json ReactNativeBBPlayer.podspec android/build.gradle CHANGELOG.md
+          git commit -m "Bump version to ${{ env.RELEASE_VERSION }}
+
+          - Update iOS SDK to ${{ env.IOS_SDK_VERSION }}
+          - Update Android SDK to ${{ env.ANDROID_SDK_VERSION }}
+          - Update package version to ${{ env.RELEASE_VERSION }}
+
+          🤖 Automated release branch creation"
+
+      - name: Push release branch
+        run: |
+          git push -u origin "${{ env.RELEASE_BRANCH }}"
+          echo "✅ Release branch ${{ env.RELEASE_BRANCH }} created successfully!"
+          echo "Next steps:"
+          echo "1. Test the release branch"
+          echo "2. Run 'Create release tag' workflow from this branch to create a release"

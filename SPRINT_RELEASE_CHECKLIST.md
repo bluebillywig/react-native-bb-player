@@ -2,6 +2,42 @@
 
 This checklist ensures react-native-bb-player stays synchronized with Blue Billywig's 2-weekly native SDK releases.
 
+## 🚀 Quick Start: Automated Workflow (Recommended)
+
+**For regular sprint releases, use the automated GitHub Actions workflows:**
+
+1. **Create Release Branch** (via GitHub Actions UI)
+   - Go to Actions → "Create release branch"
+   - Input: `latest` (auto-detects latest native SDK versions)
+   - This creates a release branch with all dependencies updated
+
+2. **Test the Release Branch**
+   ```bash
+   git fetch origin
+   git checkout release/v8.38.0
+   cd player-api-example
+   npm install
+   npx expo run:ios && npx expo run:android
+   ```
+
+3. **Create Release** (via GitHub Actions UI, from release branch)
+   - Switch to the release branch in GitHub
+   - Go to Actions → "Create release tag"
+   - This creates the GitHub release automatically
+
+4. **(Optional) Publish to npm**
+   ```bash
+   npm publish
+   ```
+
+**See [.github/workflows/README.md](.github/workflows/README.md) for detailed workflow documentation.**
+
+---
+
+## 📋 Manual Process (Alternative)
+
+If you prefer manual control or need to make custom changes, follow this checklist:
+
 ## Pre-Release (When Native SDKs are Released)
 
 ### 1. Verify Native SDK Releases
