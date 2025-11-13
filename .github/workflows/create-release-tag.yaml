@@ -100,12 +100,10 @@ jobs:
 
       - name: Create GitHub Release
         id: create_github_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          release_name: 'Release ${{ env.RELEASE_VERSION }}'
+          name: 'Release ${{ env.RELEASE_VERSION }}'
           body: |
             ## react-native-bb-player ${{ env.RELEASE_VERSION }}
 
@@ -147,6 +145,7 @@ jobs:
             - [Fullscreen Guide](https://github.com/bluebillywig/react-native-bb-player/blob/${{ env.RELEASE_TAG }}/FULLSCREEN.md)
           draft: false
           prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   build-android-demo:
     name: Build Android demo app
@@ -189,14 +188,11 @@ jobs:
              player-api-example-${VERSION}.apk
 
       - name: Upload APK to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./player-api-example-${{ needs.create-release.outputs.release_version }}.apk
-          asset_name: player-api-example-${{ needs.create-release.outputs.release_version }}.apk
-          asset_content_type: application/vnd.android.package-archive
+          tag_name: ${{ needs.create-release.outputs.release_tag }}
+          files: ./player-api-example-${{ needs.create-release.outputs.release_version }}.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   create-npm-package:
     name: Create npm package tarball
@@ -226,14 +222,11 @@ jobs:
           fi
 
       - name: Upload package to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./react-native-bb-player-${{ needs.create-release.outputs.release_version }}.tgz
-          asset_name: react-native-bb-player-${{ needs.create-release.outputs.release_version }}.tgz
-          asset_content_type: application/gzip
+          tag_name: ${{ needs.create-release.outputs.release_tag }}
+          files: ./react-native-bb-player-${{ needs.create-release.outputs.release_version }}.tgz
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   generate-docs:
     name: Generate documentation bundle
@@ -286,14 +279,11 @@ jobs:
           tar -czf react-native-bb-player-docs-${VERSION}.tar.gz -C docs-bundle .
 
       - name: Upload documentation bundle to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./react-native-bb-player-docs-${{ needs.create-release.outputs.release_version }}.tar.gz
-          asset_name: react-native-bb-player-docs-${{ needs.create-release.outputs.release_version }}.tar.gz
-          asset_content_type: application/gzip
+          tag_name: ${{ needs.create-release.outputs.release_tag }}
+          files: ./react-native-bb-player-docs-${{ needs.create-release.outputs.release_version }}.tar.gz
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   summary:
     name: Release summary
