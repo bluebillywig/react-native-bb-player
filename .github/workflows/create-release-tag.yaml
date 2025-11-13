@@ -28,22 +28,28 @@ jobs:
         run: |
           CURRENT_BRANCH="${GITHUB_REF##refs/heads/}"
 
-          if [[ "$CURRENT_BRANCH" =~ ^release/v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            RELEASE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
-            RELEASE_BRANCH="release/v${RELEASE_VERSION}"
+          if [[ "$CURRENT_BRANCH" =~ ^release/v([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            RELEASE_BRANCH="release/v${MAJOR}.${MINOR}"
+
+            # Get patch version from package.json
+            PATCH=$(grep '"version"' package.json | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | cut -d. -f3)
+            RELEASE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
             echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
             echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
             echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >> $GITHUB_ENV
-            echo "Creating release from branch: $RELEASE_BRANCH"
+            echo "Creating release from branch: $RELEASE_BRANCH (version: $RELEASE_VERSION)"
           else
             echo "::error::Not on a release branch. Current branch: $CURRENT_BRANCH"
-            echo "::error::This workflow must be run from a release/v{x}.{y}.{z} branch"
+            echo "::error::This workflow must be run from a release/v{x}.{y} branch"
             exit 1
           fi
 
       - name: Check if tag already exists
         run: |
-          RELEASE_TAG="v${{ env.RELEASE_VERSION }}"
+          RELEASE_TAG="${{ env.RELEASE_VERSION }}"
 
           if git rev-parse "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "::error::Tag $RELEASE_TAG already exists"
@@ -54,7 +60,7 @@ jobs:
 
       - name: Get previous tag for changelog
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 --match='v*.*.*' 2>/dev/null || echo "")
+          PREV_TAG=$(git describe --tags --abbrev=0 --match='*.*.*' 2>/dev/null || echo "")
           if [ -z "$PREV_TAG" ]; then
             PREV_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
