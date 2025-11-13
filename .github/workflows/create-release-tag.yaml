@@ -293,21 +293,83 @@ jobs:
     steps:
       - name: Generate summary
         run: |
-          echo "## ✅ Release ${{ needs.create-release.outputs.release_tag }} Created!" >> $GITHUB_STEP_SUMMARY
+          # Check job statuses
+          RELEASE_STATUS="${{ needs.create-release.result }}"
+          ANDROID_STATUS="${{ needs.build-android-demo.result }}"
+          NPM_STATUS="${{ needs.create-npm-package.result }}"
+          DOCS_STATUS="${{ needs.generate-docs.result }}"
+
+          # Determine overall status
+          if [ "$RELEASE_STATUS" == "success" ] && [ "$ANDROID_STATUS" == "success" ] && [ "$NPM_STATUS" == "success" ] && [ "$DOCS_STATUS" == "success" ]; then
+            echo "## ✅ Release ${{ needs.create-release.outputs.release_tag }} Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ⚠️ Release ${{ needs.create-release.outputs.release_tag }} Completed with Issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version**: \`${{ needs.create-release.outputs.release_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Tag**: \`${{ needs.create-release.outputs.release_tag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Release Assets" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Android demo APK" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ npm package tarball" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Documentation bundle" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Release Assets Status" >> $GITHUB_STEP_SUMMARY
+
+          # Android APK status
+          if [ "$ANDROID_STATUS" == "success" ]; then
+            echo "- ✅ Android demo APK" >> $GITHUB_STEP_SUMMARY
+          elif [ "$ANDROID_STATUS" == "failure" ]; then
+            echo "- ❌ Android demo APK (build failed)" >> $GITHUB_STEP_SUMMARY
+          elif [ "$ANDROID_STATUS" == "skipped" ]; then
+            echo "- ⏭️ Android demo APK (skipped)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ Android demo APK (status: $ANDROID_STATUS)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # npm package status
+          if [ "$NPM_STATUS" == "success" ]; then
+            echo "- ✅ npm package tarball" >> $GITHUB_STEP_SUMMARY
+          elif [ "$NPM_STATUS" == "failure" ]; then
+            echo "- ❌ npm package tarball (build failed)" >> $GITHUB_STEP_SUMMARY
+          elif [ "$NPM_STATUS" == "skipped" ]; then
+            echo "- ⏭️ npm package tarball (skipped)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ npm package tarball (status: $NPM_STATUS)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Documentation status
+          if [ "$DOCS_STATUS" == "success" ]; then
+            echo "- ✅ Documentation bundle" >> $GITHUB_STEP_SUMMARY
+          elif [ "$DOCS_STATUS" == "failure" ]; then
+            echo "- ❌ Documentation bundle (build failed)" >> $GITHUB_STEP_SUMMARY
+          elif [ "$DOCS_STATUS" == "skipped" ]; then
+            echo "- ⏭️ Documentation bundle (skipped)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ Documentation bundle (status: $DOCS_STATUS)" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
           echo "- [View Release](https://github.com/bluebillywig/react-native-bb-player/releases/tag/${{ needs.create-release.outputs.release_tag }})" >> $GITHUB_STEP_SUMMARY
-          echo "- [Download Demo APK](https://github.com/bluebillywig/react-native-bb-player/releases/download/${{ needs.create-release.outputs.release_tag }}/player-api-example-${{ needs.create-release.outputs.release_version }}.apk)" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$ANDROID_STATUS" == "success" ]; then
+            echo "- [Download Demo APK](https://github.com/bluebillywig/react-native-bb-player/releases/download/${{ needs.create-release.outputs.release_tag }}/player-api-example-${{ needs.create-release.outputs.release_version }}.apk)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "$NPM_STATUS" == "success" ]; then
+            echo "- [Download npm Package](https://github.com/bluebillywig/react-native-bb-player/releases/download/${{ needs.create-release.outputs.release_tag }}/react-native-bb-player-${{ needs.create-release.outputs.release_version }}.tgz)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "$DOCS_STATUS" == "success" ]; then
+            echo "- [Download Documentation](https://github.com/bluebillywig/react-native-bb-player/releases/download/${{ needs.create-release.outputs.release_tag }}/react-native-bb-player-docs-${{ needs.create-release.outputs.release_version }}.tar.gz)" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Test the demo APK on Android devices" >> $GITHUB_STEP_SUMMARY
-          echo "2. Optionally publish to npm: \`npm publish\`" >> $GITHUB_STEP_SUMMARY
-          echo "3. Announce the release to your team/customers" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$RELEASE_STATUS" == "success" ] && [ "$ANDROID_STATUS" == "success" ] && [ "$NPM_STATUS" == "success" ] && [ "$DOCS_STATUS" == "success" ]; then
+            echo "1. Test the demo APK on Android devices" >> $GITHUB_STEP_SUMMARY
+            echo "2. Optionally publish to npm: \`npm publish\`" >> $GITHUB_STEP_SUMMARY
+            echo "3. Announce the release to your team/customers" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "1. Review failed jobs above" >> $GITHUB_STEP_SUMMARY
+            echo "2. Check job logs for error details" >> $GITHUB_STEP_SUMMARY
+            echo "3. Fix issues and re-run failed jobs or create a new release" >> $GITHUB_STEP_SUMMARY
+          fi
