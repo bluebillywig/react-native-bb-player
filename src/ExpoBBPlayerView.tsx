@@ -25,13 +25,13 @@ type NativeExpoBBPlayerViewProps = Override<
       event: NativeSyntheticEvent<{ payload: string }>
     ) => void;
     onDidTriggerAutoPause?: (
-      event: NativeSyntheticEvent<{ payload: string }>
+      event: NativeSyntheticEvent<{ why: string }>
     ) => void;
     onDidTriggerAutoPausePlay?: (
-      event: NativeSyntheticEvent<{ payload: string }>
+      event: NativeSyntheticEvent<{ why: string }>
     ) => void;
     onDidTriggerDurationChange?: (
-      event: NativeSyntheticEvent<{ payload: number }>
+      event: NativeSyntheticEvent<{ duration: number }>
     ) => void;
     onDidTriggerCustomStatistics?: (
       event: NativeSyntheticEvent<CustomStatistics>
@@ -40,7 +40,7 @@ type NativeExpoBBPlayerViewProps = Override<
       event: NativeSyntheticEvent<MediaClip>
     ) => void;
     onDidTriggerModeChange?: (
-      event: NativeSyntheticEvent<{ payload: string }>
+      event: NativeSyntheticEvent<{ mode: string }>
     ) => void;
     onDidTriggerPhaseChange?: (
       event: NativeSyntheticEvent<{ phase: Phase }>
