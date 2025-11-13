@@ -218,7 +218,12 @@ jobs:
         run: |
           npm pack
           VERSION="${{ needs.create-release.outputs.release_version }}"
-          mv react-native-bb-player-*.tgz react-native-bb-player-${VERSION}.tgz
+          # Ensure the file has the expected name (npm pack uses version from package.json)
+          ACTUAL_FILE=$(ls react-native-bb-player-*.tgz)
+          EXPECTED_FILE="react-native-bb-player-${VERSION}.tgz"
+          if [ "$ACTUAL_FILE" != "$EXPECTED_FILE" ]; then
+            mv "$ACTUAL_FILE" "$EXPECTED_FILE"
+          fi
 
       - name: Upload package to release
         uses: actions/upload-release-asset@v1
