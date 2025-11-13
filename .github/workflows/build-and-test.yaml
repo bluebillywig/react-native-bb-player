@@ -139,16 +139,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'player-api-example/package-lock.json'
 
       - name: Install dependencies
-        working-directory: player-api-example
         run: npm ci
 
-      - name: Type check
-        working-directory: player-api-example
+      - name: Type check library
         run: npx tsc --noEmit
 
       - name: Build summary
         run: |
           echo "## ✅ TypeScript Check Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Library source code type checking completed successfully." >> $GITHUB_STEP_SUMMARY
