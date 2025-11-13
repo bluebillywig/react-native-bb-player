@@ -143,8 +143,11 @@ jobs:
 
       - name: Update Android build.gradle
         run: |
-          sed -i "s|com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:[^']*|com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:${{ env.ANDROID_SDK_VERSION }}.+|" android/build.gradle
-          echo "Updated Android SDK to ${{ env.ANDROID_SDK_VERSION }}"
+          # Extract major.minor from version (e.g., 8.37.0 -> 8.37)
+          ANDROID_VERSION="${{ env.ANDROID_SDK_VERSION }}"
+          ANDROID_MAJOR_MINOR="${ANDROID_VERSION%.*}"
+          sed -i "s|com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:[^']*|com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:${ANDROID_MAJOR_MINOR}.+|" android/build.gradle
+          echo "Updated Android SDK to ${ANDROID_MAJOR_MINOR}.+ (from ${ANDROID_VERSION})"
 
       - name: Update CHANGELOG.md
         run: |
