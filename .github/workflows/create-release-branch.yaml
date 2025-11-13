@@ -28,19 +28,42 @@ jobs:
       - name: Get latest iOS SDK version from CocoaPods
         id: ios_version
         run: |
-          # Query CocoaPods trunk for latest version
-          IOS_VERSION=$(curl -s https://cdn.cocoapods.org/Specs/BlueBillywigNativePlayerKit-iOS/ | \
-            grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | \
-            sort -V | \
-            tail -1)
+          # Try CocoaPods Trunk API first
+          echo "Querying CocoaPods Trunk API..."
+          IOS_VERSION=$(curl -s "https://trunk.cocoapods.org/api/v1/pods/BlueBillywigNativePlayerKit-iOS" | \
+            grep -o '"version":"[0-9]\+\.[0-9]\+\.[0-9]\+"' | \
+            head -1 | \
+            grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+
+          # If trunk API fails, try GitHub Specs repository
+          if [ -z "$IOS_VERSION" ]; then
+            echo "Trunk API failed, trying GitHub Specs repository..."
+            IOS_VERSION=$(curl -s "https://api.github.com/repos/CocoaPods/Specs/contents/Specs/b/4/a/BlueBillywigNativePlayerKit-iOS" | \
+              grep -o '"name":"[0-9]\+\.[0-9]\+\.[0-9]\+"' | \
+              grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | \
+              sort -V | \
+              tail -1)
+          fi
+
+          # If both fail, try querying the specs directly via CDN
+          if [ -z "$IOS_VERSION" ]; then
+            echo "GitHub API failed, trying CocoaPods Specs CDN..."
+            # Query the all_pods_versions file
+            IOS_VERSION=$(curl -s "https://cdn.cocoapods.org/all_pods_versions_b_4_a.txt" | \
+              grep "BlueBillywigNativePlayerKit-iOS" | \
+              grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | \
+              sort -V | \
+              tail -1)
+          fi
 
           if [ -z "$IOS_VERSION" ]; then
-            echo "::error::Could not detect latest iOS SDK version"
+            echo "::error::Could not detect latest iOS SDK version from any source"
+            echo "::error::Please manually specify the version or check CocoaPods availability"
             exit 1
           fi
 
           echo "IOS_SDK_VERSION=$IOS_VERSION" >> $GITHUB_ENV
-          echo "Found iOS SDK version: $IOS_VERSION"
+          echo "✅ Found iOS SDK version: $IOS_VERSION"
 
       - name: Get latest Android SDK version from Maven
         id: android_version
