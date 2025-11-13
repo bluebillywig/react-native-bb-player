@@ -49,19 +49,21 @@ jobs:
         id: android_version
         run: |
           # Query Maven for latest version
+          echo "Querying Maven repository..."
           ANDROID_VERSION=$(curl -s https://maven.bluebillywig.com/releases/com/bluebillywig/bbnativeplayersdk/bbnativeplayersdk/maven-metadata.xml | \
             grep -o '<version>[0-9]\+\.[0-9]\+\.[0-9]\+</version>' | \
             grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | \
             sort -V | \
             tail -1)
 
+          # If Maven query fails, use iOS version as fallback (they're typically released together)
           if [ -z "$ANDROID_VERSION" ]; then
-            echo "::error::Could not detect latest Android SDK version"
-            exit 1
+            echo "::warning::Could not detect Android SDK version from Maven, using iOS version as fallback"
+            ANDROID_VERSION="${{ env.IOS_SDK_VERSION }}"
           fi
 
           echo "ANDROID_SDK_VERSION=$ANDROID_VERSION" >> $GITHUB_ENV
-          echo "Found Android SDK version: $ANDROID_VERSION"
+          echo "✅ Found Android SDK version: $ANDROID_VERSION"
 
       - name: Determine release version
         run: |
@@ -133,7 +135,7 @@ jobs:
 
       - name: Update Android build.gradle
         run: |
-          sed -i "s/com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:.*/com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:${{ env.ANDROID_SDK_VERSION }}'/" android/build.gradle
+          sed -i "s|com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:[^']*|com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:${{ env.ANDROID_SDK_VERSION }}.+|" android/build.gradle
           echo "Updated Android SDK to ${{ env.ANDROID_SDK_VERSION }}"
 
       - name: Update CHANGELOG.md
