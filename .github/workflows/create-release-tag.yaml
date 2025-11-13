@@ -33,8 +33,18 @@ jobs:
             MINOR="${BASH_REMATCH[2]}"
             RELEASE_BRANCH="release/v${MAJOR}.${MINOR}"
 
-            # Get patch version from package.json
-            PATCH=$(grep '"version"' package.json | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | cut -d. -f3)
+            # Find the highest existing patch version for this major.minor
+            # Look for tags like 8.37.0, 8.37.1, 8.37.2, etc.
+            LATEST_PATCH=$(git tag -l "${MAJOR}.${MINOR}.*" | grep -oE "[0-9]+$" | sort -n | tail -1)
+
+            if [ -z "$LATEST_PATCH" ]; then
+              # No existing tags, start with patch 0
+              PATCH=0
+            else
+              # Increment the latest patch version
+              PATCH=$((LATEST_PATCH + 1))
+            fi
+
             RELEASE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 
             echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
@@ -57,6 +67,15 @@ jobs:
           fi
 
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
+
+      - name: Update package.json version
+        run: |
+          VERSION="${{ env.RELEASE_VERSION }}"
+          sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
+          git add package.json
+          git commit -m "Bump version to ${VERSION}" || echo "No changes to commit"
+          git push origin ${{ env.RELEASE_BRANCH }}
+          echo "✅ Updated package.json to version ${VERSION}"
 
       - name: Get previous tag for changelog
         run: |
