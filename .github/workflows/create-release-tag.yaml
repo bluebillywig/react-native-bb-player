@@ -206,12 +206,16 @@ jobs:
           # Remove package-lock.json to force npm to read updated parent package.json
           rm -f package-lock.json
           npm install
+
+          # CRITICAL FIX: Remove npm's internal metadata cache
+          # This file stores the version from BEFORE we updated package.json
+          # Expo autolinking reads from this cache, causing it to show the old version
+          rm -f node_modules/.package-lock.json
+
           echo "Checking installed react-native-bb-player version:"
           cat node_modules/react-native-bb-player/package.json | grep '"version":'
-          echo "Checking if it's a symlink:"
-          ls -la node_modules/react-native-bb-player
-          echo "Real path:"
-          readlink -f node_modules/react-native-bb-player/package.json || realpath node_modules/react-native-bb-player/package.json
+          echo "Verifying npm metadata cache is removed:"
+          ls -la node_modules/.package-lock.json 2>&1 || echo "✅ Cache file removed"
 
       - name: Prebuild Android project
         working-directory: player-api-example
