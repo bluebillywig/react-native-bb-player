@@ -68,11 +68,14 @@ jobs:
 
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
-      - name: Update package.json version (for build artifacts only)
+      - name: Update package.json version on release branch
         run: |
           VERSION="${{ env.RELEASE_VERSION }}"
           sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
-          echo "✅ Updated package.json to version ${VERSION} (not committed to repository)"
+          git add package.json
+          git commit -m "Release version ${VERSION}"
+          git push origin ${{ env.RELEASE_BRANCH }}
+          echo "✅ Updated and committed package.json to version ${VERSION} on ${{ env.RELEASE_BRANCH }}"
 
       - name: Get previous tag for changelog
         run: |
@@ -185,20 +188,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Update package.json version and commit locally
+      - name: Verify package.json version
         run: |
-          VERSION="${{ needs.create-release.outputs.release_version }}"
-          sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
-          echo "✅ Updated package.json to version ${VERSION}"
-          echo "Verifying version in package.json:"
+          echo "Package version from tag:"
           grep '"version":' package.json
-
-          # Commit locally so git-aware tools (like Expo autolinking) see the correct version
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add package.json
-          git commit -m "Set version to ${VERSION} for build"
-          echo "✅ Committed version change to local git (not pushed)"
+          echo "Expected version: ${{ needs.create-release.outputs.release_version }}"
 
       - name: Install dependencies
         working-directory: player-api-example
@@ -274,17 +268,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Update package.json version and commit locally
+      - name: Verify package.json version
         run: |
-          VERSION="${{ needs.create-release.outputs.release_version }}"
-          sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
-          echo "✅ Updated package.json to version ${VERSION}"
-
-          # Commit locally for consistency
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add package.json
-          git commit -m "Set version to ${VERSION} for build"
+          echo "Package version from tag:"
+          grep '"version":' package.json
+          echo "Expected version: ${{ needs.create-release.outputs.release_version }}"
 
       - name: Create npm package
         run: |
