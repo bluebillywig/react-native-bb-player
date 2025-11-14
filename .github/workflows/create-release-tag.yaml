@@ -203,19 +203,26 @@ jobs:
       - name: Install dependencies
         working-directory: player-api-example
         run: |
-          # Remove package-lock.json to force npm to read updated parent package.json
+          # Remove ALL caches before install
           rm -f package-lock.json
+          rm -rf node_modules
+          npm cache clean --force
+
           npm install
 
-          # CRITICAL FIX: Remove npm's internal metadata cache
-          # This file stores the version from BEFORE we updated package.json
-          # Expo autolinking reads from this cache, causing it to show the old version
+          # Remove npm's internal metadata cache
           rm -f node_modules/.package-lock.json
 
           echo "Checking installed react-native-bb-player version:"
           cat node_modules/react-native-bb-player/package.json | grep '"version":'
-          echo "Verifying npm metadata cache is removed:"
-          ls -la node_modules/.package-lock.json 2>&1 || echo "✅ Cache file removed"
+
+          # Also check if npm copied or symlinked
+          echo "Checking node_modules structure:"
+          ls -la node_modules/react-native-bb-player | head -5
+
+          # Test what Node.js resolves (same as Gradle plugin does)
+          echo "Testing Node.js package resolution:"
+          node --print "require('react-native-bb-player/package.json').version"
 
       - name: Prebuild Android project
         working-directory: player-api-example
