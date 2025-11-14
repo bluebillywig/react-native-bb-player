@@ -68,14 +68,23 @@ jobs:
 
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
-      - name: Update package.json version on release branch
+      - name: Update version files on release branch
         run: |
           VERSION="${{ env.RELEASE_VERSION }}"
+
+          # Update package.json
           sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
-          git add package.json
+
+          # Update android/build.gradle (this is what Expo Gradle plugin reads!)
+          sed -i "s/^version = '.*'/version = '${VERSION}'/" android/build.gradle
+
+          # Update android versionName
+          sed -i "s/versionName \".*\"/versionName \"${VERSION}\"/" android/build.gradle
+
+          git add package.json android/build.gradle
           git commit -m "Release version ${VERSION}"
           git push origin ${{ env.RELEASE_BRANCH }}
-          echo "✅ Updated and committed package.json to version ${VERSION} on ${{ env.RELEASE_BRANCH }}"
+          echo "✅ Updated and committed version files to ${VERSION} on ${{ env.RELEASE_BRANCH }}"
 
       - name: Get previous tag for changelog
         run: |
