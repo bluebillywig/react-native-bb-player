@@ -1,3 +1,12 @@
+## [8.38.0] - 2025-11-14
+
+### Updated
+- iOS Native SDK to 8.37.0
+- Android Native SDK to 8.37.0
+
+### Changes
+- See native SDK release notes for detailed changes
+
 # Changelog
 
 All notable changes to react-native-bb-player will be documented in this file.
