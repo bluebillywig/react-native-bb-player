@@ -122,6 +122,36 @@ jobs:
           echo "RELEASE_TAG=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
           echo "✅ Created and pushed tag: ${{ env.RELEASE_TAG }}"
 
+      - name: Merge version bump to master
+        run: |
+          # Get the version bump commit SHA
+          VERSION_COMMIT=$(git log -1 --format="%H")
+
+          # Switch to master branch
+          git fetch origin master
+          git checkout master
+
+          # Cherry-pick the version bump commit
+          git cherry-pick $VERSION_COMMIT
+
+          # Retry push up to 3 times with delays (handles transient GitHub errors)
+          for i in 1 2 3; do
+            if git push origin master; then
+              echo "✅ Merged version bump to master"
+              break
+            else
+              if [ $i -eq 3 ]; then
+                echo "::error::Failed to push version bump to master after 3 attempts"
+                exit 1
+              fi
+              echo "⚠️ Push failed, retrying in 5 seconds (attempt $i/3)..."
+              sleep 5
+            fi
+          done
+
+          # Switch back to release branch for the rest of the workflow
+          git checkout ${{ env.RELEASE_BRANCH }}
+
       - name: Extract native SDK versions
         id: sdk_versions
         run: |
