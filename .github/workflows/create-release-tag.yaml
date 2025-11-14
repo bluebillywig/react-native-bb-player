@@ -68,14 +68,11 @@ jobs:
 
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
-      - name: Update package.json version
+      - name: Update package.json version (for build artifacts only)
         run: |
           VERSION="${{ env.RELEASE_VERSION }}"
           sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
-          git add package.json
-          git commit -m "Bump version to ${VERSION}" || echo "No changes to commit"
-          git push origin ${{ env.RELEASE_BRANCH }}
-          echo "✅ Updated package.json to version ${VERSION}"
+          echo "✅ Updated package.json to version ${VERSION} (not committed to repository)"
 
       - name: Get previous tag for changelog
         run: |
