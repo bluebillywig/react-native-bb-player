@@ -190,10 +190,17 @@ jobs:
           VERSION="${{ needs.create-release.outputs.release_version }}"
           sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
           echo "✅ Updated package.json to version ${VERSION}"
+          echo "Verifying version in package.json:"
+          grep '"version":' package.json
 
       - name: Install dependencies
         working-directory: player-api-example
-        run: npm ci
+        run: |
+          # Remove package-lock.json to force npm to read updated parent package.json
+          rm -f package-lock.json
+          npm install
+          echo "Checking installed react-native-bb-player version:"
+          cat node_modules/react-native-bb-player/package.json | grep '"version":'
 
       - name: Prebuild Android project
         working-directory: player-api-example
