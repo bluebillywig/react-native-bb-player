@@ -68,27 +68,11 @@ jobs:
 
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
 
-      - name: Update package.json version
+      - name: Update package.json version (for build artifacts only)
         run: |
           VERSION="${{ env.RELEASE_VERSION }}"
           sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
-          git add package.json
-          git commit -m "Bump version to ${VERSION}" || echo "No changes to commit"
-
-          # Retry push up to 3 times with delays (handles transient GitHub errors)
-          for i in 1 2 3; do
-            if git push origin ${{ env.RELEASE_BRANCH }}; then
-              echo "✅ Updated package.json to version ${VERSION}"
-              break
-            else
-              if [ $i -eq 3 ]; then
-                echo "::error::Failed to push version bump after 3 attempts"
-                exit 1
-              fi
-              echo "⚠️ Push failed, retrying in 5 seconds (attempt $i/3)..."
-              sleep 5
-            fi
-          done
+          echo "✅ Updated package.json to version ${VERSION} (not committed to repository)"
 
       - name: Get previous tag for changelog
         run: |
@@ -121,36 +105,6 @@ jobs:
           git push origin "${{ env.RELEASE_TAG }}"
           echo "RELEASE_TAG=${{ env.RELEASE_TAG }}" >> $GITHUB_OUTPUT
           echo "✅ Created and pushed tag: ${{ env.RELEASE_TAG }}"
-
-      - name: Merge version bump to master
-        run: |
-          # Get the version bump commit SHA
-          VERSION_COMMIT=$(git log -1 --format="%H")
-
-          # Switch to master branch
-          git fetch origin master
-          git checkout master
-
-          # Cherry-pick the version bump commit
-          git cherry-pick $VERSION_COMMIT
-
-          # Retry push up to 3 times with delays (handles transient GitHub errors)
-          for i in 1 2 3; do
-            if git push origin master; then
-              echo "✅ Merged version bump to master"
-              break
-            else
-              if [ $i -eq 3 ]; then
-                echo "::error::Failed to push version bump to master after 3 attempts"
-                exit 1
-              fi
-              echo "⚠️ Push failed, retrying in 5 seconds (attempt $i/3)..."
-              sleep 5
-            fi
-          done
-
-          # Switch back to release branch for the rest of the workflow
-          git checkout ${{ env.RELEASE_BRANCH }}
 
       - name: Extract native SDK versions
         id: sdk_versions
