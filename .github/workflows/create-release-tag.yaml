@@ -185,6 +185,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Update package.json version
+        run: |
+          VERSION="${{ needs.create-release.outputs.release_version }}"
+          sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
+          echo "✅ Updated package.json to version ${VERSION}"
+
       - name: Install dependencies
         working-directory: player-api-example
         run: npm ci
@@ -225,6 +231,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Update package.json version
+        run: |
+          VERSION="${{ needs.create-release.outputs.release_version }}"
+          sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
+          echo "✅ Updated package.json to version ${VERSION}"
 
       - name: Create npm package
         run: |
