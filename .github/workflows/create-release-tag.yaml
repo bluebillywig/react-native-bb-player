@@ -185,13 +185,20 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Update package.json version
+      - name: Update package.json version and commit locally
         run: |
           VERSION="${{ needs.create-release.outputs.release_version }}"
           sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
           echo "✅ Updated package.json to version ${VERSION}"
           echo "Verifying version in package.json:"
           grep '"version":' package.json
+
+          # Commit locally so git-aware tools (like Expo autolinking) see the correct version
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add package.json
+          git commit -m "Set version to ${VERSION} for build"
+          echo "✅ Committed version change to local git (not pushed)"
 
       - name: Install dependencies
         working-directory: player-api-example
@@ -248,11 +255,17 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Update package.json version
+      - name: Update package.json version and commit locally
         run: |
           VERSION="${{ needs.create-release.outputs.release_version }}"
           sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
           echo "✅ Updated package.json to version ${VERSION}"
+
+          # Commit locally for consistency
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add package.json
+          git commit -m "Set version to ${VERSION} for build"
 
       - name: Create npm package
         run: |
