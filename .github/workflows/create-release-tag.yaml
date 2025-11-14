@@ -216,7 +216,15 @@ jobs:
       - name: Prebuild Android project
         working-directory: player-api-example
         run: |
+          # Clear all Gradle and Expo caches
+          rm -rf android .expo ~/.gradle
+
+          # Verify root package.json has correct version before prebuild
+          echo "Root package.json version before prebuild:"
+          cat ../package.json | grep '"version":'
+
           npx expo prebuild --platform android --clean
+
           echo "Checking what Expo generated in autolinking:"
           if [ -f android/app/build/generated/autolinking/src/main/java/expo/modules/ExpoModulesPackageList.java ]; then
             grep -A5 "react-native-bb-player" android/app/build/generated/autolinking/src/main/java/expo/modules/ExpoModulesPackageList.java || echo "Not found in autolinking"
