@@ -201,10 +201,19 @@ jobs:
           npm install
           echo "Checking installed react-native-bb-player version:"
           cat node_modules/react-native-bb-player/package.json | grep '"version":'
+          echo "Checking if it's a symlink:"
+          ls -la node_modules/react-native-bb-player
+          echo "Real path:"
+          readlink -f node_modules/react-native-bb-player/package.json || realpath node_modules/react-native-bb-player/package.json
 
       - name: Prebuild Android project
         working-directory: player-api-example
-        run: npx expo prebuild --platform android --clean
+        run: |
+          npx expo prebuild --platform android --clean
+          echo "Checking what Expo generated in autolinking:"
+          if [ -f android/app/build/generated/autolinking/src/main/java/expo/modules/ExpoModulesPackageList.java ]; then
+            grep -A5 "react-native-bb-player" android/app/build/generated/autolinking/src/main/java/expo/modules/ExpoModulesPackageList.java || echo "Not found in autolinking"
+          fi
 
       - name: Build Android release APK
         working-directory: player-api-example/android
