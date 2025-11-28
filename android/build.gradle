@@ -4,13 +4,13 @@ plugins {
 }
 
 group = 'expo.modules.bbplayer'
-version = '1.0.0'
+version = '8.39.0'
 
 android {
   namespace "expo.modules.bbplayer"
   defaultConfig {
     versionCode 1
-    versionName "1.0.0"
+    versionName "8.39.0"
   }
 }
 
