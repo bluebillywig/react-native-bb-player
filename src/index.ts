@@ -1,8 +1,12 @@
-export * from "./ExpoBBPlayer.types";
-export { default as ExpoBBPlayerView } from "./ExpoBBPlayerView";
-// Alias for backwards compatibility and cleaner naming
-export { default as BBPlayerView } from "./ExpoBBPlayerView";
-export { type ExpoBBPlayerViewProps as BBPlayerViewProps } from "./ExpoBBPlayer.types";
+// Main exports
+export { default as BBPlayerView } from "./BBPlayerView";
+export * from "./BBPlayer.types";
 export * from "./types";
 export * from "./utils";
 
+// For backwards compatibility with Expo module naming
+export { default as ExpoBBPlayerView } from "./BBPlayerView";
+export {
+  type BBPlayerViewProps as ExpoBBPlayerViewProps,
+  type BBPlayerViewMethods as ExpoBBPlayerViewType,
+} from "./BBPlayer.types";

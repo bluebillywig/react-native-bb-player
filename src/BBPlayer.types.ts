@@ -1,0 +1,138 @@
+import type { ViewProps } from "react-native";
+
+import type {
+  CustomStatistics,
+  MediaClip,
+  Phase,
+  Project,
+  State,
+} from "./types";
+
+export type BBPlayerViewMethods = {
+  // Playback control methods
+  play: () => void;
+  pause: () => void;
+  seek: (position: number) => void;
+  seekRelative: (offsetSeconds: number) => void;
+  setMuted: (muted: boolean) => void;
+  setVolume: (volume: number) => void;
+  enterFullscreen: () => void;
+  enterFullscreenLandscape: () => void;
+  exitFullscreen: () => void;
+  collapse: () => void;
+  expand: () => void;
+  autoPlayNextCancel: () => void;
+  destroy: () => void;
+  showCastPicker: () => void;
+
+  // Load methods
+  loadWithClipId: (
+    clipId: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => void;
+  loadWithClipListId: (
+    clipListId: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => void;
+  loadWithProjectId: (
+    projectId: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => void;
+  loadWithClipJson: (
+    clipJson: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => void;
+  loadWithClipListJson: (
+    clipListJson: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => void;
+  loadWithProjectJson: (
+    projectJson: string,
+    initiator?: string,
+    autoPlay?: boolean,
+    seekTo?: number
+  ) => void;
+  loadWithJsonUrl: (jsonUrl: string, autoPlay?: boolean) => void;
+
+  // Getter methods (async)
+  getDuration: () => Promise<number | null>;
+  getCurrentTime: () => Promise<number | null>;
+  getMuted: () => Promise<boolean | null>;
+  getVolume: () => Promise<number | null>;
+  getPhase: () => Promise<string | null>;
+  getState: () => Promise<string | null>;
+  getMode: () => Promise<string | null>;
+  getClipData: () => Promise<{
+    id?: string;
+    title?: string;
+    description?: string;
+    length?: number;
+  } | null>;
+  getProjectData: () => Promise<{
+    id?: string;
+    name?: string;
+  } | null>;
+  getPlayoutData: () => Promise<{
+    name?: string;
+  } | null>;
+};
+
+export type BBPlayerViewProps = {
+  options?: Record<string, unknown>;
+  jsonUrl?: string;
+  enableTimeUpdates?: boolean;
+  onDidFailWithError?: (error: string) => void;
+  onDidRequestCollapse?: () => void;
+  onDidRequestExpand?: () => void;
+  onDidRequestOpenUrl?: (url: string) => void;
+  onDidSetupWithJsonUrl?: (url: string) => void;
+  onDidTriggerAdError?: (error: string) => void;
+  onDidTriggerAdFinished?: () => void;
+  onDidTriggerAdLoaded?: () => void;
+  onDidTriggerAdLoadStart?: () => void;
+  onDidTriggerAdNotFound?: () => void;
+  onDidTriggerAdQuartile1?: () => void;
+  onDidTriggerAdQuartile2?: () => void;
+  onDidTriggerAdQuartile3?: () => void;
+  onDidTriggerAdStarted?: () => void;
+  onDidTriggerAllAdsCompleted?: () => void;
+  onDidTriggerApiReady?: () => void;
+  onDidTriggerAutoPause?: (why: string) => void;
+  onDidTriggerAutoPausePlay?: (why: string) => void;
+  onDidTriggerCanPlay?: () => void;
+  onDidTriggerCustomStatistics?: (customStatistics: CustomStatistics) => void;
+  onDidTriggerDurationChange?: (duration: number) => void;
+  onDidTriggerEnded?: () => void;
+  onDidTriggerFullscreen?: () => void;
+  onDidTriggerMediaClipFailed?: () => void;
+  onDidTriggerMediaClipLoaded?: (mediaClip: MediaClip) => void;
+  onDidTriggerModeChange?: (mode: string) => void;
+  onDidTriggerPause?: () => void;
+  onDidTriggerPhaseChange?: (phase: Phase) => void;
+  onDidTriggerPlay?: () => void;
+  onDidTriggerPlaying?: () => void;
+  onDidTriggerProjectLoaded?: (project: Project) => void;
+  onDidTriggerRetractFullscreen?: () => void;
+  onDidTriggerSeeked?: (position: number) => void;
+  onDidTriggerSeeking?: () => void;
+  onDidTriggerStall?: () => void;
+  onDidTriggerStateChange?: (state: State) => void;
+  onDidTriggerTimeUpdate?: (currentTime: number, duration: number) => void;
+  onDidTriggerViewFinished?: () => void;
+  onDidTriggerViewStarted?: () => void;
+  onDidTriggerVolumeChange?: (volume: number) => void;
+} & ViewProps;
+
+// For backwards compatibility
+export type ExpoBBPlayerViewType = BBPlayerViewMethods;
+export type ExpoBBPlayerViewProps = BBPlayerViewProps;
