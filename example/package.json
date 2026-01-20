@@ -1,32 +1,36 @@
 {
-  "name": "expo-bb-player-example",
+  "name": "BBPlayerExample",
   "version": "1.0.0",
-  "main": "index.ts",
+  "description": "Demo app showing Blue Billywig Native Player integration",
+  "main": "index.js",
   "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web"
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "build:android": "cd android && env JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.0.2.jdk/Contents/Home ./gradlew assembleDebug",
+    "build:android-release": "cd android && env JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.0.2.jdk/Contents/Home ./gradlew assembleRelease",
+    "install:android": "adb install -r android/app/build/outputs/apk/release/app-release.apk"
   },
   "dependencies": {
-    "@react-navigation/native": "^7.1.9",
-    "@react-navigation/native-stack": "^7.3.13",
-    "expo": "~54.0.0",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-safe-area-context": "5.4.0",
-    "react-native-screens": "~4.10.0"
+    "@bluebillywig/react-native-bb-player": "file:..",
+    "react": "19.1.1",
+    "react-native": "0.82.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@biomejs/biome": "1.9.4",
-    "@types/react": "~19.1.10",
-    "typescript": "~5.8.3"
+    "@babel/core": "^7.28.3",
+    "@babel/preset-env": "^7.28.2",
+    "@babel/runtime": "^7.28.2",
+    "@react-native-community/cli": "^20.1.0",
+    "@react-native-community/cli-platform-android": "^20.1.0",
+    "@react-native-community/cli-platform-ios": "^20.1.0",
+    "@react-native/babel-preset": "0.82.1",
+    "@react-native/metro-config": "0.82.1",
+    "@react-native/typescript-config": "0.82.1",
+    "@types/react": "~19.1.0",
+    "typescript": "~5.3.0"
   },
-  "private": true,
-  "expo": {
-    "autolinking": {
-      "nativeModulesDir": ".."
-    }
-  }
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true
 }

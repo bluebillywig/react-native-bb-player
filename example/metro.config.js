@@ -1,34 +1,34 @@
-// Learn more https://docs.expo.io/guides/customizing-metro
-const { getDefaultConfig } = require('expo/metro-config');
+const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const path = require('path');
 
-const config = getDefaultConfig(__dirname);
+const projectRoot = __dirname;
+const sdkRoot = path.resolve(projectRoot, '..');
 
-// npm v7+ will install ../node_modules/react and ../node_modules/react-native because of peerDependencies.
-// To prevent the incompatible react-native between ./node_modules/react-native and ../node_modules/react-native,
-// excludes the one from the parent folder when bundling.
-config.resolver.blockList = [
-  ...Array.from(config.resolver.blockList ?? []),
-  new RegExp(path.resolve('..', 'node_modules', 'react')),
-  new RegExp(path.resolve('..', 'node_modules', 'react-native')),
-];
+const defaultConfig = getDefaultConfig(projectRoot);
 
-config.resolver.nodeModulesPaths = [
-  path.resolve(__dirname, './node_modules'),
-  path.resolve(__dirname, '../node_modules'),
-];
+const config = {
+  // Watch the SDK source folder for development
+  watchFolders: [sdkRoot],
 
-config.resolver.extraNodeModules = {
-  'expo-bb-player': '..',
+  resolver: {
+    // Block SDK's nested node_modules to prevent duplicate dependencies
+    blockList: [
+      new RegExp(`${sdkRoot.replace(/[/\\]/g, '[/\\\\]')}/node_modules/.*`),
+      // Also block any nested node_modules in the SDK copy within example's node_modules
+      /node_modules\/@bluebillywig\/react-native-bb-player\/node_modules\/.*/,
+    ],
+
+    // Resolve all modules from example's node_modules only
+    nodeModulesPaths: [
+      path.resolve(projectRoot, 'node_modules'),
+    ],
+
+    // Ensure SDK dependencies resolve to example's node_modules
+    extraNodeModules: {
+      'react': path.resolve(projectRoot, 'node_modules/react'),
+      'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
+    },
+  },
 };
 
-config.watchFolders = [path.resolve(__dirname, '..')];
-
-config.transformer.getTransformOptions = async () => ({
-  transform: {
-    experimentalImportSupport: false,
-    inlineRequires: true,
-  },
-});
-
-module.exports = config;
+module.exports = mergeConfig(defaultConfig, config);
