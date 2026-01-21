@@ -1,5 +1,16 @@
 # React Native BB Player - Build Configuration
 
+## IMPORTANT: Release Policy
+
+**DO NOT create or push git tags, or trigger releases, unless explicitly requested by the user.**
+
+Releases are done via GitHub Actions workflows:
+1. `create-release-branch.yml` - Creates release branches (e.g., `release/v8.43`)
+2. `create-release.yml` - Creates version tags from release branches
+3. `release.yml` - Publishes to npm when tags are pushed
+
+Only create tags/releases when the user explicitly asks.
+
 ## Overview
 
 This is a **pure React Native native module** (not Expo) for the Blue Billywig Native Video Player SDK.
