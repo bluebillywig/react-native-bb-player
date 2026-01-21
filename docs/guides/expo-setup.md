@@ -182,6 +182,18 @@ npx expo prebuild --clean
 cd ios && pod install
 ```
 
+## Compatibility Notes
+
+### Node.js 22+ / Expo SDK 54+
+
+This package is fully compatible with Node.js 22+ and Expo SDK 54+. The package's `exports` field in `package.json` properly exposes the config plugin entry points for Node.js strict module resolution.
+
+If you encounter issues with older versions of this package on Node 22 or Expo 54+, ensure you're using version 8.42.5 or later.
+
+### New Architecture (Fabric)
+
+The BB Player SDK fully supports React Native's New Architecture (Fabric). If you have `newArchEnabled: true` in your app.json, the player will work correctly with Fabric rendering.
+
 ## Related Guides
 
 - [README - Quick Start](../../README.md#quick-start)
