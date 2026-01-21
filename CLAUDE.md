@@ -1,15 +1,21 @@
 # React Native BB Player - Build Configuration
 
-## IMPORTANT: Release Policy
+## CRITICAL: Release Policy
 
-**DO NOT create or push git tags, or trigger releases, unless explicitly requested by the user.**
+**A new npm release is ONLY triggered when a git TAG is pushed.**
 
-Releases are done via GitHub Actions workflows:
+**NEVER create or push git tags unless the user EXPLICITLY asks for a release.**
+
+- Pushing commits to any branch (including `master` or `release/*`) does NOT trigger a release
+- Only pushing a tag matching `v*.*.*` triggers the `release.yml` workflow → npm publish
+- Tags are created via the `create-release.yml` workflow (run manually from a release branch)
+
+**Workflow:**
 1. `create-release-branch.yml` - Creates release branches (e.g., `release/v8.43`)
-2. `create-release.yml` - Creates version tags from release branches
+2. `create-release.yml` - Creates version tags from release branches (ONLY when explicitly requested)
 3. `release.yml` - Publishes to npm when tags are pushed
 
-Only create tags/releases when the user explicitly asks.
+**DO NOT run `create-release.yml` or push tags without explicit user request.**
 
 ## Overview
 
