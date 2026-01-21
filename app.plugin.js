@@ -6,4 +6,4 @@
  *
  * @see https://docs.expo.dev/config-plugins/development-for-libraries/
  */
-module.exports = require("./plugin/build");
+module.exports = require("./plugin/build").default;
