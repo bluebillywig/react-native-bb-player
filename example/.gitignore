@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# React Native
+.metro-health-check*
+
+# Android
+android/build/
+android/.gradle/
+android/app/build/
+android/local.properties
+*.apk
+*.aab
+
+# iOS
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+*.xcuserdata/
+Podfile.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Misc
+.DS_Store
+*.hprof

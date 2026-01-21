@@ -1,0 +1,93 @@
+name: Check Native SDK Updates
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-updates:
+    name: Check for SDK Updates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Android SDK version
+        id: android
+        run: |
+          # Current version in build.gradle
+          CURRENT=$(grep -oP "bbnativeplayersdk:\K[0-9]+\.[0-9]+" android/build.gradle | head -1)
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+          # Check Maven for latest version
+          LATEST=$(curl -s "https://maven.bluebillywig.com/releases/com/bluebillywig/bbnativeplayersdk/maven-metadata.xml" \
+            | grep -oP '<latest>\K[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+
+          if [ -n "$LATEST" ]; then
+            echo "latest=$LATEST" >> $GITHUB_OUTPUT
+            LATEST_MINOR=$(echo $LATEST | cut -d. -f1,2)
+            if [ "$CURRENT" != "$LATEST_MINOR" ]; then
+              echo "update_available=true" >> $GITHUB_OUTPUT
+            else
+              echo "update_available=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "latest=unknown" >> $GITHUB_OUTPUT
+            echo "update_available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check iOS SDK version
+        id: ios
+        run: |
+          # Current version in podspec
+          CURRENT=$(grep -oP "BlueBillywigNativePlayerKit-iOS.*~>\s*\K[0-9]+\.[0-9]+" react-native-bb-player.podspec | head -1)
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+          # Note: Would need to check CocoaPods spec repo for latest
+          # For now, just report current
+          echo "latest=check-manually" >> $GITHUB_OUTPUT
+
+      - name: Create issue if updates available
+        if: steps.android.outputs.update_available == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🔄 Native SDK Update Available`;
+            const body = `## SDK Version Check
+
+            **Android SDK**
+            - Current: \`${{ steps.android.outputs.current }}\`
+            - Latest: \`${{ steps.android.outputs.latest }}\`
+            - Update available: ${{ steps.android.outputs.update_available }}
+
+            **iOS SDK**
+            - Current: \`${{ steps.ios.outputs.current }}\`
+            - Latest: Check CocoaPods manually
+
+            ## Update Steps
+            1. Update \`android/build.gradle\`: Change version to latest
+            2. Update \`react-native-bb-player.podspec\`: Change version to latest
+            3. Update \`CHANGELOG.md\`
+            4. Test both platforms
+            5. Bump package version and publish
+
+            /cc @${context.actor}
+            `;
+
+            // Check if similar issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'sdk-update'
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['sdk-update', 'maintenance']
+              });
+            }

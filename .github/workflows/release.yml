@@ -1,0 +1,91 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# Triggered automatically when a tag is pushed (by create-release workflow or manually).
+# Publishes to npm using OIDC trusted publishing (no secrets required).
+#
+# Requires one-time setup on npmjs.com:
+# 1. Go to package settings → Trusted Publisher → GitHub Actions
+# 2. Configure: org=bluebillywig, repo=react-native-bb-player, workflow=release.yml
+
+jobs:
+  publish:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "📦 Publishing version: ${VERSION}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify npm version
+        run: |
+          npm --version
+          echo "OIDC trusted publishing requires npm >=11.5.1"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package version from tag
+        run: |
+          npm version "${{ env.VERSION }}" --no-git-tag-version --allow-same-version
+          echo "✅ Set package version to ${{ env.VERSION }}"
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Run type check
+        run: npm run typescript
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ env.VERSION }}';
+            const tag = '${{ env.TAG }}';
+
+            const body = `## @bluebillywig/react-native-bb-player v${version}
+
+            ### Installation
+            \`\`\`bash
+            npm install @bluebillywig/react-native-bb-player@${version}
+            \`\`\`
+
+            ### Links
+            - [npm package](https://www.npmjs.com/package/@bluebillywig/react-native-bb-player)
+            - [Documentation](https://bluebillywig.github.io/react-native-bb-player/)
+            `;
+
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: `Release ${tag}`,
+              body: body,
+              generate_release_notes: true
+            });
+
+            console.log(`✅ Created GitHub release for ${tag}`);

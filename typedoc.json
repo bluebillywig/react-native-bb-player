@@ -1,0 +1,29 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "name": "react-native-bb-player",
+  "readme": "none",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "githubPages": true,
+  "navigationLinks": {
+    "GitHub": "https://github.com/bluebillywig/react-native-bb-player",
+    "npm": "https://www.npmjs.com/package/@bluebillywig/react-native-bb-player"
+  },
+  "sidebarLinks": {
+    "README": "https://github.com/bluebillywig/react-native-bb-player#readme",
+    "Changelog": "https://github.com/bluebillywig/react-native-bb-player/blob/master/CHANGELOG.md"
+  },
+  "categorizeByGroup": true,
+  "categoryOrder": ["Component", "Types", "Events", "*"],
+  "sort": ["source-order"],
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  }
+}

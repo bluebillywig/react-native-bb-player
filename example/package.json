@@ -1,0 +1,37 @@
+{
+  "name": "BBPlayerExample",
+  "version": "1.0.0",
+  "description": "Demo app showing Blue Billywig Native Player integration",
+  "main": "index.js",
+  "scripts": {
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "build:android": "cd android && env JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.0.2.jdk/Contents/Home ./gradlew assembleDebug",
+    "build:android-release": "cd android && env JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.0.2.jdk/Contents/Home ./gradlew assembleRelease",
+    "install:android": "adb install -r android/app/build/outputs/apk/release/app-release.apk"
+  },
+  "dependencies": {
+    "@bluebillywig/react-native-bb-player": "file:..",
+    "react": "19.1.1",
+    "react-native": "0.82.1",
+    "react-native-safe-area-context": "^5.6.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.3",
+    "@babel/preset-env": "^7.28.2",
+    "@babel/runtime": "^7.28.2",
+    "@react-native-community/cli": "^20.1.0",
+    "@react-native-community/cli-platform-android": "^20.1.0",
+    "@react-native-community/cli-platform-ios": "^20.1.0",
+    "@react-native/babel-preset": "0.82.1",
+    "@react-native/metro-config": "0.82.1",
+    "@react-native/typescript-config": "0.82.1",
+    "@types/react": "~19.1.0",
+    "typescript": "~5.3.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true
+}

@@ -1,0 +1,78 @@
+name: Build iOS Example
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'ios/**'
+      - 'src/**'
+      - 'example/**'
+      - 'package.json'
+      - '*.podspec'
+      - '.github/workflows/build-ios.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'ios/**'
+      - 'src/**'
+      - 'example/**'
+      - 'package.json'
+      - '*.podspec'
+      - '.github/workflows/build-ios.yml'
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build iOS Example App
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Install example dependencies
+        working-directory: example
+        run: npm ci
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: example/ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('example/ios/Podfile.lock') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+
+      - name: Install CocoaPods dependencies
+        working-directory: example/ios
+        run: pod install
+
+      - name: Build iOS Release
+        working-directory: example/ios
+        run: |
+          xcodebuild \
+            -workspace BBPlayerExample.xcworkspace \
+            -scheme BBPlayerExample \
+            -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Upload iOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-build
+          path: example/ios/build/Build/Products/Release-iphonesimulator/
+          retention-days: 14

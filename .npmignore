@@ -1,0 +1,33 @@
+# Development and config files
+/.*/
+/.claude
+/.eslintrc.js
+/.github/
+/tsconfig.json
+/tsconfig.build.json
+/plugin/src/
+/plugin/tsconfig.json
+
+# Example app
+/example/
+
+# Tarballs
+/*.tgz
+
+# Tests
+__mocks__/
+__tests__/
+coverage/
+
+# Build artifacts
+/android/build/
+/ios/build/
+
+# Internal documentation
+CLAUDE.md
+claude.md
+
+# Logs and temp files
+*.log
+npm-debug.log*
+*.bak

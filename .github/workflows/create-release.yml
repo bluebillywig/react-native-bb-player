@@ -1,0 +1,62 @@
+name: Create release tag
+
+on:
+  workflow_dispatch:
+
+# Run this workflow FROM a release branch (e.g., release/v8.43) to create a tag.
+# The tag triggers the publish workflow which publishes to npm.
+#
+# Flow:
+# 1. Create release branch: release/v8.43
+# 2. Run this workflow from that branch
+# 3. Creates tag: v8.43.0 (or v8.43.1 for hotfix, etc.)
+# 4. Tag triggers publish workflow → npm publish
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release branch
+        run: |
+          if [[ "${GITHUB_REF##refs/heads/}" =~ ^release/v([0-9]+)\.([0-9]+)$ ]]; then
+            RELEASE_BRANCH_VERSION="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+            RELEASE_BRANCH="release/${RELEASE_BRANCH_VERSION}"
+            echo "RELEASE_BRANCH_VERSION=${RELEASE_BRANCH_VERSION}" >>$GITHUB_ENV
+            echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >>$GITHUB_ENV
+            echo "✅ On release branch: ${RELEASE_BRANCH}"
+          else
+            echo "::error::This workflow must be run from a release branch (e.g., release/v8.43)"
+            echo "Current ref: ${GITHUB_REF}"
+            exit 1
+          fi
+
+      - name: Generate release tag version
+        run: |
+          PATCH=0
+
+          LATEST_TAG=$(git describe --tags --first-parent --abbrev=0 --match='v*.*.*' --always ${GITHUB_REF} 2>/dev/null || echo "")
+          if [[ "${LATEST_TAG}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            if [ "v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}" == "${{ env.RELEASE_BRANCH_VERSION }}" ]; then
+              PATCH=$((${BASH_REMATCH[3]} + 1))
+            fi
+          fi
+
+          RELEASE_TAG="${{ env.RELEASE_BRANCH_VERSION }}.${PATCH}"
+          echo "RELEASE_TAG=${RELEASE_TAG}" >>$GITHUB_ENV
+          echo "📦 Will create tag: ${RELEASE_TAG}"
+
+      - name: Create new release tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ env.RELEASE_TAG }}"
+          git push origin --tags
+          echo "✅ Created and pushed tag: ${{ env.RELEASE_TAG }}"
+          echo ""
+          echo "The publish workflow will now run automatically to publish to npm."

@@ -1,0 +1,86 @@
+name: Create release branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release branch version [auto|{x}.{y}] (e.g., 8.43)'
+        required: true
+        default: auto
+
+# Creates a release branch (e.g., release/v8.43) from master
+# The release branch is used to create release tags (v8.43.0, v8.43.1, etc.)
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Get latest release branch
+        run: |
+          LATEST_RELEASE_BRANCH_WITH_DISTANCE=$(for branch in $(git for-each-ref --format='%(refname)' 'refs/remotes/origin/release/v*'); do
+            mergebase=$(diff -u <(git rev-list --first-parent origin/master) <(git rev-list --first-parent ${branch}) | grep -E '^ ' | head -1 | awk '{print $1}')
+            count=$(git rev-list --count ${mergebase}..origin/master);
+            echo -e "${count} ${branch}"
+          done | sort -n | head -1)
+
+          if [ ! -z "${LATEST_RELEASE_BRANCH_WITH_DISTANCE}" ]; then
+            echo "LATEST_RELEASE_BRANCH=${LATEST_RELEASE_BRANCH_WITH_DISTANCE#* }" >>$GITHUB_ENV
+            echo "LATEST_RELEASE_BRANCH_DISTANCE=${LATEST_RELEASE_BRANCH_WITH_DISTANCE% *}" >>$GITHUB_ENV
+          fi
+
+      - name: Validate release branch version
+        if: github.event.inputs.version != 'auto'
+        run: |
+          if [[ "${{ github.event.inputs.version }}" =~ ^(release/v|v|)?([0-9]+)\.([0-9]+)$ ]]; then
+            RELEASE_BRANCH_VERSION="v${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+            RELEASE_BRANCH="release/${RELEASE_BRANCH_VERSION}"
+            if git rev-parse -q --verify origin/${RELEASE_BRANCH} >/dev/null; then
+              echo "::error::Release branch ${RELEASE_BRANCH} already exists."
+              exit 1
+            fi
+            echo "RELEASE_BRANCH_VERSION=${RELEASE_BRANCH_VERSION}" >>$GITHUB_ENV
+            echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >>$GITHUB_ENV
+          else
+            echo "::error::Invalid release version '${{ github.event.inputs.version }}'. Use [release/v{x}.{y}|v{x}.{y}|{x}.{y}]"
+            exit 1
+          fi
+
+      - name: Generate release branch version
+        if: github.event.inputs.version == 'auto'
+        run: |
+          LATEST_RELEASE_BRANCH="${{ env.LATEST_RELEASE_BRANCH }}"
+
+          if [ -z "${LATEST_RELEASE_BRANCH}" ]; then
+            echo "::error::No release branch yet, cannot be auto incremented. Please specify a version."
+            exit 1
+          fi
+
+          if [[ "${LATEST_RELEASE_BRANCH}" =~ release/v([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            MINOR=$((MINOR + 1))
+            RELEASE_BRANCH_VERSION="v${MAJOR}.${MINOR}"
+            RELEASE_BRANCH="release/${RELEASE_BRANCH_VERSION}"
+            if git rev-parse -q --verify origin/${RELEASE_BRANCH} >/dev/null; then
+              echo "::error::Auto incremented release branch ${RELEASE_BRANCH} already exists."
+              exit 1
+            fi
+            echo "RELEASE_BRANCH_VERSION=${RELEASE_BRANCH_VERSION}" >>$GITHUB_ENV
+            echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >>$GITHUB_ENV
+          else
+            echo "::error::Latest release branch ${LATEST_RELEASE_BRANCH##*origin/} cannot be auto incremented"
+            exit 1
+          fi
+
+      - name: Create new release branch
+        run: |
+          git checkout -b "${{ env.RELEASE_BRANCH }}" master
+          git push -u origin "${{ env.RELEASE_BRANCH }}"
+          echo "✅ Created release branch: ${{ env.RELEASE_BRANCH }}"
