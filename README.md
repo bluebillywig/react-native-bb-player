@@ -1,13 +1,13 @@
 # react-native-bb-player
 
-Native video player for React Native - powered by Blue Billywig's iOS (AVPlayer) and Android (ExoPlayer) SDKs.
+Native video player for React Native - powered by Blue Billywig's iOS and Android SDKs.
 
 ## Overview
 
 `react-native-bb-player` provides a production-ready, native video player component for React Native. It wraps Blue Billywig's native iOS and Android player SDKs, giving you:
 
 - **True native playback** - iOS AVPlayer and Android ExoPlayer (no WebView)
-- **Full-featured player** - Ads, analytics, DRM, Picture-in-Picture support
+- **Full-featured player** - Ads, analytics, Content Protection
 - **Type-safe API** - Full TypeScript support with comprehensive types
 - **Production ready** - Built on Blue Billywig's battle-tested native SDKs
 - **Easy integration** - Simple component-based API with imperative ref methods
@@ -679,9 +679,6 @@ function CustomScreen() {
 
 Yes! This package wraps Blue Billywig's production-grade native SDKs used by major media companies.
 
-### Does this support DRM?
-
-Yes, DRM support is provided by the native SDKs (FairPlay on iOS, Widevine on Android). Configure DRM settings in your Blue Billywig playout.
 
 ### Does this support ads?
 
