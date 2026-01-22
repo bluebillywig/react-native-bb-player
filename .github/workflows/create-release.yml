@@ -9,8 +9,9 @@ on:
 # Flow:
 # 1. Create release branch: release/v8.43
 # 2. Run this workflow from that branch
-# 3. Creates tag: v8.43.0 (or v8.43.1 for hotfix, etc.)
-# 4. Tag triggers publish workflow → npm publish
+# 3. Updates native SDK versions to match release branch (e.g., 8.43.x)
+# 4. Creates tag: v8.43.0 (or v8.43.1 for hotfix, etc.)
+# 5. Tag triggers publish workflow → npm publish
 #
 # IMPORTANT: Uses PAT_GITHUB_TOKEN secret to push tags, because the default
 # GITHUB_TOKEN doesn't trigger other workflows (GitHub security feature).
@@ -29,15 +30,149 @@ jobs:
       - name: Validate release branch
         run: |
           if [[ "${GITHUB_REF##refs/heads/}" =~ ^release/v([0-9]+)\.([0-9]+)$ ]]; then
-            RELEASE_BRANCH_VERSION="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            RELEASE_BRANCH_VERSION="v${MAJOR}.${MINOR}"
             RELEASE_BRANCH="release/${RELEASE_BRANCH_VERSION}"
+            SDK_VERSION="${MAJOR}.${MINOR}"
             echo "RELEASE_BRANCH_VERSION=${RELEASE_BRANCH_VERSION}" >>$GITHUB_ENV
             echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >>$GITHUB_ENV
+            echo "SDK_VERSION=${SDK_VERSION}" >>$GITHUB_ENV
             echo "✅ On release branch: ${RELEASE_BRANCH}"
+            echo "📦 SDK version target: ${SDK_VERSION}.x"
           else
             echo "::error::This workflow must be run from a release branch (e.g., release/v8.43)"
             echo "Current ref: ${GITHUB_REF}"
             exit 1
+          fi
+
+      - name: Verify native SDK availability
+        run: |
+          SDK_VERSION="${{ env.SDK_VERSION }}"
+          echo "🔍 Verifying native SDK ${SDK_VERSION}.x is available..."
+          echo ""
+
+          # ========================================
+          # Check Android SDK on Maven
+          # ========================================
+          echo "📦 Checking Android SDK on Maven..."
+          # Maven coordinates: com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk
+          # Published to Maven Central (repo1.maven.org)
+          MAVEN_BASE="https://repo1.maven.org/maven2/com/bluebillywig/bbnativeplayersdk/bbnativeplayersdk"
+
+          # First try maven-metadata.xml for version listing
+          MAVEN_URL="${MAVEN_BASE}/maven-metadata.xml"
+          echo "   Checking: $MAVEN_URL"
+
+          MAVEN_RESPONSE=$(curl -s -f "$MAVEN_URL" 2>&1)
+          MAVEN_STATUS=$?
+
+          if [ $MAVEN_STATUS -eq 0 ] && [ -n "$MAVEN_RESPONSE" ]; then
+            # Maven metadata available - check for matching versions
+            echo "   Found maven-metadata.xml"
+            if echo "$MAVEN_RESPONSE" | grep -q "<version>${SDK_VERSION}\.[0-9]"; then
+              ANDROID_VERSIONS=$(echo "$MAVEN_RESPONSE" | grep -o "<version>${SDK_VERSION}\.[0-9]*</version>" | sed 's/<[^>]*>//g' | tr '\n' ', ' | sed 's/, $//')
+              echo "✅ Android SDK ${SDK_VERSION}.x found: ${ANDROID_VERSIONS}"
+              echo "ANDROID_SDK_VERSIONS=${ANDROID_VERSIONS}" >> $GITHUB_ENV
+            else
+              echo "::error::Android SDK ${SDK_VERSION}.x not found on Maven"
+              echo ""
+              echo "Available versions on Maven (last 10):"
+              echo "$MAVEN_RESPONSE" | grep -o "<version>[^<]*</version>" | sed 's/<[^>]*>//g' | tail -10
+              exit 1
+            fi
+          else
+            # Fallback: check if a specific version directory exists (e.g., 8.42.0)
+            echo "   maven-metadata.xml not found, checking version directory..."
+            VERSION_URL="${MAVEN_BASE}/${SDK_VERSION}.0/"
+            echo "   Checking: $VERSION_URL"
+
+            if curl -s -f -I "$VERSION_URL" >/dev/null 2>&1; then
+              echo "✅ Android SDK ${SDK_VERSION}.0 found on Maven"
+              echo "ANDROID_SDK_VERSIONS=${SDK_VERSION}.0" >> $GITHUB_ENV
+            else
+              echo "::error::Android SDK ${SDK_VERSION}.x not found on Maven"
+              echo "   Tried: $VERSION_URL"
+              exit 1
+            fi
+          fi
+
+          echo ""
+
+          # ========================================
+          # Check iOS SDK on CocoaPods
+          # ========================================
+          echo "📦 Checking iOS SDK on CocoaPods..."
+          PODS_URL="https://cdn.cocoapods.org/all_pods_versions_b_5_c.txt"
+          echo "   URL: $PODS_URL"
+
+          PODS_RESPONSE=$(curl -s -f "$PODS_URL" 2>&1) || {
+            echo "::error::Failed to fetch CocoaPods version list"
+            exit 1
+          }
+
+          # Find BlueBillywigNativePlayerKit-iOS versions
+          IOS_VERSIONS_LINE=$(echo "$PODS_RESPONSE" | grep "^BlueBillywigNativePlayerKit-iOS/" || echo "")
+          if [ -z "$IOS_VERSIONS_LINE" ]; then
+            echo "::error::BlueBillywigNativePlayerKit-iOS not found on CocoaPods"
+            exit 1
+          fi
+
+          # Check if SDK_VERSION.x exists (e.g., 8.42.0, 8.42.1, etc.)
+          if echo "$IOS_VERSIONS_LINE" | grep -qE "/${SDK_VERSION}\.[0-9]+(/|$)"; then
+            IOS_MATCHING=$(echo "$IOS_VERSIONS_LINE" | tr '/' '\n' | grep -E "^${SDK_VERSION}\.[0-9]+$" | tr '\n' ', ' | sed 's/, $//')
+            echo "✅ iOS SDK ${SDK_VERSION}.x found: ${IOS_MATCHING}"
+            echo "IOS_SDK_VERSIONS=${IOS_MATCHING}" >> $GITHUB_ENV
+          else
+            echo "::error::iOS SDK ${SDK_VERSION}.x not found on CocoaPods"
+            echo ""
+            echo "Available iOS SDK versions (last 10):"
+            echo "$IOS_VERSIONS_LINE" | tr '/' '\n' | tail -10
+            exit 1
+          fi
+
+          echo ""
+          echo "========================================"
+          echo "✅ NATIVE SDK VALIDATION PASSED"
+          echo "   Android: ${ANDROID_VERSIONS}"
+          echo "   iOS: ${IOS_MATCHING}"
+          echo "========================================"
+
+      - name: Update native SDK versions
+        run: |
+          SDK_VERSION="${{ env.SDK_VERSION }}"
+          echo "Updating native SDK versions to ${SDK_VERSION}.x"
+
+          # Update Android build.gradle
+          # Changes: bbnativeplayersdk:X.Y.+ to bbnativeplayersdk:SDK_VERSION.+
+          sed -i "s/bbnativeplayersdk:[0-9]\+\.[0-9]\+\.\+/bbnativeplayersdk:${SDK_VERSION}.+/g" android/build.gradle
+          echo "✅ Updated Android SDK to ${SDK_VERSION}.+"
+
+          # Update iOS podspec
+          # Changes: ~> X.Y.0 to ~> SDK_VERSION.0
+          sed -i "s/BlueBillywigNativePlayerKit-iOS', '~> [0-9]\+\.[0-9]\+\.[0-9]\+'/BlueBillywigNativePlayerKit-iOS', '~> ${SDK_VERSION}.0'/g" react-native-bb-player.podspec
+          sed -i "s/BlueBillywigNativePlayerKit-iOS\/GoogleCastSDK', '~> [0-9]\+\.[0-9]\+\.[0-9]\+'/BlueBillywigNativePlayerKit-iOS\/GoogleCastSDK', '~> ${SDK_VERSION}.0'/g" react-native-bb-player.podspec
+          echo "✅ Updated iOS SDK to ~> ${SDK_VERSION}.0"
+
+          # Update CLAUDE.md documentation
+          sed -i "s/BB Native Player SDK\*\*: \`[0-9]\+\.[0-9]\+\.\+\`/BB Native Player SDK**: \`${SDK_VERSION}.+\`/g" CLAUDE.md
+          sed -i "s/BB Native Player Kit\*\*: \`~> [0-9]\+\.[0-9]\+\.[0-9]\+\`/BB Native Player Kit**: \`~> ${SDK_VERSION}.0\`/g" CLAUDE.md
+
+          # Show changes
+          echo ""
+          echo "📋 Changes made:"
+          git diff --stat
+
+          # Commit if there are changes
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add android/build.gradle react-native-bb-player.podspec CLAUDE.md
+            git commit -m "chore: update native SDK versions to ${SDK_VERSION}.x"
+            git push origin HEAD
+            echo "✅ Committed SDK version updates"
+          else
+            echo "ℹ️ SDK versions already up to date"
           fi
 
       - name: Generate release tag version
