@@ -20,7 +20,8 @@ jobs:
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
 
           # Check Maven for latest version
-          LATEST=$(curl -s "https://maven.bluebillywig.com/releases/com/bluebillywig/bbnativeplayersdk/maven-metadata.xml" \
+          # Maven coordinates: com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk
+          LATEST=$(curl -s "https://maven.bluebillywig.com/releases/com/bluebillywig/bbnativeplayersdk/bbnativeplayersdk/maven-metadata.xml" \
             | grep -oP '<latest>\K[0-9]+\.[0-9]+\.[0-9]+' || echo "")
 
           if [ -n "$LATEST" ]; then
