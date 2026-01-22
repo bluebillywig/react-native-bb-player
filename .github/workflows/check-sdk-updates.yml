@@ -19,9 +19,9 @@ jobs:
           CURRENT=$(grep -oP "bbnativeplayersdk:\K[0-9]+\.[0-9]+" android/build.gradle | head -1)
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
 
-          # Check Maven for latest version
+          # Check Maven Central for latest version
           # Maven coordinates: com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk
-          LATEST=$(curl -s "https://maven.bluebillywig.com/releases/com/bluebillywig/bbnativeplayersdk/bbnativeplayersdk/maven-metadata.xml" \
+          LATEST=$(curl -s "https://repo1.maven.org/maven2/com/bluebillywig/bbnativeplayersdk/bbnativeplayersdk/maven-metadata.xml" \
             | grep -oP '<latest>\K[0-9]+\.[0-9]+\.[0-9]+' || echo "")
 
           if [ -n "$LATEST" ]; then
