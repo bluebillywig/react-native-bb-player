@@ -103,7 +103,9 @@ jobs:
           # Check iOS SDK on CocoaPods
           # ========================================
           echo "📦 Checking iOS SDK on CocoaPods..."
-          PODS_URL="https://cdn.cocoapods.org/all_pods_versions_b_5_c.txt"
+          # CocoaPods CDN uses sharded files based on MD5 of pod name
+          # MD5("BlueBillywigNativePlayerKit-iOS") starts with "1ef..."
+          PODS_URL="https://cdn.cocoapods.org/all_pods_versions_1_e_f.txt"
           echo "   URL: $PODS_URL"
 
           PODS_RESPONSE=$(curl -s -f "$PODS_URL" 2>&1) || {
