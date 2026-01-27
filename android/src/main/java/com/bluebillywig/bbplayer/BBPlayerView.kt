@@ -4,6 +4,8 @@ import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.MotionEvent
+import android.view.View
 import android.widget.FrameLayout
 import androidx.collection.ArrayMap
 import androidx.mediarouter.app.MediaRouteButton
@@ -31,8 +33,40 @@ private inline fun debugLog(tag: String, message: () -> String) {
 /**
  * React Native View for Blue Billywig Native Player
  *
- * Uses FrameLayout as base for proper native Android layout handling.
- * Events are sent via React Native's RCTEventEmitter.
+ * This view wraps the native BBNativePlayerView and handles the integration with
+ * React Native's view system. The key challenge is that React Native uses Yoga for
+ * layout, which can interfere with native Android views that have their own layout
+ * and touch handling requirements (like ExoPlayer's StyledPlayerView with controlbar).
+ *
+ * ## Native Layout Integration
+ *
+ * To ensure the native player controls work correctly, this view:
+ *
+ * 1. **Overrides requestLayout()** - Ensures layout requests propagate correctly through
+ *    React Native's view hierarchy by posting to the choreographer.
+ *
+ * 2. **Overrides onMeasure()** - Uses native Android measurement (MeasureSpec.EXACTLY)
+ *    instead of letting Yoga determine the size, ensuring the player and its controls
+ *    receive proper dimensions.
+ *
+ * 3. **Overrides onLayout()** - Explicitly layouts child views to fill the container,
+ *    which is necessary because React Native's Yoga layout doesn't automatically
+ *    propagate layout to native child views.
+ *
+ * 4. **Overrides onInterceptTouchEvent()** - Returns false to ensure touch events
+ *    always reach the child BBNativePlayerView, allowing the player's controlbar
+ *    to respond to taps.
+ *
+ * ## Why This Is Necessary
+ *
+ * React Native's Yoga layout system is designed for flexbox-based UI, not for native
+ * views with complex internal view hierarchies. The BBNativePlayerView contains an
+ * ExoPlayer StyledPlayerView which has its own gesture detectors and controlbar that
+ * need to receive touch events directly. Without these overrides, React Native's
+ * touch handling system intercepts events before they reach the native player controls.
+ *
+ * This approach is similar to how Expo's ExpoView handles native views with
+ * `shouldUseAndroidLayout = true`.
  */
 class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(reactContext),
     BBNativePlayerViewDelegate {
@@ -56,17 +90,107 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         setBackgroundColor(android.graphics.Color.BLACK)
     }
 
+    // ==================================================================================
+    // NATIVE LAYOUT INTEGRATION
+    // These overrides ensure the native player view and its controls work correctly
+    // within React Native's Yoga-based layout system.
+    // ==================================================================================
+
     /**
-     * Override onLayout to ensure child views receive proper bounds.
-     * This is critical for React Native Fabric where layout isn't automatically propagated.
+     * Override requestLayout to ensure layout requests are properly handled.
+     *
+     * React Native's layout system uses Yoga which processes layout asynchronously.
+     * Native Android views expect requestLayout() to trigger a synchronous layout pass.
+     * This override posts a layout request to ensure proper propagation through the
+     * view hierarchy while being frame-aligned via Choreographer for performance.
+     *
+     * Without this, the native player view may not update its layout when needed,
+     * causing issues with control positioning and visibility.
+     */
+    override fun requestLayout() {
+        super.requestLayout()
+
+        // Post to ensure layout happens on the next frame, avoiding layout-during-layout issues
+        // This is a common pattern for native views embedded in React Native
+        post {
+            measure(
+                MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+            )
+            layout(left, top, right, bottom)
+        }
+    }
+
+    /**
+     * Override onMeasure to use native Android measurement.
+     *
+     * By default, React Native's Yoga layout may pass UNSPECIFIED or AT_MOST specs,
+     * which can confuse native views expecting EXACTLY specs. This ensures the player
+     * view receives precise dimensions matching the container size set by React Native.
+     *
+     * Performance note: This is called during the measure pass and is optimized to
+     * avoid unnecessary work by only measuring children when we have valid dimensions.
+     */
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        // Get the exact dimensions from React Native's layout
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        val height = MeasureSpec.getSize(heightMeasureSpec)
+
+        // Set our measured dimensions
+        setMeasuredDimension(width, height)
+
+        // Measure all children with EXACTLY specs to ensure they fill the container
+        // This is critical for the player view to receive proper dimensions
+        if (width > 0 && height > 0) {
+            val childWidthSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY)
+            val childHeightSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+
+            for (i in 0 until childCount) {
+                getChildAt(i)?.measure(childWidthSpec, childHeightSpec)
+            }
+        }
+    }
+
+    /**
+     * Override onLayout to explicitly position child views.
+     *
+     * React Native's Yoga layout calculates positions but doesn't automatically apply
+     * them to native child views. This explicitly layouts all children to fill the
+     * container, which is necessary for the BBNativePlayerView to render correctly.
      */
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        // Explicitly layout all children to fill the container
+
+        val width = right - left
+        val height = bottom - top
+
+        // Layout all children to fill the entire container
         for (i in 0 until childCount) {
-            getChildAt(i)?.layout(0, 0, right - left, bottom - top)
+            getChildAt(i)?.layout(0, 0, width, height)
         }
     }
+
+    /**
+     * Never intercept touch events - let them pass through to child views.
+     *
+     * This is CRITICAL for the player controlbar to work. React Native's gesture
+     * handling system can intercept touch events before they reach native views.
+     * By always returning false, we ensure:
+     *
+     * 1. Single taps reach the PlayerView to toggle the controlbar
+     * 2. Double taps reach the PlayerView for seek functionality
+     * 3. Swipes and other gestures work for any interactive elements
+     *
+     * The BBNativePlayerView handles its own touch events internally through
+     * ExoPlayer's StyledPlayerView and custom gesture detectors.
+     */
+    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
+        return false
+    }
+
+    // ==================================================================================
+    // END NATIVE LAYOUT INTEGRATION
+    // ==================================================================================
 
     // Timer for periodic time updates (opt-in for performance)
     private val timeUpdateHandler = Handler(Looper.getMainLooper())
