@@ -4,9 +4,12 @@ import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
+import com.facebook.react.modules.core.ReactChoreographer
 import androidx.collection.ArrayMap
 import androidx.mediarouter.app.MediaRouteButton
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayer
@@ -42,18 +45,11 @@ private inline fun debugLog(tag: String, message: () -> String) {
  *
  * To ensure the native player controls work correctly, this view:
  *
- * 1. **Overrides requestLayout()** - Ensures layout requests propagate correctly through
- *    React Native's view hierarchy by posting to the choreographer.
- *
- * 2. **Overrides onMeasure()** - Uses native Android measurement (MeasureSpec.EXACTLY)
- *    instead of letting Yoga determine the size, ensuring the player and its controls
- *    receive proper dimensions.
- *
- * 3. **Overrides onLayout()** - Explicitly layouts child views to fill the container,
+ * 1. **Overrides onLayout()** - Explicitly layouts child views to fill the container,
  *    which is necessary because React Native's Yoga layout doesn't automatically
  *    propagate layout to native child views.
  *
- * 4. **Overrides onInterceptTouchEvent()** - Returns false to ensure touch events
+ * 2. **Overrides onInterceptTouchEvent()** - Returns false to ensure touch events
  *    always reach the child BBNativePlayerView, allowing the player's controlbar
  *    to respond to taps.
  *
@@ -64,9 +60,6 @@ private inline fun debugLog(tag: String, message: () -> String) {
  * ExoPlayer StyledPlayerView which has its own gesture detectors and controlbar that
  * need to receive touch events directly. Without these overrides, React Native's
  * touch handling system intercepts events before they reach the native player controls.
- *
- * This approach is similar to how Expo's ExpoView handles native views with
- * `shouldUseAndroidLayout = true`.
  */
 class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(reactContext),
     BBNativePlayerViewDelegate {
@@ -85,88 +78,79 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     private var wasLandscapeFullscreen = false
     private var savedOrientation: Int? = null
 
+    // ==================================================================================
+    // NATIVE LAYOUT INTEGRATION
+    // ViewGroupManager.needsCustomLayoutForChildren() = true tells React Native
+    // that this view handles its own child layout, allowing ExoPlayer's controlbar
+    // to work correctly.
+    //
+    // This uses the ReactChoreographer pattern from react-native-screens:
+    // https://github.com/software-mansion/react-native-screens
+    // See also: https://github.com/facebook/react-native/issues/17968
+    // ==================================================================================
+
+    private var isLayoutEnqueued = false
+    // Flag to prevent requestLayout during super constructor
+    private var constructorComplete = false
+
+    private val layoutCallback = Choreographer.FrameCallback {
+        isLayoutEnqueued = false
+        measure(
+            MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+        )
+        layout(left, top, right, bottom)
+    }
+
     init {
         // Default to black background (playout data may override with bgColor)
         setBackgroundColor(android.graphics.Color.BLACK)
+        // Remove any padding
+        setPadding(0, 0, 0, 0)
+        // Allow children to render slightly outside bounds (helps with margin artifacts)
+        clipToPadding = false
+        clipChildren = false
+        // Mark constructor complete - enables requestLayout Choreographer callback
+        constructorComplete = true
     }
 
-    // ==================================================================================
-    // NATIVE LAYOUT INTEGRATION
-    // These overrides ensure the native player view and its controls work correctly
-    // within React Native's Yoga-based layout system.
-    // ==================================================================================
-
     /**
-     * Override requestLayout to ensure layout requests are properly handled.
+     * Override requestLayout to ensure layout propagates to children using ReactChoreographer.
      *
-     * React Native's layout system uses Yoga which processes layout asynchronously.
-     * Native Android views expect requestLayout() to trigger a synchronous layout pass.
-     * This override posts a layout request to ensure proper propagation through the
-     * view hierarchy while being frame-aligned via Choreographer for performance.
+     * This is the proper React Native pattern for native views that need layout updates.
+     * Using NATIVE_ANIMATED_MODULE queue catches the current looper loop instead of
+     * enqueueing the update in the next loop, preventing one-frame delays.
      *
-     * Without this, the native player view may not update its layout when needed,
-     * causing issues with control positioning and visibility.
+     * Combined with ViewGroupManager.needsCustomLayoutForChildren() = true, this ensures
+     * the native player view and controlbar layout correctly without margin artifacts.
      */
     override fun requestLayout() {
         super.requestLayout()
-
-        // Post to ensure layout happens on the next frame, avoiding layout-during-layout issues
-        // This is a common pattern for native views embedded in React Native
-        post {
-            measure(
-                MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
-            )
-            layout(left, top, right, bottom)
+        // Guard against calls during super constructor (before properties are initialized)
+        if (!constructorComplete) return
+        if (!isLayoutEnqueued) {
+            isLayoutEnqueued = true
+            ReactChoreographer.getInstance()
+                .postFrameCallback(
+                    ReactChoreographer.CallbackType.NATIVE_ANIMATED_MODULE,
+                    layoutCallback
+                )
         }
     }
 
     /**
-     * Override onMeasure to use native Android measurement.
-     *
-     * By default, React Native's Yoga layout may pass UNSPECIFIED or AT_MOST specs,
-     * which can confuse native views expecting EXACTLY specs. This ensures the player
-     * view receives precise dimensions matching the container size set by React Native.
-     *
-     * Performance note: This is called during the measure pass and is optimized to
-     * avoid unnecessary work by only measuring children when we have valid dimensions.
-     */
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // Get the exact dimensions from React Native's layout
-        val width = MeasureSpec.getSize(widthMeasureSpec)
-        val height = MeasureSpec.getSize(heightMeasureSpec)
-
-        // Set our measured dimensions
-        setMeasuredDimension(width, height)
-
-        // Measure all children with EXACTLY specs to ensure they fill the container
-        // This is critical for the player view to receive proper dimensions
-        if (width > 0 && height > 0) {
-            val childWidthSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY)
-            val childHeightSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
-
-            for (i in 0 until childCount) {
-                getChildAt(i)?.measure(childWidthSpec, childHeightSpec)
-            }
-        }
-    }
-
-    /**
-     * Override onLayout to explicitly position child views.
+     * Override onLayout to explicitly position child views to fill the container.
      *
      * React Native's Yoga layout calculates positions but doesn't automatically apply
-     * them to native child views. This explicitly layouts all children to fill the
-     * container, which is necessary for the BBNativePlayerView to render correctly.
+     * them to native child views.
      */
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-
-        val width = right - left
-        val height = bottom - top
-
         // Layout all children to fill the entire container
+        val w = right - left
+        val h = bottom - top
         for (i in 0 until childCount) {
-            getChildAt(i)?.layout(0, 0, width, height)
+            getChildAt(i)?.layout(0, 0, w, h)
         }
     }
 
@@ -286,11 +270,97 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         debugLog("BBPlayerView") { "Creating BBNativePlayerView with factory method" }
         playerView = BBNativePlayer.createPlayerView(currentActivity, jsonUrl, options)
         playerView.delegate = this@BBPlayerView
+        // Remove any padding from playerView
+        playerView.setPadding(0, 0, 0, 0)
 
         addView(playerView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
 
+        // Set ExoPlayer's resize mode to FILL to prevent letterboxing margins
+        // This addresses top/bottom margin issues caused by AspectRatioFrameLayout
+        postDelayed({
+            setExoPlayerResizeMode(playerView, RESIZE_MODE_FILL)
+        }, 1000)
+
         playerSetup = true
         debugLog("BBPlayerView") { "Player setup complete with URL: $jsonUrl" }
+    }
+
+    companion object {
+        // AspectRatioFrameLayout resize mode constants
+        private const val RESIZE_MODE_FILL = 3
+    }
+
+    /**
+     * Recursively find ExoPlayer's PlayerView or AspectRatioFrameLayout and set resize mode.
+     * Uses reflection since media3 classes aren't directly available in RN module classpath.
+     * This fixes top/bottom margin issues caused by AspectRatioFrameLayout letterboxing.
+     */
+    private fun setExoPlayerResizeMode(view: View, resizeMode: Int): Boolean {
+        // Try Media3 AspectRatioFrameLayout via reflection
+        try {
+            val aspectRatioClass = Class.forName("androidx.media3.ui.AspectRatioFrameLayout")
+            if (aspectRatioClass.isInstance(view)) {
+                val method = aspectRatioClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
+                method.invoke(view, resizeMode)
+                return true
+            }
+        } catch (_: ClassNotFoundException) {
+            // Media3 not available
+        } catch (_: Exception) {
+            // Failed to set resize mode
+        }
+
+        // Try Media3 PlayerView via reflection
+        try {
+            val playerViewClass = Class.forName("androidx.media3.ui.PlayerView")
+            if (playerViewClass.isInstance(view)) {
+                val method = playerViewClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
+                method.invoke(view, resizeMode)
+                // Continue searching - there might be an AspectRatioFrameLayout inside
+            }
+        } catch (_: ClassNotFoundException) {
+            // Media3 PlayerView not available
+        } catch (_: Exception) {
+            // Failed to set resize mode
+        }
+
+        // Try legacy ExoPlayer2 AspectRatioFrameLayout via reflection
+        try {
+            val legacyAspectRatioClass = Class.forName("com.google.android.exoplayer2.ui.AspectRatioFrameLayout")
+            if (legacyAspectRatioClass.isInstance(view)) {
+                val method = legacyAspectRatioClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
+                method.invoke(view, resizeMode)
+                return true
+            }
+        } catch (_: ClassNotFoundException) {
+            // ExoPlayer2 not available
+        } catch (_: Exception) {
+            // Failed to set resize mode
+        }
+
+        // Try legacy ExoPlayer2 StyledPlayerView via reflection
+        try {
+            val styledPlayerViewClass = Class.forName("com.google.android.exoplayer2.ui.StyledPlayerView")
+            if (styledPlayerViewClass.isInstance(view)) {
+                val method = styledPlayerViewClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
+                method.invoke(view, resizeMode)
+            }
+        } catch (_: ClassNotFoundException) {
+            // StyledPlayerView not available
+        } catch (_: Exception) {
+            // Failed to set resize mode
+        }
+
+        // Recursively search children
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                if (setExoPlayerResizeMode(view.getChildAt(i), resizeMode)) {
+                    return true
+                }
+            }
+        }
+
+        return false
     }
 
     /**
