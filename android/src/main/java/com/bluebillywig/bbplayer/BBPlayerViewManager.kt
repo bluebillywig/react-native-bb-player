@@ -2,11 +2,29 @@ package com.bluebillywig.bbplayer
 
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.annotations.ReactProp
 
-class BBPlayerViewManager : SimpleViewManager<BBPlayerView>() {
+/**
+ * ViewGroupManager for BBPlayerView.
+ *
+ * Uses ViewGroupManager instead of SimpleViewManager because BBPlayerView contains
+ * child views (BBNativePlayerView with ExoPlayer). The needsCustomLayoutForChildren()
+ * override tells React Native that this view handles its own child layout, which is
+ * necessary for ExoPlayer's controlbar to work correctly.
+ *
+ * See: https://github.com/facebook/react-native/issues/17968
+ * See: https://github.com/reactwg/react-native-new-architecture/discussions/52
+ */
+class BBPlayerViewManager : ViewGroupManager<BBPlayerView>() {
+
+    /**
+     * Tell React Native that this view handles its own child layout.
+     * This prevents Yoga from interfering with native child view layout,
+     * which is necessary for ExoPlayer's controlbar to work.
+     */
+    override fun needsCustomLayoutForChildren(): Boolean = true
 
     override fun getName(): String = REACT_CLASS
 
