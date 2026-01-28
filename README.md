@@ -18,7 +18,7 @@ Native video player for React Native - powered by Blue Billywig's iOS and Androi
 |----------|-------------|---------------|
 | **iOS** | 12.0+ | AVPlayer |
 | **Android** | API 21+ (5.0+) | ExoPlayer |
-| **React Native** | 0.73+ | Old & New Architecture |
+| **React Native** | 0.73+ | Old & New Architecture (TurboModules) |
 | **Expo** | SDK 51+ | With config plugin (optional) |
 
 ## Installation
@@ -671,6 +671,63 @@ function CustomScreen() {
     </View>
   );
 }
+```
+
+## New Architecture (Fabric & TurboModules)
+
+This package fully supports React Native's New Architecture, including:
+
+- **Fabric** - The new rendering system
+- **TurboModules** - The new native module system with synchronous access and lazy loading
+
+### Automatic Detection
+
+The package automatically detects which architecture your app uses:
+- **New Architecture enabled**: Uses `TurboModuleRegistry` for optimal performance
+- **Old Architecture**: Falls back to `NativeModules` (no changes needed)
+
+### Enabling New Architecture
+
+#### React Native 0.76+
+New Architecture is enabled by default in React Native 0.76 and later.
+
+#### React Native 0.73-0.75
+Enable in your app's configuration:
+
+**Android** (`android/gradle.properties`):
+```properties
+newArchEnabled=true
+```
+
+**iOS** (`ios/Podfile`):
+```ruby
+ENV['RCT_NEW_ARCH_ENABLED'] = '1'
+```
+
+Then rebuild your app:
+```bash
+# iOS
+cd ios && pod install && cd ..
+npx react-native run-ios
+
+# Android
+cd android && ./gradlew clean && cd ..
+npx react-native run-android
+```
+
+### No Code Changes Required
+
+Your existing code works with both architectures. The package handles the architecture detection internally:
+
+```tsx
+// This works on both Old and New Architecture
+import { BBPlayerView } from '@bluebillywig/react-native-bb-player';
+
+<BBPlayerView
+  ref={playerRef}
+  jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
+  onDidTriggerPlay={() => console.log('Playing')}
+/>
 ```
 
 ## FAQ
