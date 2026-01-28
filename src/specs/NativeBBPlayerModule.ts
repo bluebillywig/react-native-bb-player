@@ -82,4 +82,5 @@ export interface Spec extends TurboModule {
   getPlayoutData(viewTag: number): Promise<Object | null>;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>("BBPlayerModule");
+// Use get() instead of getEnforcing() to avoid crash when module not registered
+export default TurboModuleRegistry.get<Spec>("BBPlayerModule");
