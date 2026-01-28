@@ -111,7 +111,8 @@ Here's a full example of a Shorts screen with error handling, status display, an
 
 ```tsx
 import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BBShortsView,
   type BBShortsViewMethods,
