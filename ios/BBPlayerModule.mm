@@ -1,5 +1,9 @@
 #import <React/RCTBridgeModule.h>
 
+#ifdef RCT_NEW_ARCH_ENABLED
+#import <BBPlayerModuleSpec/BBPlayerModuleSpec.h>
+#endif
+
 @interface RCT_EXTERN_MODULE(BBPlayerModule, NSObject)
 
 // Playback control
@@ -44,5 +48,13 @@ RCT_EXTERN_METHOD(getMode:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolv
 RCT_EXTERN_METHOD(getClipData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
 RCT_EXTERN_METHOD(getProjectData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
 RCT_EXTERN_METHOD(getPlayoutData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+
+#ifdef RCT_NEW_ARCH_ENABLED
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params
+{
+    return std::make_shared<facebook::react::NativeBBPlayerModuleSpecJSI>(params);
+}
+#endif
 
 @end

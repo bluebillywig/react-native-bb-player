@@ -101,5 +101,13 @@
         }
       ]
     ]
+  },
+  "codegenConfig": {
+    "name": "BBPlayerModuleSpec",
+    "type": "modules",
+    "jsSrcsDir": "./src/specs",
+    "android": {
+      "javaPackageName": "com.bluebillywig.bbplayer"
+    }
   }
 }

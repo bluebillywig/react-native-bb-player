@@ -4,21 +4,22 @@ import android.util.Log
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.UiThreadUtil
+import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.common.UIManagerType
 
 /**
  * Native Module for BBPlayer commands.
- * Works with both Old Architecture and New Architecture (Fabric).
+ * Works with both Old Architecture (Paper) and New Architecture (Fabric/TurboModules).
  *
- * This module stores references to BBPlayerView instances and dispatches
- * commands to them by their React view tag.
+ * This module looks up BBPlayerView instances by their React view tag and dispatches
+ * commands to them.
  */
+@ReactModule(name = BBPlayerModule.NAME)
 class BBPlayerModule(private val reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext) {
+    NativeBBPlayerModuleSpec(reactContext) {
 
     override fun getName(): String = NAME
 
@@ -60,77 +61,77 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun play(viewTag: Int) {
+    override fun play(viewTag: Int) {
         runOnUiThread(viewTag) { it.play() }
     }
 
     @ReactMethod
-    fun pause(viewTag: Int) {
+    override fun pause(viewTag: Int) {
         runOnUiThread(viewTag) { it.pause() }
     }
 
     @ReactMethod
-    fun seek(viewTag: Int, position: Double) {
+    override fun seek(viewTag: Int, position: Double) {
         runOnUiThread(viewTag) { it.seek(position) }
     }
 
     @ReactMethod
-    fun seekRelative(viewTag: Int, offsetSeconds: Double) {
+    override fun seekRelative(viewTag: Int, offsetSeconds: Double) {
         runOnUiThread(viewTag) { it.seekRelative(offsetSeconds) }
     }
 
     @ReactMethod
-    fun setVolume(viewTag: Int, volume: Double) {
+    override fun setVolume(viewTag: Int, volume: Double) {
         runOnUiThread(viewTag) { it.setVolume(volume) }
     }
 
     @ReactMethod
-    fun setMuted(viewTag: Int, muted: Boolean) {
+    override fun setMuted(viewTag: Int, muted: Boolean) {
         runOnUiThread(viewTag) { it.setMuted(muted) }
     }
 
     @ReactMethod
-    fun enterFullscreen(viewTag: Int) {
+    override fun enterFullscreen(viewTag: Int) {
         runOnUiThread(viewTag) { it.enterFullscreen() }
     }
 
     @ReactMethod
-    fun enterFullscreenLandscape(viewTag: Int) {
+    override fun enterFullscreenLandscape(viewTag: Int) {
         runOnUiThread(viewTag) { it.enterFullscreenLandscape() }
     }
 
     @ReactMethod
-    fun exitFullscreen(viewTag: Int) {
+    override fun exitFullscreen(viewTag: Int) {
         runOnUiThread(viewTag) { it.exitFullscreen() }
     }
 
     @ReactMethod
-    fun collapse(viewTag: Int) {
+    override fun collapse(viewTag: Int) {
         runOnUiThread(viewTag) { it.collapse() }
     }
 
     @ReactMethod
-    fun expand(viewTag: Int) {
+    override fun expand(viewTag: Int) {
         runOnUiThread(viewTag) { it.expand() }
     }
 
     @ReactMethod
-    fun autoPlayNextCancel(viewTag: Int) {
+    override fun autoPlayNextCancel(viewTag: Int) {
         runOnUiThread(viewTag) { it.autoPlayNextCancel() }
     }
 
     @ReactMethod
-    fun destroy(viewTag: Int) {
+    override fun destroy(viewTag: Int) {
         runOnUiThread(viewTag) { it.destroy() }
     }
 
     @ReactMethod
-    fun showCastPicker(viewTag: Int) {
+    override fun showCastPicker(viewTag: Int) {
         runOnUiThread(viewTag) { it.showCastPicker() }
     }
 
     @ReactMethod
-    fun loadWithClipId(
+    override fun loadWithClipId(
         viewTag: Int,
         clipId: String,
         initiator: String?,
@@ -149,7 +150,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun loadWithClipListId(
+    override fun loadWithClipListId(
         viewTag: Int,
         clipListId: String,
         initiator: String?,
@@ -167,7 +168,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun loadWithProjectId(
+    override fun loadWithProjectId(
         viewTag: Int,
         projectId: String,
         initiator: String?,
@@ -185,7 +186,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun loadWithClipJson(
+    override fun loadWithClipJson(
         viewTag: Int,
         clipJson: String,
         initiator: String?,
@@ -203,7 +204,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun loadWithClipListJson(
+    override fun loadWithClipListJson(
         viewTag: Int,
         clipListJson: String,
         initiator: String?,
@@ -221,7 +222,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun loadWithProjectJson(
+    override fun loadWithProjectJson(
         viewTag: Int,
         projectJson: String,
         initiator: String?,
@@ -239,7 +240,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun loadWithJsonUrl(
+    override fun loadWithJsonUrl(
         viewTag: Int,
         jsonUrl: String,
         autoPlay: Boolean
@@ -254,7 +255,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
 
     // Getter methods with Promise support
     @ReactMethod
-    fun getDuration(viewTag: Int, promise: Promise) {
+    override fun getDuration(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {
@@ -267,7 +268,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getCurrentTime(viewTag: Int, promise: Promise) {
+    override fun getCurrentTime(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {
@@ -280,7 +281,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getMuted(viewTag: Int, promise: Promise) {
+    override fun getMuted(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {
@@ -293,7 +294,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getVolume(viewTag: Int, promise: Promise) {
+    override fun getVolume(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {
@@ -306,7 +307,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getPhase(viewTag: Int, promise: Promise) {
+    override fun getPhase(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {
@@ -319,7 +320,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getState(viewTag: Int, promise: Promise) {
+    override fun getState(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {
@@ -332,7 +333,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getMode(viewTag: Int, promise: Promise) {
+    override fun getMode(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {
@@ -345,7 +346,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getClipData(viewTag: Int, promise: Promise) {
+    override fun getClipData(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {
@@ -368,7 +369,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getProjectData(viewTag: Int, promise: Promise) {
+    override fun getProjectData(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {
@@ -389,7 +390,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getPlayoutData(viewTag: Int, promise: Promise) {
+    override fun getPlayoutData(viewTag: Int, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag)
             if (view != null) {

@@ -2,6 +2,9 @@ require 'json'
 
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
+# Check if New Architecture is enabled
+new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
+
 Pod::Spec.new do |s|
   s.name           = 'react-native-bb-player'
   s.version        = package['version']
@@ -16,14 +19,31 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'React-Core'
-  s.dependency 'BlueBillywigNativePlayerKit-iOS', '~> 8.40.0'
-  s.dependency 'BlueBillywigNativePlayerKit-iOS/GoogleCastSDK', '~> 8.40.0'
+  s.dependency 'BlueBillywigNativePlayerKit-iOS', '~> 8.42.0'
+  s.dependency 'BlueBillywigNativePlayerKit-iOS/GoogleCastSDK', '~> 8.42.0'
+
+  # TurboModule dependencies for New Architecture
+  if new_arch_enabled
+    s.dependency 'React-Codegen'
+    s.dependency 'RCT-Folly'
+    s.dependency 'RCTRequired'
+    s.dependency 'RCTTypeSafety'
+    s.dependency 'ReactCommon/turbomodule/core'
+  end
 
   # Swift/Objective-C compatibility
-  s.pod_target_xcconfig = {
+  xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'SWIFT_COMPILATION_MODE' => 'wholemodule'
   }
+
+  # Add compiler flag for New Architecture
+  if new_arch_enabled
+    xcconfig['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -DRCT_NEW_ARCH_ENABLED'
+    xcconfig['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+  end
+
+  s.pod_target_xcconfig = xcconfig
 
   s.source_files = "ios/**/*.{h,m,mm,swift,hpp,cpp}"
 end

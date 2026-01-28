@@ -7,6 +7,10 @@ def safeExtGet(prop, fallback) {
   rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
 
+def isNewArchitectureEnabled() {
+  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
+}
+
 group = 'com.bluebillywig.bbplayer'
 version = '2.0.0'
 
@@ -19,6 +23,11 @@ android {
     targetSdk safeExtGet('targetSdkVersion', 36)
     versionCode 1
     versionName "2.0.0"
+    buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
+  }
+
+  buildFeatures {
+    buildConfig true
   }
 
   buildTypes {
@@ -39,6 +48,11 @@ android {
   sourceSets {
     main {
       java.srcDirs = ['src/main/java']
+      if (isNewArchitectureEnabled()) {
+        java.srcDirs += ['src/newarch/java']
+      } else {
+        java.srcDirs += ['src/paper/java']
+      }
     }
   }
 }

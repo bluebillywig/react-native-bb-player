@@ -3,7 +3,22 @@ import { NativeModules, findNodeHandle } from "react-native";
 import type { LoadClipOptions, BBPlayerState } from "./BBPlayer.types";
 import type { State, Phase } from "./types";
 
-const { BBPlayerModule } = NativeModules;
+// Try TurboModule first, fallback to legacy NativeModules
+let BBPlayerModule: typeof import("./specs/NativeBBPlayerModule").default | null =
+  null;
+
+try {
+  // Try to use TurboModule (New Architecture)
+  BBPlayerModule = require("./specs/NativeBBPlayerModule").default;
+} catch {
+  // Fallback to legacy NativeModules (Old Architecture)
+  BBPlayerModule = NativeModules.BBPlayerModule;
+}
+
+// Final fallback if both fail
+if (!BBPlayerModule) {
+  BBPlayerModule = NativeModules.BBPlayerModule;
+}
 
 /**
  * Get the view tag (node handle) for a ref
