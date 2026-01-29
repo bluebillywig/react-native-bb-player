@@ -30,37 +30,8 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
     /// Don't override preferredInterfaceOrientationForPresentation
     /// Let the fullscreen modal (AVPlayerViewController) use its own preferred orientation
 
-    func refreshPlayerViewHierarchy() {
-        guard let playerView = playerView else {
-            print("BBPlayer: refreshPlayerViewHierarchy - no playerView")
-            return
-        }
-
-        print("BBPlayer: Starting view hierarchy refresh")
-
-        // Force all sublayers to redraw by traversing the entire layer hierarchy
-        func refreshLayerTree(_ layer: CALayer) {
-            layer.setNeedsDisplay()
-            layer.displayIfNeeded()
-            for sublayer in layer.sublayers ?? [] {
-                refreshLayerTree(sublayer)
-            }
-        }
-
-        // Refresh the entire layer tree of the player view
-        refreshLayerTree(playerView.layer)
-
-        // Force the player view and all its subviews to re-layout
-        playerView.setNeedsLayout()
-        playerView.layoutIfNeeded()
-
-        for subview in playerView.subviews {
-            subview.setNeedsLayout()
-            subview.layoutIfNeeded()
-        }
-
-        print("BBPlayer: View hierarchy refresh complete")
-    }
+    // NOTE: Removed refreshPlayerViewHierarchy() - it was unused dead code that forced
+    // GPU redraw on every layer in the hierarchy, which would cause severe heat/battery drain
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
@@ -308,23 +279,29 @@ class BBPlayerViewController: UIViewController, BBNativePlayerViewDelegate {
             NSLog("BBPlayer: Refreshing view hierarchy after fullscreen exit")
 
             // Reset any transforms that might be lingering from fullscreen
-            // Only reset view transforms, avoid touching layers to prevent visual glitches
-            func resetTransforms(_ view: UIView) {
-                view.transform = .identity
+            // Use iterative approach instead of recursion to avoid deep stack calls
+            // Only reset views that actually have non-identity transforms to save CPU
+            var viewsToProcess: [UIView] = [playerView]
+            var transformsReset = 0
 
-                // Recursively reset subviews
-                view.subviews.forEach { subview in
-                    resetTransforms(subview)
+            while !viewsToProcess.isEmpty {
+                let view = viewsToProcess.removeLast()
+                // Only reset if transform is not already identity (avoids unnecessary work)
+                if view.transform != .identity {
+                    view.transform = .identity
+                    transformsReset += 1
                 }
+                viewsToProcess.append(contentsOf: view.subviews)
             }
 
-            resetTransforms(playerView)
+            if transformsReset > 0 {
+                NSLog("BBPlayer: Reset \(transformsReset) non-identity transforms")
+            }
 
-            // Force layout update
+            // Single batched layout update instead of multiple calls
             playerView.setNeedsLayout()
-            playerView.layoutIfNeeded()
             self.view.setNeedsLayout()
-            self.view.layoutIfNeeded()
+            self.view.layoutIfNeeded()  // This will also layout playerView as it's a subview
 
             // Log the player state for debugging
             let player = playerView.player
