@@ -42,9 +42,11 @@ class BBPlayerView: UIView, BBPlayerViewControllerDelegate {
   private var isPlaying: Bool = false
   private var currentDuration: Double = 0.0
   private var lastKnownTime: Double = 0.0
-  private var playbackStartTimestamp: TimeInterval = 0
+  private var playbackStartTimestamp: CFTimeInterval = 0  // Use CFTimeInterval for CACurrentMediaTime
   private var lastEmittedTime: Double = 0.0
   private var isInFullscreen: Bool = false
+  private var backgroundObserver: NSObjectProtocol?
+  private var foregroundObserver: NSObjectProtocol?
   // Independent Google Cast button for showing the cast picker
   private var independentCastButton: GCKUICastButton?
 
@@ -144,6 +146,9 @@ class BBPlayerView: UIView, BBPlayerViewControllerDelegate {
       // Ensure this view respects its frame from React Native layout
       self.clipsToBounds = false  // Allow settings overlay to render outside bounds
 
+      // Set up lifecycle observers to pause timer when app goes to background (saves battery)
+      setupAppLifecycleObservers()
+
       // Find the parent view controller from the responder chain
       var parentVC: UIViewController?
       var responder = self.next
@@ -211,8 +216,8 @@ class BBPlayerView: UIView, BBPlayerViewControllerDelegate {
     timeUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
       guard let self = self, self.isPlaying else { return }
 
-      // Calculate current time based on elapsed time since playback started
-      let elapsedSeconds = Date().timeIntervalSince1970 - self.playbackStartTimestamp
+      // Use CACurrentMediaTime() instead of Date() - much more efficient (no system call overhead)
+      let elapsedSeconds = CACurrentMediaTime() - self.playbackStartTimestamp
       let estimatedTime = self.lastKnownTime + elapsedSeconds
       let currentTime = min(estimatedTime, self.currentDuration)
 
@@ -234,11 +239,60 @@ class BBPlayerView: UIView, BBPlayerViewControllerDelegate {
     timeUpdateTimer = nil
   }
 
-  // Clean up timers and views to prevent memory leaks
+  // Clean up timers, observers, and views to prevent memory leaks
   deinit {
     stopTimeUpdates()
+    removeAppLifecycleObservers()
     independentCastButton?.removeFromSuperview()
     independentCastButton = nil
+  }
+
+  // MARK: - App Lifecycle Management (Battery Optimization)
+
+  private func setupAppLifecycleObservers() {
+    // Only set up once
+    guard backgroundObserver == nil else { return }
+
+    // Pause timer when app goes to background to save battery
+    backgroundObserver = NotificationCenter.default.addObserver(
+      forName: UIApplication.didEnterBackgroundNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      guard let self = self else { return }
+      // Save current time before pausing timer so we can resume accurately
+      if self.isPlaying {
+        self.lastKnownTime = self.calculateCurrentTime()
+      }
+      self.stopTimeUpdates()
+      log("Timer paused - app entered background", level: .debug)
+    }
+
+    // Resume timer when app comes back to foreground
+    foregroundObserver = NotificationCenter.default.addObserver(
+      forName: UIApplication.willEnterForegroundNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      guard let self = self else { return }
+      if self.isPlaying && self.enableTimeUpdates {
+        // Reset timestamp to now for accurate time calculation after background
+        self.playbackStartTimestamp = CACurrentMediaTime()
+        self.startTimeUpdates()
+        log("Timer resumed - app entered foreground", level: .debug)
+      }
+    }
+  }
+
+  private func removeAppLifecycleObservers() {
+    if let observer = backgroundObserver {
+      NotificationCenter.default.removeObserver(observer)
+      backgroundObserver = nil
+    }
+    if let observer = foregroundObserver {
+      NotificationCenter.default.removeObserver(observer)
+      foregroundObserver = nil
+    }
   }
 
   func bbPlayerViewController(
@@ -341,7 +395,7 @@ class BBPlayerView: UIView, BBPlayerViewControllerDelegate {
 
     case .playing:
       isPlaying = true
-      playbackStartTimestamp = Date().timeIntervalSince1970
+      playbackStartTimestamp = CACurrentMediaTime()  // More efficient than Date()
       lastEmittedTime = 0.0  // Reset to ensure immediate time update on play
       lastKnownTime = calculateCurrentTime()  // Update to ensure accuracy between events
       startTimeUpdates()
@@ -352,21 +406,14 @@ class BBPlayerView: UIView, BBPlayerViewControllerDelegate {
 
     case .retractFullscreen:
       isInFullscreen = false
-
-      // Force rotation back to portrait when exiting fullscreen
-      if #available(iOS 16.0, *) {
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-          windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
-          log("Requested portrait rotation on retractFullscreen event", level: .info)
-        }
-      }
-
+      // Note: Orientation reset is handled by BBPlayerViewController.bbNativePlayerView(didTriggerRetractFullscreen:)
+      // to avoid duplicate calls which cause unnecessary CPU/GPU work
       onDidTriggerRetractFullscreen?([:])
 
     case .seeked(let seekOffset):
       // Update lastKnownTime based on seek and reset playback timestamp
       lastKnownTime = seekOffset ?? 0.0
-      playbackStartTimestamp = Date().timeIntervalSince1970
+      playbackStartTimestamp = CACurrentMediaTime()  // More efficient than Date()
       lastEmittedTime = 0.0  // Reset to ensure immediate time update after seek
       onDidTriggerSeeked?(["payload": seekOffset as Any])
 
@@ -482,7 +529,8 @@ class BBPlayerView: UIView, BBPlayerViewControllerDelegate {
   /// iOS SDK doesn't expose direct currentTime property, so we estimate it
   private func calculateCurrentTime() -> Double {
     if isPlaying && playbackStartTimestamp > 0 {
-      let elapsedSeconds = Date().timeIntervalSince1970 - playbackStartTimestamp
+      // Use CACurrentMediaTime() - more efficient than Date() (no system call overhead)
+      let elapsedSeconds = CACurrentMediaTime() - playbackStartTimestamp
       let estimatedTime = lastKnownTime + elapsedSeconds
       return min(estimatedTime, currentDuration)
     } else {
@@ -596,15 +644,9 @@ class BBPlayerView: UIView, BBPlayerViewControllerDelegate {
   }
 
   func exitFullscreen() {
-    // Force rotation back to portrait before exiting fullscreen
-    if #available(iOS 16.0, *) {
-      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-        windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
-        log("Requested portrait rotation before exitFullscreen", level: .info)
-      }
-    }
-
     // iOS SDK Note: The iOS SDK uses exitFullScreen() method
+    // Orientation reset is handled by BBPlayerViewController.bbNativePlayerView(didTriggerRetractFullscreen:)
+    // to avoid duplicate orientation update calls which cause unnecessary CPU/GPU work
     playerController.playerView?.player.exitFullScreen()
   }
 
