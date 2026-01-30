@@ -2,6 +2,42 @@ import Foundation
 import React
 
 /**
+ * Global registry for BBPlayerView instances.
+ * This is needed because the bridge.uiManager.view(forReactTag:) doesn't work
+ * with the New Architecture (Fabric). Views register themselves when created.
+ */
+class BBPlayerViewRegistry: NSObject {
+    static let shared = BBPlayerViewRegistry()
+
+    private var views: [Int: BBPlayerView] = [:]
+    private let lock = NSLock()
+
+    private override init() {
+        super.init()
+    }
+
+    func register(_ view: BBPlayerView, tag: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        views[tag] = view
+        NSLog("BBPlayerViewRegistry: Registered view with tag %d (total: %d)", tag, views.count)
+    }
+
+    func unregister(tag: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        views.removeValue(forKey: tag)
+        NSLog("BBPlayerViewRegistry: Unregistered view with tag %d (total: %d)", tag, views.count)
+    }
+
+    func getView(tag: Int) -> BBPlayerView? {
+        lock.lock()
+        defer { lock.unlock() }
+        return views[tag]
+    }
+}
+
+/**
  * Native Module for BBPlayer commands.
  * This module looks up BBPlayerView instances by their React tag and dispatches commands to them.
  */
@@ -21,11 +57,20 @@ class BBPlayerModule: NSObject {
     // MARK: - Helper to get view by tag
 
     private func getView(_ reactTag: NSNumber) -> BBPlayerView? {
-        guard let bridge = self.bridge else {
-            NSLog("BBPlayerModule: Bridge is nil")
-            return nil
+        // First try the view registry (works with both old and new architecture)
+        if let view = BBPlayerViewRegistry.shared.getView(tag: reactTag.intValue) {
+            return view
         }
-        return bridge.uiManager.view(forReactTag: reactTag) as? BBPlayerView
+
+        // Fallback to bridge.uiManager for old architecture
+        if let bridge = self.bridge {
+            if let view = bridge.uiManager.view(forReactTag: reactTag) as? BBPlayerView {
+                return view
+            }
+        }
+
+        NSLog("BBPlayerModule: Could not find view with tag %@", reactTag)
+        return nil
     }
 
     // MARK: - Commands
@@ -151,10 +196,15 @@ class BBPlayerModule: NSObject {
     }
 
     @objc func loadWithJsonUrl(_ viewTag: NSNumber, jsonUrl: String?, autoPlay: Bool) {
+        NSLog("BBPlayerModule.loadWithJsonUrl called - viewTag: %@, jsonUrl: %@, autoPlay: %d", viewTag, jsonUrl ?? "nil", autoPlay)
         DispatchQueue.main.async {
-            // Load new JSON URL - update the jsonUrl property and re-setup
-            if let view = self.getView(viewTag), let url = jsonUrl {
-                view.jsonUrl = url
+            let view = self.getView(viewTag)
+            NSLog("BBPlayerModule.loadWithJsonUrl - view found: %@", view != nil ? "YES" : "NO")
+            if let view = view, let url = jsonUrl {
+                NSLog("BBPlayerModule.loadWithJsonUrl - calling view.loadWithJsonUrl with url: %@", url)
+                view.loadWithJsonUrl(url, autoPlay: autoPlay)
+            } else {
+                NSLog("BBPlayerModule.loadWithJsonUrl - FAILED: view=%@, url=%@", view != nil ? "found" : "nil", jsonUrl ?? "nil")
             }
         }
     }

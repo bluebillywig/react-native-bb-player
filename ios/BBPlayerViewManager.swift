@@ -146,6 +146,14 @@ class BBPlayerViewManager: RCTViewManager {
         }
     }
 
+    @objc func loadWithJsonUrl(_ reactTag: NSNumber, jsonUrl: String?, autoPlay: Bool) {
+        DispatchQueue.main.async {
+            if let url = jsonUrl {
+                self.getView(reactTag)?.loadWithJsonUrl(url, autoPlay: autoPlay)
+            }
+        }
+    }
+
     // Note: loadWithShortsId is NOT supported on BBPlayerView.
     // For Shorts playback, use the BBShortsView component instead.
 }

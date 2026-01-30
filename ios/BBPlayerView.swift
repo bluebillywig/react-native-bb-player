@@ -148,6 +148,11 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       self.layer.drawsAsynchronously = true
       self.isOpaque = true
 
+      // Register with view registry for command dispatch (supports New Architecture)
+      if let tag = self.reactTag {
+        BBPlayerViewRegistry.shared.register(self, tag: tag.intValue)
+      }
+
       setupAppLifecycleObservers()
 
       // Find the parent view controller from the responder chain
@@ -169,6 +174,11 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       setupPlayerIfNeeded()
     } else {
       log("BBPlayerView.didMoveToWindow - view removed from window, isInFullscreen: \(isInFullscreen)")
+
+      // Unregister from view registry when removed from window (unless in fullscreen)
+      if !isInFullscreen, let tag = self.reactTag {
+        BBPlayerViewRegistry.shared.unregister(tag: tag.intValue)
+      }
 
       if !isInFullscreen {
         stopTimeUpdates()
@@ -203,6 +213,10 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
   }
 
   deinit {
+    // Unregister from view registry
+    if let tag = self.reactTag {
+      BBPlayerViewRegistry.shared.unregister(tag: tag.intValue)
+    }
     stopTimeUpdates()
     removeAppLifecycleObservers()
     independentCastButton?.removeFromSuperview()
@@ -712,6 +726,100 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
 
   func loadWithProjectJson(_ projectJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
     playerView?.player.loadWithProjectJson(projectJson: projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  }
+
+  /**
+   * Load content from a JSON URL into the existing player.
+   * Extracts IDs from the URL and uses the native SDK's loadWithXxxId methods.
+   * This is more reliable than parsing JSON because the SDK handles all the loading internally.
+   *
+   * Note: Shorts URLs (/sh/{id}.json) are NOT supported here - use BBShortsView instead.
+   */
+  func loadWithJsonUrl(_ url: String, autoPlay: Bool) {
+    NSLog("BBPlayerView.loadWithJsonUrl called - url: %@, autoPlay: %d", url, autoPlay)
+    guard playerView != nil else {
+      NSLog("BBPlayerView.loadWithJsonUrl ERROR - playerView not initialized")
+      return
+    }
+
+    NSLog("BBPlayerView.loadWithJsonUrl - playerView exists, parsing URL")
+
+    // Extract ID from URL patterns like:
+    // /c/{id}.json or /mediaclip/{id}.json -> clip ID
+    // /l/{id}.json or /mediacliplist/{id}.json -> clip list ID
+    // /pj/{id}.json or /project/{id}.json -> project ID
+
+    let clipIdPattern = "/c/([0-9]+)\\.json|/mediaclip/([0-9]+)"
+    let clipListIdPattern = "/l/([0-9]+)\\.json|/mediacliplist/([0-9]+)"
+    let projectIdPattern = "/pj/([0-9]+)\\.json|/project/([0-9]+)"
+    let shortsIdPattern = "/sh/([0-9]+)\\.json"
+
+    if let shortsMatch = url.range(of: shortsIdPattern, options: .regularExpression) {
+      // Shorts require a separate BBShortsView component
+      log("ERROR - Shorts URLs are not supported in BBPlayerView. Use BBShortsView instead.", level: .error)
+      onDidFailWithError?(["payload": "Shorts URLs are not supported in BBPlayerView. Use BBShortsView instead."])
+      return
+    }
+
+    if let match = url.range(of: clipListIdPattern, options: .regularExpression) {
+      // Extract the cliplist ID
+      if let clipListId = extractIdFromUrl(url, pattern: clipListIdPattern) {
+        NSLog("BBPlayerView.loadWithJsonUrl - Loading ClipList by ID: %@", clipListId)
+        playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: "external", autoPlay: autoPlay, seekTo: nil)
+      } else {
+        NSLog("BBPlayerView.loadWithJsonUrl ERROR - Failed to extract cliplist ID from URL: %@", url)
+      }
+      return
+    }
+
+    if let match = url.range(of: projectIdPattern, options: .regularExpression) {
+      // Extract the project ID
+      if let projectId = extractIdFromUrl(url, pattern: projectIdPattern) {
+        NSLog("BBPlayerView.loadWithJsonUrl - Loading Project by ID: %@", projectId)
+        playerView?.player.loadWithProjectId(projectId: projectId, initiator: "external", autoPlay: autoPlay, seekTo: nil)
+      } else {
+        NSLog("BBPlayerView.loadWithJsonUrl ERROR - Failed to extract project ID from URL: %@", url)
+      }
+      return
+    }
+
+    if let match = url.range(of: clipIdPattern, options: .regularExpression) {
+      // Extract the clip ID
+      if let clipId = extractIdFromUrl(url, pattern: clipIdPattern) {
+        NSLog("BBPlayerView.loadWithJsonUrl - Loading Clip by ID: %@", clipId)
+        playerView?.player.loadWithClipId(clipId: clipId, initiator: "external", autoPlay: autoPlay, seekTo: nil)
+      } else {
+        NSLog("BBPlayerView.loadWithJsonUrl ERROR - Failed to extract clip ID from URL: %@", url)
+      }
+      return
+    }
+
+    NSLog("BBPlayerView.loadWithJsonUrl ERROR - Unknown URL format, cannot extract ID: %@", url)
+    onDidFailWithError?(["payload": "Cannot load content: unsupported URL format"])
+  }
+
+  /**
+   * Helper to extract numeric ID from URL using regex pattern with capture groups
+   */
+  private func extractIdFromUrl(_ url: String, pattern: String) -> String? {
+    do {
+      let regex = try NSRegularExpression(pattern: pattern, options: [])
+      let range = NSRange(url.startIndex..., in: url)
+      if let match = regex.firstMatch(in: url, options: [], range: range) {
+        // Try each capture group (pattern has multiple alternatives with |)
+        for i in 1..<match.numberOfRanges {
+          if let groupRange = Range(match.range(at: i), in: url) {
+            let extracted = String(url[groupRange])
+            if !extracted.isEmpty {
+              return extracted
+            }
+          }
+        }
+      }
+    } catch {
+      log("ERROR - Regex error: \(error)", level: .error)
+    }
+    return nil
   }
 
   func showCastPicker() {
