@@ -212,7 +212,7 @@ class BBPlayerModule: NSObject {
 
     @objc func getClipData(_ viewTag: NSNumber, resolver: @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
         DispatchQueue.main.async {
-            let clipData = self.getView(viewTag)?.adMediaClip()
+            let clipData = self.getView(viewTag)?.clipData()
             resolver(clipData)
         }
     }

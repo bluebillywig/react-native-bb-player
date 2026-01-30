@@ -1,64 +1,30 @@
 import {
   ConfigPlugin,
   withInfoPlist,
-  withPodfile,
   InfoPlist,
 } from "expo/config-plugins";
 
 import type { BBPlayerPluginProps } from "./index";
 
-const BB_POD_SOURCE = "https://github.com/nickkraakman/test-specs.git";
-const BB_POD_COMMENT = "# Blue Billywig SDK Pod Source";
-
 /**
  * Configures iOS for the Blue Billywig Player SDK
+ *
+ * Note: BlueBillywigNativePlayerKit-iOS is available on CocoaPods trunk,
+ * so no custom pod source is needed.
+ *
+ * The SDK is automatically linked via React Native's autolinking mechanism
+ * through react-native.config.js. No manual pod configuration is needed.
  */
 export const withIosBBPlayer: ConfigPlugin<BBPlayerPluginProps> = (
   config,
   props
 ) => {
-  // Add BB pod source to Podfile
-  config = withBBPodSource(config);
-
   // Optionally add background audio capability
   if (props.enableBackgroundAudio) {
     config = withBackgroundAudio(config);
   }
 
   return config;
-};
-
-/**
- * Adds the Blue Billywig CocoaPods source to the Podfile
- */
-const withBBPodSource: ConfigPlugin = (config) => {
-  return withPodfile(config, (config) => {
-    const podfile = config.modResults.contents;
-
-    // Check if already added
-    if (podfile.includes(BB_POD_SOURCE)) {
-      return config;
-    }
-
-    // Add source at the top of the Podfile (after any existing sources)
-    const sourceBlock = `${BB_POD_COMMENT}\nsource '${BB_POD_SOURCE}'\n`;
-
-    // Check if there's already a source line
-    if (podfile.includes("source '")) {
-      // Add after existing sources
-      const lastSourceIndex = podfile.lastIndexOf("source '");
-      const endOfLine = podfile.indexOf("\n", lastSourceIndex);
-      config.modResults.contents =
-        podfile.slice(0, endOfLine + 1) +
-        sourceBlock +
-        podfile.slice(endOfLine + 1);
-    } else {
-      // Add at the beginning
-      config.modResults.contents = sourceBlock + "\n" + podfile;
-    }
-
-    return config;
-  });
 };
 
 /**

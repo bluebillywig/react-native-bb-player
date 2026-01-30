@@ -12,6 +12,12 @@ class BBShortsViewManager: RCTViewManager {
         return true
     }
 
+    // Override moduleName to expose as "BBShortsView" instead of default "BBShorts"
+    // This is required for Fabric interop to find the component correctly
+    @objc override static func moduleName() -> String! {
+        return "BBShortsView"
+    }
+
     // MARK: - Helper to get view by tag
 
     private func getView(_ reactTag: NSNumber) -> BBShortsView? {

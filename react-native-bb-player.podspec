@@ -2,18 +2,22 @@ require 'json'
 
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
-# Check if New Architecture is enabled
-new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
+# Use a fallback version for local development if version is 0.0.0-development
+# This prevents CocoaPods from trying to validate a non-existent git tag
+version = package['version']
+if version.start_with?('0.0.0')
+  version = '0.0.1-local'
+end
 
 Pod::Spec.new do |s|
   s.name           = 'react-native-bb-player'
-  s.version        = package['version']
+  s.version        = version
   s.summary        = package['description']
   s.description    = 'React Native Module for Blue Billywig Native Player SDK'
   s.license        = package['license']
   s.author         = 'Blue Billywig'
   s.homepage       = 'https://github.com/bluebillywig/react-native-bb-player'
-  s.platforms      = { :ios => '13.4', :tvos => '13.4' }
+  s.platforms      = { :ios => '14.0' }
   s.swift_version  = '5.4'
   s.source         = { :git => 'https://github.com/bluebillywig/react-native-bb-player.git', :tag => "v#{s.version}" }
   s.static_framework = true
@@ -22,28 +26,15 @@ Pod::Spec.new do |s|
   s.dependency 'BlueBillywigNativePlayerKit-iOS', '~> 8.42.0'
   s.dependency 'BlueBillywigNativePlayerKit-iOS/GoogleCastSDK', '~> 8.42.0'
 
-  # TurboModule dependencies for New Architecture
-  if new_arch_enabled
-    s.dependency 'React-Codegen'
-    s.dependency 'RCT-Folly'
-    s.dependency 'RCTRequired'
-    s.dependency 'RCTTypeSafety'
-    s.dependency 'ReactCommon/turbomodule/core'
-  end
+  # Note: TurboModule/New Architecture dependencies (React-Codegen, RCT-Folly, etc.)
+  # are automatically provided by React Native when New Architecture is enabled.
+  # No need to specify them here as they would create duplicate/conflicting deps.
 
   # Swift/Objective-C compatibility
-  xcconfig = {
+  s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'SWIFT_COMPILATION_MODE' => 'wholemodule'
   }
-
-  # Add compiler flag for New Architecture
-  if new_arch_enabled
-    xcconfig['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -DRCT_NEW_ARCH_ENABLED'
-    xcconfig['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
-  end
-
-  s.pod_target_xcconfig = xcconfig
 
   s.source_files = "ios/**/*.{h,m,mm,swift,hpp,cpp}"
 end
