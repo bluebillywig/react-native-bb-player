@@ -1,5 +1,5 @@
 /// <reference types="react" />
-import type { LoadClipOptions, BBPlayerState } from "./BBPlayer.types";
+import type { LoadClipOptions, LoadContext, BBPlayerState } from "./BBPlayer.types";
 /**
  * Creates command functions for the BBPlayerView ref.
  * Uses NativeModule for reliable command dispatch on both Old and New Architecture.
@@ -24,13 +24,13 @@ export declare function createCommands(viewRef: React.RefObject<any>): {
      * This is the primary method for loading content, matching the channel SDK pattern.
      */
     loadClip: (clipId: string, options?: LoadClipOptions) => void;
-    loadWithClipId: (clipId: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithClipListId: (clipListId: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithProjectId: (projectId: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithClipJson: (clipJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithClipListJson: (clipListJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithProjectJson: (projectJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithJsonUrl: (jsonUrl: string, autoPlay?: boolean) => void;
+    loadWithClipId: (clipId: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithClipListId: (clipListId: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithProjectId: (projectId: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithClipJson: (clipJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithClipListJson: (clipListJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithProjectJson: (projectJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithJsonUrl: (jsonUrl: string, autoPlay?: boolean, context?: LoadContext) => void;
     getDuration: () => Promise<number | null>;
     getCurrentTime: () => Promise<number | null>;
     getMuted: () => Promise<boolean | null>;

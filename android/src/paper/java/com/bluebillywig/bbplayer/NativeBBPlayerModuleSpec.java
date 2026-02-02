@@ -37,13 +37,13 @@ public abstract class NativeBBPlayerModuleSpec extends ReactContextBaseJavaModul
     public abstract void showCastPicker(int viewTag);
 
     // Load methods
-    public abstract void loadWithClipId(int viewTag, String clipId, String initiator, boolean autoPlay, double seekTo);
-    public abstract void loadWithClipListId(int viewTag, String clipListId, String initiator, boolean autoPlay, double seekTo);
-    public abstract void loadWithProjectId(int viewTag, String projectId, String initiator, boolean autoPlay, double seekTo);
-    public abstract void loadWithClipJson(int viewTag, String clipJson, String initiator, boolean autoPlay, double seekTo);
-    public abstract void loadWithClipListJson(int viewTag, String clipListJson, String initiator, boolean autoPlay, double seekTo);
-    public abstract void loadWithProjectJson(int viewTag, String projectJson, String initiator, boolean autoPlay, double seekTo);
-    public abstract void loadWithJsonUrl(int viewTag, String jsonUrl, boolean autoPlay);
+    public abstract void loadWithClipId(int viewTag, String clipId, String initiator, boolean autoPlay, double seekTo, String contextJson);
+    public abstract void loadWithClipListId(int viewTag, String clipListId, String initiator, boolean autoPlay, double seekTo, String contextJson);
+    public abstract void loadWithProjectId(int viewTag, String projectId, String initiator, boolean autoPlay, double seekTo, String contextJson);
+    public abstract void loadWithClipJson(int viewTag, String clipJson, String initiator, boolean autoPlay, double seekTo, String contextJson);
+    public abstract void loadWithClipListJson(int viewTag, String clipListJson, String initiator, boolean autoPlay, double seekTo, String contextJson);
+    public abstract void loadWithProjectJson(int viewTag, String projectJson, String initiator, boolean autoPlay, double seekTo, String contextJson);
+    public abstract void loadWithJsonUrl(int viewTag, String jsonUrl, boolean autoPlay, String contextJson);
 
     // Promise getters
     public abstract void getDuration(int viewTag, Promise promise);

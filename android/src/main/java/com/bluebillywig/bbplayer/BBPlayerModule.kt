@@ -136,15 +136,17 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
         clipId: String,
         initiator: String?,
         autoPlay: Boolean,
-        seekTo: Double
+        seekTo: Double,
+        contextJson: String?
     ) {
-        Log.d("BBPlayerModule", "loadWithClipId called - viewTag: $viewTag, clipId: $clipId, autoPlay: $autoPlay")
+        Log.d("BBPlayerModule", "loadWithClipId called - viewTag: $viewTag, clipId: $clipId, autoPlay: $autoPlay, context: $contextJson")
         runOnUiThread(viewTag.toInt()) {
             it.loadWithClipId(
                 clipId,
                 initiator,
                 if (autoPlay) true else null,
-                if (seekTo > 0) seekTo else null
+                if (seekTo > 0) seekTo else null,
+                contextJson
             )
         }
     }
@@ -155,14 +157,16 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
         clipListId: String,
         initiator: String?,
         autoPlay: Boolean,
-        seekTo: Double
+        seekTo: Double,
+        contextJson: String?
     ) {
         runOnUiThread(viewTag.toInt()) {
             it.loadWithClipListId(
                 clipListId,
                 initiator,
                 if (autoPlay) true else null,
-                if (seekTo > 0) seekTo else null
+                if (seekTo > 0) seekTo else null,
+                contextJson
             )
         }
     }
@@ -173,14 +177,16 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
         projectId: String,
         initiator: String?,
         autoPlay: Boolean,
-        seekTo: Double
+        seekTo: Double,
+        contextJson: String?
     ) {
         runOnUiThread(viewTag.toInt()) {
             it.loadWithProjectId(
                 projectId,
                 initiator,
                 if (autoPlay) true else null,
-                if (seekTo > 0) seekTo else null
+                if (seekTo > 0) seekTo else null,
+                contextJson
             )
         }
     }
@@ -191,14 +197,16 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
         clipJson: String,
         initiator: String?,
         autoPlay: Boolean,
-        seekTo: Double
+        seekTo: Double,
+        contextJson: String?
     ) {
         runOnUiThread(viewTag.toInt()) {
             it.loadWithClipJson(
                 clipJson,
                 initiator,
                 if (autoPlay) true else null,
-                if (seekTo > 0) seekTo else null
+                if (seekTo > 0) seekTo else null,
+                contextJson
             )
         }
     }
@@ -209,14 +217,16 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
         clipListJson: String,
         initiator: String?,
         autoPlay: Boolean,
-        seekTo: Double
+        seekTo: Double,
+        contextJson: String?
     ) {
         runOnUiThread(viewTag.toInt()) {
             it.loadWithClipListJson(
                 clipListJson,
                 initiator,
                 if (autoPlay) true else null,
-                if (seekTo > 0) seekTo else null
+                if (seekTo > 0) seekTo else null,
+                contextJson
             )
         }
     }
@@ -227,14 +237,16 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
         projectJson: String,
         initiator: String?,
         autoPlay: Boolean,
-        seekTo: Double
+        seekTo: Double,
+        contextJson: String?
     ) {
         runOnUiThread(viewTag.toInt()) {
             it.loadWithProjectJson(
                 projectJson,
                 initiator,
                 if (autoPlay) true else null,
-                if (seekTo > 0) seekTo else null
+                if (seekTo > 0) seekTo else null,
+                contextJson
             )
         }
     }
@@ -243,10 +255,11 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     override fun loadWithJsonUrl(
         viewTag: Double,
         jsonUrl: String,
-        autoPlay: Boolean
+        autoPlay: Boolean,
+        contextJson: String?
     ) {
         runOnUiThread(viewTag.toInt()) {
-            it.loadWithJsonUrl(jsonUrl, autoPlay)
+            it.loadWithJsonUrl(jsonUrl, autoPlay, contextJson)
         }
     }
 

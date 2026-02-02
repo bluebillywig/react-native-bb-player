@@ -30,44 +30,50 @@ export interface Spec extends TurboModule {
     clipId: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithClipListId(
     viewTag: number,
     clipListId: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithProjectId(
     viewTag: number,
     projectId: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithClipJson(
     viewTag: number,
     clipJson: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithClipListJson(
     viewTag: number,
     clipListJson: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithProjectJson(
     viewTag: number,
     projectJson: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
-  loadWithJsonUrl(viewTag: number, jsonUrl: string, autoPlay: boolean): void;
+  loadWithJsonUrl(viewTag: number, jsonUrl: string, autoPlay: boolean, contextJson: string | null): void;
 
   // Promise getters
   getDuration(viewTag: number): Promise<number | null>;

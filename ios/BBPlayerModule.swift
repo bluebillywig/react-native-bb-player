@@ -159,50 +159,50 @@ class BBPlayerModule: NSObject {
         }
     }
 
-    @objc func loadWithClipId(_ viewTag: NSNumber, clipId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithClipId(_ viewTag: NSNumber, clipId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithClipId(clipId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithClipId(clipId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithClipListId(_ viewTag: NSNumber, clipListId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithClipListId(_ viewTag: NSNumber, clipListId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithClipListId(clipListId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithClipListId(clipListId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithProjectId(_ viewTag: NSNumber, projectId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithProjectId(_ viewTag: NSNumber, projectId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithProjectId(projectId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithProjectId(projectId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithClipJson(_ viewTag: NSNumber, clipJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithClipJson(_ viewTag: NSNumber, clipJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithClipJson(clipJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithClipJson(clipJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithClipListJson(_ viewTag: NSNumber, clipListJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithClipListJson(_ viewTag: NSNumber, clipListJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithClipListJson(clipListJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithClipListJson(clipListJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithProjectJson(_ viewTag: NSNumber, projectJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithProjectJson(_ viewTag: NSNumber, projectJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithProjectJson(projectJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithProjectJson(projectJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithJsonUrl(_ viewTag: NSNumber, jsonUrl: String?, autoPlay: Bool) {
-        NSLog("BBPlayerModule.loadWithJsonUrl called - viewTag: %@, jsonUrl: %@, autoPlay: %d", viewTag, jsonUrl ?? "nil", autoPlay)
+    @objc func loadWithJsonUrl(_ viewTag: NSNumber, jsonUrl: String?, autoPlay: Bool, contextJson: String?) {
+        NSLog("BBPlayerModule.loadWithJsonUrl called - viewTag: %@, jsonUrl: %@, autoPlay: %d, context: %@", viewTag, jsonUrl ?? "nil", autoPlay, contextJson ?? "nil")
         DispatchQueue.main.async {
             let view = self.getView(viewTag)
             NSLog("BBPlayerModule.loadWithJsonUrl - view found: %@", view != nil ? "YES" : "NO")
             if let view = view, let url = jsonUrl {
                 NSLog("BBPlayerModule.loadWithJsonUrl - calling view.loadWithJsonUrl with url: %@", url)
-                view.loadWithJsonUrl(url, autoPlay: autoPlay)
+                view.loadWithJsonUrl(url, autoPlay: autoPlay, contextJson: contextJson)
             } else {
                 NSLog("BBPlayerModule.loadWithJsonUrl - FAILED: view=%@, url=%@", view != nil ? "found" : "nil", jsonUrl ?? "nil")
             }

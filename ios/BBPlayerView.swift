@@ -704,28 +704,48 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
     playerView?.setApiProperty(property: .volume, value: Float(volume))
   }
 
-  func loadWithClipId(_ clipId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithClipId(clipId: clipId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  // Helper to parse context JSON into a dictionary for the native SDK
+  private func parseContext(_ contextJson: String?) -> [String: Any]? {
+    guard let jsonString = contextJson, !jsonString.isEmpty else { return nil }
+    guard let data = jsonString.data(using: .utf8) else { return nil }
+    do {
+      if let dict = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+        return dict
+      }
+    } catch {
+      log("Failed to parse context JSON: \(error)", level: .warning)
+    }
+    return nil
   }
 
-  func loadWithClipListId(_ clipListId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithClipId(_ clipId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithClipId(clipId: clipId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
-  func loadWithProjectId(_ projectId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithProjectId(projectId: projectId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithClipListId(_ clipListId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
-  func loadWithClipJson(_ clipJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithClipJson(clipJson: clipJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithProjectId(_ projectId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithProjectId(projectId: projectId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
-  func loadWithClipListJson(_ clipListJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithClipListJson(clipListJson: clipListJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithClipJson(_ clipJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithClipJson(clipJson: clipJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
-  func loadWithProjectJson(_ projectJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithProjectJson(projectJson: projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithClipListJson(_ clipListJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithClipListJson(clipListJson: clipListJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
+  }
+
+  func loadWithProjectJson(_ projectJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithProjectJson(projectJson: projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
   /**
@@ -735,8 +755,8 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
    *
    * Note: Shorts URLs (/sh/{id}.json) are NOT supported here - use BBShortsView instead.
    */
-  func loadWithJsonUrl(_ url: String, autoPlay: Bool) {
-    NSLog("BBPlayerView.loadWithJsonUrl called - url: %@, autoPlay: %d", url, autoPlay)
+  func loadWithJsonUrl(_ url: String, autoPlay: Bool, contextJson: String? = nil) {
+    NSLog("BBPlayerView.loadWithJsonUrl called - url: %@, autoPlay: %d, context: %@", url, autoPlay, contextJson ?? "nil")
     guard playerView != nil else {
       NSLog("BBPlayerView.loadWithJsonUrl ERROR - playerView not initialized")
       return
@@ -754,6 +774,8 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
     let projectIdPattern = "/pj/([0-9]+)\\.json|/project/([0-9]+)"
     let shortsIdPattern = "/sh/([0-9]+)\\.json"
 
+    let context = parseContext(contextJson)
+
     if let shortsMatch = url.range(of: shortsIdPattern, options: .regularExpression) {
       // Shorts require a separate BBShortsView component
       log("ERROR - Shorts URLs are not supported in BBPlayerView. Use BBShortsView instead.", level: .error)
@@ -765,7 +787,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       // Extract the cliplist ID
       if let clipListId = extractIdFromUrl(url, pattern: clipListIdPattern) {
         NSLog("BBPlayerView.loadWithJsonUrl - Loading ClipList by ID: %@", clipListId)
-        playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: "external", autoPlay: autoPlay, seekTo: nil)
+        playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: "external", autoPlay: autoPlay, seekTo: nil, context: context)
       } else {
         NSLog("BBPlayerView.loadWithJsonUrl ERROR - Failed to extract cliplist ID from URL: %@", url)
       }
@@ -776,7 +798,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       // Extract the project ID
       if let projectId = extractIdFromUrl(url, pattern: projectIdPattern) {
         NSLog("BBPlayerView.loadWithJsonUrl - Loading Project by ID: %@", projectId)
-        playerView?.player.loadWithProjectId(projectId: projectId, initiator: "external", autoPlay: autoPlay, seekTo: nil)
+        playerView?.player.loadWithProjectId(projectId: projectId, initiator: "external", autoPlay: autoPlay, seekTo: nil, context: context)
       } else {
         NSLog("BBPlayerView.loadWithJsonUrl ERROR - Failed to extract project ID from URL: %@", url)
       }
@@ -787,7 +809,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       // Extract the clip ID
       if let clipId = extractIdFromUrl(url, pattern: clipIdPattern) {
         NSLog("BBPlayerView.loadWithJsonUrl - Loading Clip by ID: %@", clipId)
-        playerView?.player.loadWithClipId(clipId: clipId, initiator: "external", autoPlay: autoPlay, seekTo: nil)
+        playerView?.player.loadWithClipId(clipId: clipId, initiator: "external", autoPlay: autoPlay, seekTo: nil, context: context)
       } else {
         NSLog("BBPlayerView.loadWithJsonUrl ERROR - Failed to extract clip ID from URL: %@", url)
       }
