@@ -60,6 +60,7 @@ This document outlines platform support and feature availability for the Blue Bi
 | **Inline Playback** | ✅ | ✅ | Default |
 | **Fullscreen** | ✅ | ✅ | `enterFullscreen()` |
 | **Fullscreen Landscape** | ✅ | ✅ | `enterFullscreenLandscape()` |
+| **Modal-style Fullscreen** | ✅ | ✅ | `enterFullscreenLandscape()` + offscreen view ([guide](../guides/fullscreen.md)) |
 | **Exit Fullscreen** | ✅ | ✅ | `exitFullscreen()` |
 | **Picture-in-Picture** | ✅ | ✅ | Via native controls |
 | **Collapse/Expand** | ✅ | ✅ | `collapse()`, `expand()` |

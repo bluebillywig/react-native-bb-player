@@ -85,6 +85,7 @@ See the [Expo Setup Guide](docs/guides/expo-setup.md) for detailed configuration
 ### Guides
 
 - [Expo Setup Guide](docs/guides/expo-setup.md) - Expo configuration and prebuild
+- [Fullscreen & Modal Player Guide](docs/guides/fullscreen.md) - Fullscreen, landscape, and modal-style presentation
 - [Advertising Guide](docs/guides/advertising.md) - Ad integration and VAST/VPAID
 - [Analytics Guide](docs/guides/analytics.md) - Analytics integration and custom statistics
 - [Shorts Guide](docs/guides/shorts.md) - Vertical video player (TikTok-style experience)
@@ -327,29 +328,25 @@ import { BBPlayerView, type BBPlayerViewMethods } from '@bluebillywig/react-nati
 export function FullscreenPlayer() {
   const playerRef = useRef<BBPlayerViewMethods>(null);
 
-  useEffect(() => {
-    // Enter fullscreen after player is ready
-    const timer = setTimeout(() => {
-      playerRef.current?.enterFullscreen();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <BBPlayerView
       ref={playerRef}
       jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
-      options={{
-        autoPlay: true,
-      }}
+      options={{ autoPlay: true }}
       style={{ flex: 1 }}
-      onDidTriggerFullscreen={() => console.log('Entered fullscreen')}
-      onDidTriggerRetractFullscreen={() => console.log('Exited fullscreen')}
+      onDidTriggerApiReady={() => {
+        // Enter fullscreen landscape once the player is ready
+        playerRef.current?.enterFullscreenLandscape();
+      }}
+      onDidTriggerRetractFullscreen={() => {
+        console.log('User exited fullscreen');
+      }}
     />
   );
 }
 ```
+
+See the [Fullscreen & Modal Player Guide](docs/guides/fullscreen.md) for advanced patterns including modal-style presentation and handling orientation.
 
 ### Chromecast Support
 
