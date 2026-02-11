@@ -505,6 +505,15 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         }
     }
 
+    fun presentModal() {
+        // Use in-place fullscreen with landscape; modalPlayer option hides fullscreen button
+        enterFullscreenLandscape()
+    }
+
+    fun closeModal() {
+        exitFullscreen()
+    }
+
     fun enterFullscreen() {
         if (::playerView.isInitialized) {
             shouldForceLandscape = false
