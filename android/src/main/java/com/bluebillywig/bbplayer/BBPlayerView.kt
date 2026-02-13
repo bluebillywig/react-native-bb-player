@@ -12,6 +12,7 @@ import android.widget.FrameLayout
 import com.facebook.react.modules.core.ReactChoreographer
 import androidx.collection.ArrayMap
 import androidx.mediarouter.app.MediaRouteButton
+import org.json.JSONObject
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayer
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayerView
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayerViewDelegate
@@ -370,13 +371,13 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
      *
      * Note: Shorts URLs (/sh/{id}.json) are NOT supported here - use BBShortsView instead.
      */
-    fun loadWithJsonUrl(url: String, autoPlay: Boolean = true) {
+    fun loadWithJsonUrl(url: String, autoPlay: Boolean = true, contextJson: String? = null) {
         if (!::playerView.isInitialized) {
             Log.w("BBPlayerView", "Cannot load content - playerView not initialized")
             return
         }
 
-        Log.d("BBPlayerView", "loadWithJsonUrl called with URL: $url")
+        Log.d("BBPlayerView", "loadWithJsonUrl called with URL: $url, context: $contextJson")
 
         // Extract ID from URL patterns like:
         // /c/{id}.json or /mediaclip/{id}.json -> clip ID
@@ -387,6 +388,8 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         val clipListIdRegex = Regex("/l/([0-9]+)\\.json|/mediacliplist/([0-9]+)")
         val projectIdRegex = Regex("/pj/([0-9]+)\\.json|/project/([0-9]+)")
         val shortsIdRegex = Regex("/sh/([0-9]+)\\.json")
+
+        val context = parseContext(contextJson)
 
         when {
             shortsIdRegex.containsMatchIn(url) -> {
@@ -401,7 +404,7 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
                 val clipListId = match?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
                 if (clipListId != null) {
                     Log.d("BBPlayerView", "Loading ClipList by ID: $clipListId")
-                    playerView.player?.loadWithClipListId(clipListId, "external", autoPlay, null)
+                    playerView.player?.loadWithClipListId(clipListId, "external", autoPlay, null, context)
                 } else {
                     Log.e("BBPlayerView", "Failed to extract cliplist ID from URL: $url")
                 }
@@ -411,7 +414,7 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
                 val projectId = match?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
                 if (projectId != null) {
                     Log.d("BBPlayerView", "Loading Project by ID: $projectId")
-                    playerView.player?.loadWithProjectId(projectId, "external", autoPlay, null)
+                    playerView.player?.loadWithProjectId(projectId, "external", autoPlay, null, context)
                 } else {
                     Log.e("BBPlayerView", "Failed to extract project ID from URL: $url")
                 }
@@ -421,7 +424,7 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
                 val clipId = match?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
                 if (clipId != null) {
                     Log.d("BBPlayerView", "Loading Clip by ID: $clipId")
-                    playerView.player?.loadWithClipId(clipId, "external", autoPlay, null)
+                    playerView.player?.loadWithClipId(clipId, "external", autoPlay, null, context)
                 } else {
                     Log.e("BBPlayerView", "Failed to extract clip ID from URL: $url")
                 }
@@ -672,40 +675,63 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         return null
     }
 
+    // Helper to parse context JSON into a Map for the native SDK
+    private fun parseContext(contextJson: String?): Map<String, Any?>? {
+        if (contextJson.isNullOrBlank()) return null
+        return try {
+            val json = JSONObject(contextJson)
+            mapOf(
+                "contextEntityType" to json.optString("contextEntityType", null),
+                "contextEntityId" to json.optString("contextEntityId", null),
+                "contextCollectionType" to json.optString("contextCollectionType", null),
+                "contextCollectionId" to json.optString("contextCollectionId", null)
+            ).filterValues { it != null }
+        } catch (e: Exception) {
+            Log.w("BBPlayerView", "Failed to parse context JSON: $contextJson", e)
+            null
+        }
+    }
+
     // Load methods
-    fun loadWithClipId(clipId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithClipId(clipId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithClipId(clipId, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithClipId(clipId, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithClipListId(clipListId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithClipListId(clipListId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithClipListId(clipListId, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithClipListId(clipListId, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithProjectId(projectId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithProjectId(projectId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithProjectId(projectId, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithProjectId(projectId, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithClipJson(clipJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithClipJson(clipJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithClipJson(clipJson, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithClipJson(clipJson, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithClipListJson(clipListJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithClipListJson(clipListJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithClipListJson(clipListJson, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithClipListJson(clipListJson, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithProjectJson(projectJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithProjectJson(projectJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithProjectJson(projectJson, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithProjectJson(projectJson, initiator, autoPlay, seekTo, context)
         }
     }
 
