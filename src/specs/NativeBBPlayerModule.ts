@@ -14,6 +14,8 @@ export interface Spec extends TurboModule {
   enterFullscreen(viewTag: number): void;
   enterFullscreenLandscape(viewTag: number): void;
   exitFullscreen(viewTag: number): void;
+  presentModal(viewTag: number): void;
+  closeModal(viewTag: number): void;
 
   // Void methods - layout control
   collapse(viewTag: number): void;
