@@ -31,10 +31,22 @@ public abstract class NativeBBPlayerModuleSpec extends ReactContextBaseJavaModul
     public abstract void collapse(int viewTag);
     public abstract void expand(int viewTag);
 
+    // Void methods - modal control
+    public abstract void presentModal(int viewTag);
+    public abstract void closeModal(int viewTag);
+
     // Void methods - other commands
     public abstract void autoPlayNextCancel(int viewTag);
     public abstract void destroy(int viewTag);
     public abstract void showCastPicker(int viewTag);
+
+    // Modal player (module-level)
+    public abstract void presentModalPlayer(String jsonUrl, String optionsJson);
+    public abstract void dismissModalPlayer();
+
+    // Event emitter support
+    public abstract void addListener(String eventName);
+    public abstract void removeListeners(double count);
 
     // Load methods
     public abstract void loadWithClipId(int viewTag, String clipId, String initiator, boolean autoPlay, double seekTo, String contextJson);

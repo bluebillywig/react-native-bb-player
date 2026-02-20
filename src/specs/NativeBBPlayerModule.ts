@@ -19,6 +19,10 @@ export interface Spec extends TurboModule {
   collapse(viewTag: number): void;
   expand(viewTag: number): void;
 
+  // Void methods - modal control (per-view)
+  presentModal(viewTag: number): void;
+  closeModal(viewTag: number): void;
+
   // Void methods - other commands
   autoPlayNextCancel(viewTag: number): void;
   destroy(viewTag: number): void;
@@ -86,6 +90,14 @@ export interface Spec extends TurboModule {
   getClipData(viewTag: number): Promise<Object | null>;
   getProjectData(viewTag: number): Promise<Object | null>;
   getPlayoutData(viewTag: number): Promise<Object | null>;
+
+  // Modal player (module-level, no React view needed)
+  presentModalPlayer(jsonUrl: string, optionsJson: string | null): void;
+  dismissModalPlayer(): void;
+
+  // Event emitter support (required for NativeEventEmitter)
+  addListener(eventName: string): void;
+  removeListeners(count: number): void;
 }
 
 // Use get() instead of getEnforcing() to avoid crash when module not registered

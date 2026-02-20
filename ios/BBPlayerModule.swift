@@ -1,5 +1,6 @@
 import Foundation
 import React
+import BBNativePlayerKit
 
 /**
  * Global registry for BBPlayerView instances.
@@ -39,19 +40,42 @@ class BBPlayerViewRegistry: NSObject {
 
 /**
  * Native Module for BBPlayer commands.
+ * Extends RCTEventEmitter to support module-level events (modal player).
  * This module looks up BBPlayerView instances by their React tag and dispatches commands to them.
  */
 @objc(BBPlayerModule)
-class BBPlayerModule: NSObject {
+class BBPlayerModule: RCTEventEmitter {
 
-    @objc var bridge: RCTBridge?
+    private var modalPlayerView: BBNativePlayerView?
+    private var modalDelegate: ModalPlayerDelegate?
+    private var hasListeners = false
 
-    @objc static func requiresMainQueueSetup() -> Bool {
+    @objc override static func requiresMainQueueSetup() -> Bool {
         return true
     }
 
-    @objc static func moduleName() -> String {
+    @objc override static func moduleName() -> String! {
         return "BBPlayerModule"
+    }
+
+    override func supportedEvents() -> [String]! {
+        return [
+            "modalPlayerDismissed",
+            "modalPlayerPlay",
+            "modalPlayerPause",
+            "modalPlayerEnded",
+            "modalPlayerError",
+            "modalPlayerApiReady",
+            "modalPlayerCanPlay",
+        ]
+    }
+
+    override func startObserving() {
+        hasListeners = true
+    }
+
+    override func stopObserving() {
+        hasListeners = false
     }
 
     // MARK: - Helper to get view by tag
@@ -278,6 +302,101 @@ class BBPlayerModule: NSObject {
         DispatchQueue.main.async {
             let playoutData = self.getView(viewTag)?.playoutData()
             resolver(playoutData)
+        }
+    }
+
+    // MARK: - Modal Player API
+
+    @objc func presentModalPlayer(_ jsonUrl: String, optionsJson: String?) {
+        DispatchQueue.main.async {
+            guard let rootVC = RCTPresentedViewController() else {
+                NSLog("BBPlayerModule: No root view controller found")
+                return
+            }
+
+            // Parse options from JSON string
+            var options: [String: Any]? = nil
+            if let json = optionsJson, let data = json.data(using: .utf8) {
+                options = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            }
+
+            // Create modal player via native SDK
+            let playerView = BBNativePlayer.createModalPlayerView(
+                uiViewContoller: rootVC,
+                jsonUrl: jsonUrl,
+                options: options
+            )
+
+            // Set up delegate for event forwarding
+            let delegate = ModalPlayerDelegate(module: self)
+            playerView.delegate = delegate
+
+            self.modalPlayerView = playerView
+            self.modalDelegate = delegate
+
+            NSLog("BBPlayerModule: Modal player presented with URL: %@", jsonUrl)
+        }
+    }
+
+    @objc func dismissModalPlayer() {
+        DispatchQueue.main.async {
+            self.modalPlayerView?.player.closeModalPlayer()
+            self.modalPlayerView = nil
+            self.modalDelegate = nil
+        }
+    }
+
+    @objc override func addListener(_ eventName: String) {
+        // Required for RCTEventEmitter
+    }
+
+    @objc override func removeListeners(_ count: Double) {
+        // Required for RCTEventEmitter
+    }
+
+    private func emitEvent(_ name: String, body: Any? = nil) {
+        if hasListeners {
+            sendEvent(withName: name, body: body)
+        }
+    }
+
+    // MARK: - Modal Player Delegate
+
+    private class ModalPlayerDelegate: NSObject, BBNativePlayerViewDelegate {
+        weak var module: BBPlayerModule?
+
+        init(module: BBPlayerModule) {
+            self.module = module
+        }
+
+        func bbNativePlayerView(didTriggerPlay playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerPlay")
+        }
+
+        func bbNativePlayerView(didTriggerPause playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerPause")
+        }
+
+        func bbNativePlayerView(didTriggerEnded playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerEnded")
+        }
+
+        func bbNativePlayerView(playerView: BBNativePlayerView, didFailWithError error: String?) {
+            module?.emitEvent("modalPlayerError", body: ["error": error ?? "Unknown error"])
+        }
+
+        func bbNativePlayerView(didTriggerApiReady playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerApiReady")
+        }
+
+        func bbNativePlayerView(didTriggerCanPlay playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerCanPlay")
+        }
+
+        func bbNativePlayerView(didCloseModalPlayer playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerDismissed")
+            module?.modalPlayerView = nil
+            module?.modalDelegate = nil
         }
     }
 }

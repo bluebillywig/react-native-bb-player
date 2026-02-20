@@ -46,7 +46,9 @@ export function ApiScreen({ onBack }: ApiScreenProps) {
   }, []);
 
   const addEvent = useCallback((event: string) => {
-    const timestamp = new Date().toLocaleTimeString();
+    // Use simple timestamp format to avoid expensive DateTimeFormat initialization
+    const now = new Date();
+    const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     setEventLog(prev => [`[${timestamp}] ${event}`, ...prev.slice(0, 49)]);
   }, []);
 

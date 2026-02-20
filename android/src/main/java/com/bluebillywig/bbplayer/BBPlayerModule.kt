@@ -1,14 +1,21 @@
 package com.bluebillywig.bbplayer
 
 import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
+import com.bluebillywig.bbnativeplayersdk.BBNativePlayer
+import com.bluebillywig.bbnativeplayersdk.BBNativePlayerView
+import com.bluebillywig.bbnativeplayersdk.BBNativePlayerViewDelegate
+import com.bluebillywig.bbnativeplayersdk.ModalPlayerViewHolder
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.module.annotations.ReactModule
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.common.UIManagerType
+import org.json.JSONObject
 
 /**
  * Native Module for BBPlayer commands.
@@ -261,6 +268,117 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
         runOnUiThread(viewTag.toInt()) {
             it.loadWithJsonUrl(jsonUrl, autoPlay, contextJson)
         }
+    }
+
+    @ReactMethod
+    override fun presentModal(viewTag: Double) {
+        runOnUiThread(viewTag.toInt()) { it.presentModal() }
+    }
+
+    @ReactMethod
+    override fun closeModal(viewTag: Double) {
+        runOnUiThread(viewTag.toInt()) { it.closeModal() }
+    }
+
+    // MARK: - Modal Player API (module-level, no React view needed)
+
+    private var modalPlayerView: BBNativePlayerView? = null
+
+    private fun emitEvent(eventName: String, params: com.facebook.react.bridge.WritableMap? = null) {
+        reactContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            .emit(eventName, params ?: Arguments.createMap())
+    }
+
+    private val modalPlayerDelegate = object : BBNativePlayerViewDelegate {
+        override fun didTriggerPlay(playerView: BBNativePlayerView) {
+            emitEvent("modalPlayerPlay")
+        }
+        override fun didTriggerPause(playerView: BBNativePlayerView) {
+            emitEvent("modalPlayerPause")
+        }
+        override fun didTriggerEnded(playerView: BBNativePlayerView) {
+            emitEvent("modalPlayerEnded")
+        }
+        override fun didFailWithError(playerView: BBNativePlayerView, error: String?) {
+            emitEvent("modalPlayerError", Arguments.createMap().apply {
+                putString("error", error ?: "Unknown error")
+            })
+        }
+        override fun didTriggerApiReady(playerView: BBNativePlayerView) {
+            emitEvent("modalPlayerApiReady")
+        }
+        override fun didTriggerCanPlay(playerView: BBNativePlayerView) {
+            emitEvent("modalPlayerCanPlay")
+        }
+        override fun didCloseModalPlayer(playerView: BBNativePlayerView) {
+            emitEvent("modalPlayerDismissed")
+            modalPlayerView = null
+        }
+    }
+
+    @ReactMethod
+    override fun presentModalPlayer(jsonUrl: String, optionsJson: String?) {
+        UiThreadUtil.runOnUiThread {
+            val activity = reactContext.currentActivity as? AppCompatActivity
+            if (activity == null) {
+                Log.w(NAME, "presentModalPlayer: no AppCompatActivity")
+                return@runOnUiThread
+            }
+
+            // Parse options from JSON string
+            val options = mutableMapOf<String, Any?>()
+            if (optionsJson != null) {
+                try {
+                    val json = JSONObject(optionsJson)
+                    json.keys().forEach { key ->
+                        options[key] = when {
+                            json.isNull(key) -> null
+                            else -> {
+                                val value = json.get(key)
+                                when (value) {
+                                    is Boolean -> value
+                                    is Int -> value
+                                    is Double -> value
+                                    is String -> value
+                                    else -> value.toString()
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w(NAME, "presentModalPlayer: failed to parse options JSON", e)
+                }
+            }
+
+            val playerView = BBNativePlayer.createModalPlayerView(activity, jsonUrl, options)
+            playerView.delegate = modalPlayerDelegate
+            modalPlayerView = playerView
+
+            Log.d(NAME, "Modal player presented with URL: $jsonUrl")
+        }
+    }
+
+    @ReactMethod
+    override fun dismissModalPlayer() {
+        UiThreadUtil.runOnUiThread {
+            // ModalActivity is the top activity — finish it to close the modal
+            val activity = reactContext.currentActivity
+            if (activity is com.bluebillywig.bbnativeplayersdk.ModalActivity) {
+                activity.finish()
+            }
+            modalPlayerView = null
+        }
+    }
+
+    @ReactMethod
+    override fun addListener(eventName: String) {
+        // Required for NativeEventEmitter
+    }
+
+    @ReactMethod
+    override fun removeListeners(count: Double) {
+        // Required for NativeEventEmitter
     }
 
     // Note: loadWithShortsId is NOT supported on BBPlayerView.

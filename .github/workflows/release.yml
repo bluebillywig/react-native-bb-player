@@ -1,4 +1,4 @@
-name: Publish to npm
+name: Publish to npm + GitHub Packages
 
 on:
   push:
@@ -6,15 +6,15 @@ on:
       - 'v*.*.*'
 
 # Triggered automatically when a tag is pushed (by create-release workflow or manually).
-# Publishes to npm using OIDC trusted publishing (no secrets required).
+# Publishes to npm (OIDC trusted publishing) and GitHub Packages (GITHUB_TOKEN).
 #
-# Requires one-time setup on npmjs.com:
+# npm requires one-time setup on npmjs.com:
 # 1. Go to package settings → Trusted Publisher → GitHub Actions
 # 2. Configure: org=bluebillywig, repo=react-native-bb-player, workflow=release.yml
 
 jobs:
-  publish:
-    name: Build and Publish
+  publish-npm:
+    name: Publish to npm
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -89,3 +89,41 @@ jobs:
             });
 
             console.log(`✅ Created GitHub release for ${tag}`);
+
+  publish-github:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "📦 Publishing version ${VERSION} to GitHub Packages"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://npm.pkg.github.com'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package version from tag
+        run: npm version "${{ env.VERSION }}" --no-git-tag-version --allow-same-version
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -276,91 +276,36 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
 
         addView(playerView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
 
-        // Set ExoPlayer's resize mode to FILL to prevent letterboxing margins
-        // This addresses top/bottom margin issues caused by AspectRatioFrameLayout
+        // RESIZE_MODE_FILL prevents SurfaceView bleed-through at container edges
+        // when embedding inline above a WebView. The container aspect ratio is
+        // adapted dynamically via onDidTriggerMediaClipLoaded to avoid stretching.
         postDelayed({
-            setExoPlayerResizeMode(playerView, RESIZE_MODE_FILL)
-        }, 1000)
+            setExoPlayerResizeMode(playerView)
+        }, 500)
 
         playerSetup = true
         debugLog("BBPlayerView") { "Player setup complete with URL: $jsonUrl" }
     }
 
-    companion object {
-        // AspectRatioFrameLayout resize mode constants
-        private const val RESIZE_MODE_FILL = 3
-    }
-
     /**
-     * Recursively find ExoPlayer's PlayerView or AspectRatioFrameLayout and set resize mode.
-     * Uses reflection since media3 classes aren't directly available in RN module classpath.
-     * This fixes top/bottom margin issues caused by AspectRatioFrameLayout letterboxing.
+     * Set ExoPlayer's resize mode to FILL via reflection.
+     * FILL prevents SurfaceView bleed-through artifacts at container edges.
      */
-    private fun setExoPlayerResizeMode(view: View, resizeMode: Int): Boolean {
-        // Try Media3 AspectRatioFrameLayout via reflection
-        try {
-            val aspectRatioClass = Class.forName("androidx.media3.ui.AspectRatioFrameLayout")
-            if (aspectRatioClass.isInstance(view)) {
-                val method = aspectRatioClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
-                method.invoke(view, resizeMode)
-                return true
-            }
-        } catch (_: ClassNotFoundException) {
-            // Media3 not available
-        } catch (_: Exception) {
-            // Failed to set resize mode
-        }
-
-        // Try Media3 PlayerView via reflection
+    private fun setExoPlayerResizeMode(view: View): Boolean {
         try {
             val playerViewClass = Class.forName("androidx.media3.ui.PlayerView")
             if (playerViewClass.isInstance(view)) {
                 val method = playerViewClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
-                method.invoke(view, resizeMode)
-                // Continue searching - there might be an AspectRatioFrameLayout inside
-            }
-        } catch (_: ClassNotFoundException) {
-            // Media3 PlayerView not available
-        } catch (_: Exception) {
-            // Failed to set resize mode
-        }
-
-        // Try legacy ExoPlayer2 AspectRatioFrameLayout via reflection
-        try {
-            val legacyAspectRatioClass = Class.forName("com.google.android.exoplayer2.ui.AspectRatioFrameLayout")
-            if (legacyAspectRatioClass.isInstance(view)) {
-                val method = legacyAspectRatioClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
-                method.invoke(view, resizeMode)
+                method.invoke(view, 3) // RESIZE_MODE_FILL = 3
                 return true
             }
-        } catch (_: ClassNotFoundException) {
-            // ExoPlayer2 not available
-        } catch (_: Exception) {
-            // Failed to set resize mode
-        }
+        } catch (_: Exception) {}
 
-        // Try legacy ExoPlayer2 StyledPlayerView via reflection
-        try {
-            val styledPlayerViewClass = Class.forName("com.google.android.exoplayer2.ui.StyledPlayerView")
-            if (styledPlayerViewClass.isInstance(view)) {
-                val method = styledPlayerViewClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
-                method.invoke(view, resizeMode)
-            }
-        } catch (_: ClassNotFoundException) {
-            // StyledPlayerView not available
-        } catch (_: Exception) {
-            // Failed to set resize mode
-        }
-
-        // Recursively search children
         if (view is ViewGroup) {
             for (i in 0 until view.childCount) {
-                if (setExoPlayerResizeMode(view.getChildAt(i), resizeMode)) {
-                    return true
-                }
+                if (setExoPlayerResizeMode(view.getChildAt(i))) return true
             }
         }
-
         return false
     }
 
@@ -567,6 +512,20 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         }
 
         return null
+    }
+
+    fun presentModal() {
+        Log.d("BBPlayerView", "presentModal() called")
+        if (::playerView.isInitialized) {
+            playerView.player?.enterFullScreen()
+        }
+    }
+
+    fun closeModal() {
+        Log.d("BBPlayerView", "closeModal() called")
+        if (::playerView.isInitialized) {
+            playerView.player?.exitFullScreen()
+        }
     }
 
     fun destroy() {
@@ -782,10 +741,12 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     }
 
     override fun didTriggerMediaClipLoaded(view: BBNativePlayerView, clipData: MediaClip?) {
-        debugLog("BBPlayerView") { "didTriggerMediaClipLoaded: ${clipData?.title}" }
+        debugLog("BBPlayerView") { "didTriggerMediaClipLoaded: ${clipData?.title} (${clipData?.width}x${clipData?.height})" }
         val params = Arguments.createMap().apply {
             putString("title", clipData?.title)
             putString("id", clipData?.id)
+            clipData?.width?.let { putDouble("width", it.toDouble()) }
+            clipData?.height?.let { putDouble("height", it.toDouble()) }
         }
         sendEvent("onDidTriggerMediaClipLoaded", params)
     }

@@ -13,11 +13,25 @@ import { ApiScreen } from './src/screens/ApiScreen';
 import { ShortsScreen } from './src/screens/ShortsScreen';
 import { OutstreamScreen } from './src/screens/OutstreamScreen';
 import { DeepLinkPlayerScreen } from './src/screens/DeepLinkPlayerScreen';
+import { SimplePlayerScreen } from './src/screens/SimplePlayerScreen';
+import { BarePlayerScreen } from './src/screens/BarePlayerScreen';
 
-type Screen = 'home' | 'api' | 'shorts' | 'outstream' | 'deeplink';
+type Screen = 'home' | 'api' | 'shorts' | 'outstream' | 'deeplink' | 'simple' | 'bare';
 
 // Demo menu items - matching native SDK demo app structure
 const DEMO_ITEMS = [
+  {
+    id: 'simple',
+    title: 'Simple Player',
+    description: 'Minimal player with no event handlers - for performance testing',
+    icon: '▶️',
+  },
+  {
+    id: 'bare',
+    title: 'Bare Player',
+    description: 'Native view only, bypasses JS wrapper - for baseline comparison',
+    icon: '⚡',
+  },
   {
     id: 'api',
     title: 'API Reference',
@@ -152,6 +166,10 @@ function App(): React.JSX.Element {
   // Render current screen wrapped in SafeAreaProvider
   const renderScreen = () => {
     switch (currentScreen) {
+      case 'simple':
+        return <SimplePlayerScreen />;
+      case 'bare':
+        return <BarePlayerScreen />;
       case 'api':
         return <ApiScreen onBack={handleBack} />;
       case 'shorts':
