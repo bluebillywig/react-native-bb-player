@@ -42,16 +42,9 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
   private var playerView: BBNativePlayerView?
   private var hasSetup: Bool = false
 
-  // Timer for periodic time updates (opt-in for performance)
-  private var timeUpdateTimer: Timer?
   private var isPlaying: Bool = false
   private var currentDuration: Double = 0.0
-  private var lastKnownTime: Double = 0.0
-  private var playbackStartTimestamp: CFTimeInterval = 0
-  private var lastEmittedTime: Double = 0.0
   private var isInFullscreen: Bool = false
-  private var backgroundObserver: NSObjectProtocol?
-  private var foregroundObserver: NSObjectProtocol?
   // Independent Google Cast button for showing the cast picker
   private var independentCastButton: GCKUICastButton?
   // Store parent view controller reference for SDK
@@ -68,18 +61,6 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
   @objc var options: NSDictionary = [:] {
     didSet {
       setupPlayerIfNeeded()
-    }
-  }
-
-  @objc var enableTimeUpdates: Bool = false {
-    didSet {
-      log("Time updates \(enableTimeUpdates ? "enabled" : "disabled")")
-
-      if !enableTimeUpdates && timeUpdateTimer != nil {
-        stopTimeUpdates()
-      } else if enableTimeUpdates && isPlaying && timeUpdateTimer == nil {
-        startTimeUpdates()
-      }
     }
   }
 
@@ -123,7 +104,6 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
   @objc var onDidTriggerViewFinished: RCTDirectEventBlock?
   @objc var onDidTriggerViewStarted: RCTDirectEventBlock?
   @objc var onDidTriggerVolumeChange: RCTDirectEventBlock?
-  @objc var onDidTriggerTimeUpdate: RCTDirectEventBlock?
   @objc var onDidTriggerApiReady: RCTDirectEventBlock?
 
   override var intrinsicContentSize: CGSize {
@@ -153,8 +133,6 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
         BBPlayerViewRegistry.shared.register(self, tag: tag.intValue)
       }
 
-      setupAppLifecycleObservers()
-
       // Find the parent view controller from the responder chain
       var responder = self.next
       while responder != nil {
@@ -180,36 +158,8 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
         BBPlayerViewRegistry.shared.unregister(tag: tag.intValue)
       }
 
-      if !isInFullscreen {
-        stopTimeUpdates()
-      }
+      // No cleanup needed when not in fullscreen
     }
-  }
-
-  // Start periodic time updates (1x per second, only if enabled)
-  private func startTimeUpdates() {
-    guard enableTimeUpdates, timeUpdateTimer == nil else { return }
-
-    timeUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-      guard let self = self, self.isPlaying else { return }
-
-      let elapsedSeconds = CACurrentMediaTime() - self.playbackStartTimestamp
-      let estimatedTime = self.lastKnownTime + elapsedSeconds
-      let currentTime = min(estimatedTime, self.currentDuration)
-
-      if self.currentDuration > 0 && abs(currentTime - self.lastEmittedTime) >= 0.5 {
-        self.lastEmittedTime = currentTime
-        self.onDidTriggerTimeUpdate?([
-          "currentTime": currentTime,
-          "duration": self.currentDuration
-        ])
-      }
-    }
-  }
-
-  private func stopTimeUpdates() {
-    timeUpdateTimer?.invalidate()
-    timeUpdateTimer = nil
   }
 
   deinit {
@@ -217,54 +167,10 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
     if let tag = self.reactTag {
       BBPlayerViewRegistry.shared.unregister(tag: tag.intValue)
     }
-    stopTimeUpdates()
-    removeAppLifecycleObservers()
     independentCastButton?.removeFromSuperview()
     independentCastButton = nil
   }
 
-  // MARK: - App Lifecycle Management
-
-  private func setupAppLifecycleObservers() {
-    guard backgroundObserver == nil else { return }
-
-    backgroundObserver = NotificationCenter.default.addObserver(
-      forName: UIApplication.didEnterBackgroundNotification,
-      object: nil,
-      queue: .main
-    ) { [weak self] _ in
-      guard let self = self else { return }
-      if self.isPlaying {
-        self.lastKnownTime = self.calculateCurrentTime()
-      }
-      self.stopTimeUpdates()
-      log("Timer paused - app entered background", level: .debug)
-    }
-
-    foregroundObserver = NotificationCenter.default.addObserver(
-      forName: UIApplication.willEnterForegroundNotification,
-      object: nil,
-      queue: .main
-    ) { [weak self] _ in
-      guard let self = self else { return }
-      if self.isPlaying && self.enableTimeUpdates {
-        self.playbackStartTimestamp = CACurrentMediaTime()
-        self.startTimeUpdates()
-        log("Timer resumed - app entered foreground", level: .debug)
-      }
-    }
-  }
-
-  private func removeAppLifecycleObservers() {
-    if let observer = backgroundObserver {
-      NotificationCenter.default.removeObserver(observer)
-      backgroundObserver = nil
-    }
-    if let observer = foregroundObserver {
-      NotificationCenter.default.removeObserver(observer)
-      foregroundObserver = nil
-    }
-  }
 
   // MARK: - Player Setup (Simplified - no intermediate view controller)
 
@@ -409,7 +315,6 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
 
   func bbNativePlayerView(didTriggerEnded playerView: BBNativePlayerView) {
     isPlaying = false
-    stopTimeUpdates()
     onDidTriggerEnded?([:])
   }
 
@@ -451,7 +356,6 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
 
   func bbNativePlayerView(didTriggerPause playerView: BBNativePlayerView) {
     isPlaying = false
-    stopTimeUpdates()
     onDidTriggerPause?([:])
   }
 
@@ -465,10 +369,6 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
 
   func bbNativePlayerView(didTriggerPlaying playerView: BBNativePlayerView) {
     isPlaying = true
-    playbackStartTimestamp = CACurrentMediaTime()
-    lastEmittedTime = 0.0
-    lastKnownTime = calculateCurrentTime()
-    startTimeUpdates()
     onDidTriggerPlaying?([:])
   }
 
@@ -500,9 +400,6 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
   }
 
   func bbNativePlayerView(playerView: BBNativePlayerView, didTriggerSeeked seekOffset: Double) {
-    lastKnownTime = seekOffset
-    playbackStartTimestamp = CACurrentMediaTime()
-    lastEmittedTime = 0.0
     onDidTriggerSeeked?(["payload": seekOffset as Any])
   }
 
@@ -557,18 +454,6 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
     addSubview(castButton)
   }
 
-  // MARK: - Private Helper Methods
-
-  private func calculateCurrentTime() -> Double {
-    if isPlaying && playbackStartTimestamp > 0 {
-      let elapsedSeconds = CACurrentMediaTime() - playbackStartTimestamp
-      let estimatedTime = lastKnownTime + elapsedSeconds
-      return min(estimatedTime, currentDuration)
-    } else {
-      return lastKnownTime
-    }
-  }
-
   // MARK: - Public API Methods
 
   func adMediaHeight() -> Int? {
@@ -585,10 +470,6 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
 
   func controls() -> Bool? {
     return nil
-  }
-
-  func currentTime() -> Double? {
-    return calculateCurrentTime()
   }
 
   func duration() -> Double? {
@@ -691,9 +572,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
   }
 
   func seekRelative(_ offsetInSeconds: Double) {
-    let currentTime = calculateCurrentTime()
-    let newPosition = max(0, min(currentDuration, currentTime + offsetInSeconds))
-    playerView?.player.seek(offsetInSeconds: newPosition as NSNumber)
+    playerView?.player.seekRelative(offsetInSeconds: offsetInSeconds as NSNumber)
   }
 
   func setMuted(_ muted: Bool) {
@@ -704,28 +583,48 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
     playerView?.setApiProperty(property: .volume, value: Float(volume))
   }
 
-  func loadWithClipId(_ clipId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithClipId(clipId: clipId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  // Helper to parse context JSON into a dictionary for the native SDK
+  private func parseContext(_ contextJson: String?) -> [String: Any]? {
+    guard let jsonString = contextJson, !jsonString.isEmpty else { return nil }
+    guard let data = jsonString.data(using: .utf8) else { return nil }
+    do {
+      if let dict = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+        return dict
+      }
+    } catch {
+      log("Failed to parse context JSON: \(error)", level: .warning)
+    }
+    return nil
   }
 
-  func loadWithClipListId(_ clipListId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithClipId(_ clipId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithClipId(clipId: clipId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
-  func loadWithProjectId(_ projectId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithProjectId(projectId: projectId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithClipListId(_ clipListId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
-  func loadWithClipJson(_ clipJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithClipJson(clipJson: clipJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithProjectId(_ projectId: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithProjectId(projectId: projectId, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
-  func loadWithClipListJson(_ clipListJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithClipListJson(clipListJson: clipListJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithClipJson(_ clipJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithClipJson(clipJson: clipJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
-  func loadWithProjectJson(_ projectJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?) {
-    playerView?.player.loadWithProjectJson(projectJson: projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?)
+  func loadWithClipListJson(_ clipListJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithClipListJson(clipListJson: clipListJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
+  }
+
+  func loadWithProjectJson(_ projectJson: String, initiator: String?, autoPlay: Bool?, seekTo: Double?, contextJson: String? = nil) {
+    let context = parseContext(contextJson)
+    playerView?.player.loadWithProjectJson(projectJson: projectJson, initiator: initiator, autoPlay: autoPlay, seekTo: seekTo as NSNumber?, context: context)
   }
 
   /**
@@ -735,8 +634,8 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
    *
    * Note: Shorts URLs (/sh/{id}.json) are NOT supported here - use BBShortsView instead.
    */
-  func loadWithJsonUrl(_ url: String, autoPlay: Bool) {
-    NSLog("BBPlayerView.loadWithJsonUrl called - url: %@, autoPlay: %d", url, autoPlay)
+  func loadWithJsonUrl(_ url: String, autoPlay: Bool, contextJson: String? = nil) {
+    NSLog("BBPlayerView.loadWithJsonUrl called - url: %@, autoPlay: %d, context: %@", url, autoPlay, contextJson ?? "nil")
     guard playerView != nil else {
       NSLog("BBPlayerView.loadWithJsonUrl ERROR - playerView not initialized")
       return
@@ -754,6 +653,8 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
     let projectIdPattern = "/pj/([0-9]+)\\.json|/project/([0-9]+)"
     let shortsIdPattern = "/sh/([0-9]+)\\.json"
 
+    let context = parseContext(contextJson)
+
     if let shortsMatch = url.range(of: shortsIdPattern, options: .regularExpression) {
       // Shorts require a separate BBShortsView component
       log("ERROR - Shorts URLs are not supported in BBPlayerView. Use BBShortsView instead.", level: .error)
@@ -765,7 +666,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       // Extract the cliplist ID
       if let clipListId = extractIdFromUrl(url, pattern: clipListIdPattern) {
         NSLog("BBPlayerView.loadWithJsonUrl - Loading ClipList by ID: %@", clipListId)
-        playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: "external", autoPlay: autoPlay, seekTo: nil)
+        playerView?.player.loadWithClipListId(clipListId: clipListId, initiator: "external", autoPlay: autoPlay, seekTo: nil, context: context)
       } else {
         NSLog("BBPlayerView.loadWithJsonUrl ERROR - Failed to extract cliplist ID from URL: %@", url)
       }
@@ -776,7 +677,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       // Extract the project ID
       if let projectId = extractIdFromUrl(url, pattern: projectIdPattern) {
         NSLog("BBPlayerView.loadWithJsonUrl - Loading Project by ID: %@", projectId)
-        playerView?.player.loadWithProjectId(projectId: projectId, initiator: "external", autoPlay: autoPlay, seekTo: nil)
+        playerView?.player.loadWithProjectId(projectId: projectId, initiator: "external", autoPlay: autoPlay, seekTo: nil, context: context)
       } else {
         NSLog("BBPlayerView.loadWithJsonUrl ERROR - Failed to extract project ID from URL: %@", url)
       }
@@ -787,7 +688,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       // Extract the clip ID
       if let clipId = extractIdFromUrl(url, pattern: clipIdPattern) {
         NSLog("BBPlayerView.loadWithJsonUrl - Loading Clip by ID: %@", clipId)
-        playerView?.player.loadWithClipId(clipId: clipId, initiator: "external", autoPlay: autoPlay, seekTo: nil)
+        playerView?.player.loadWithClipId(clipId: clipId, initiator: "external", autoPlay: autoPlay, seekTo: nil, context: context)
       } else {
         NSLog("BBPlayerView.loadWithJsonUrl ERROR - Failed to extract clip ID from URL: %@", url)
       }

@@ -288,7 +288,6 @@ const BBOutstreamView = forwardRef<BBOutstreamViewMethods, BBOutstreamViewProps>
         loadWithJsonUrl: (...args: Parameters<BBPlayerViewMethods['loadWithJsonUrl']>) =>
           playerRef.current?.loadWithJsonUrl(...args),
         getDuration: () => playerRef.current?.getDuration() ?? Promise.resolve(null),
-        getCurrentTime: () => playerRef.current?.getCurrentTime() ?? Promise.resolve(null),
         getMuted: () => playerRef.current?.getMuted() ?? Promise.resolve(null),
         getVolume: () => playerRef.current?.getVolume() ?? Promise.resolve(null),
         getPhase: () => playerRef.current?.getPhase() ?? Promise.resolve(null),

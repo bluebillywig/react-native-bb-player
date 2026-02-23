@@ -200,6 +200,85 @@ Ensure the module is properly linked via autolinking in `example/node_modules/@b
 - Verify `findNodeHandle` returns a valid tag
 - Ensure view is mounted before calling commands
 
+## iOS Build Process
+
+### CRITICAL: CocoaPods & Ruby Architecture
+
+**NEVER use `sudo gem install` for CocoaPods.** The system/Homebrew Ruby installations may have architecture issues.
+
+**Known issue:** Homebrew Ruby (`/usr/local/Cellar/ruby/`) is often x86_64 only, causing CocoaPods to run under Rosetta even on arm64 Macs. This causes confusing "Do not use pod install from inside Rosetta2" warnings that persist regardless of `arch -arm64` wrappers.
+
+### Step 1: Install iOS Dependencies
+
+```bash
+cd example/ios
+
+# Clean previous attempts
+rm -rf Pods Podfile.lock build ~/Library/Caches/CocoaPods
+
+# Run pod install (see troubleshooting below if this fails)
+LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install
+```
+
+### Step 2: Build iOS Release IPA
+
+```bash
+cd example/ios
+
+# Build for device (Release)
+xcodebuild -workspace BBPlayerExample.xcworkspace \
+  -scheme BBPlayerExample \
+  -configuration Release \
+  -destination 'generic/platform=iOS' \
+  -archivePath build/BBPlayerExample.xcarchive \
+  archive
+
+# Export IPA (requires valid signing identity)
+xcodebuild -exportArchive \
+  -archivePath build/BBPlayerExample.xcarchive \
+  -exportPath build/ipa \
+  -exportOptionsPlist ExportOptions.plist
+```
+
+### Step 3: Install on Device
+
+```bash
+# Install via Xcode (open archive)
+open build/BBPlayerExample.xcarchive
+
+# Or via ios-deploy
+ios-deploy --bundle build/ipa/BBPlayerExample.ipa
+```
+
+### Troubleshooting pod install
+
+**UTF-8 Encoding Error:**
+```
+Unicode Normalization not appropriate for ASCII-8BIT
+```
+Fix: Always set `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8` before running pod commands.
+
+**Rosetta Warning (even with arm64):**
+```
+Do not use "pod install" from inside Rosetta2
+```
+This usually means the Ruby binary itself is x86_64. Check with:
+```bash
+file $(which ruby)  # Should show arm64 or universal
+file /usr/local/Cellar/ruby/*/bin/ruby  # Homebrew Ruby - often x86_64
+```
+If Homebrew Ruby is x86_64, use system Ruby or install arm64 Ruby via rbenv/rvm.
+
+**Podspec Not Found:**
+```
+CocoaPods could not find compatible versions for pod "react-native-bb-player"
+```
+Ensure the podspec version matches available BlueBillywigNativePlayerKit versions:
+```bash
+pod search BlueBillywigNativePlayerKit-iOS
+# Update version in react-native-bb-player.podspec if needed
+```
+
 ## Metro Configuration
 
 The example app's `metro.config.js` is configured to:

@@ -2,6 +2,7 @@ import UIKit
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
+import BBNativePlayerKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -9,6 +10,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+
+  // Pre-initialized player view for SDK warm-up (matches native demo pattern)
+  private var preloadedPlayerView: BBNativePlayerView?
 
   func application(
     _ application: UIApplication,
@@ -28,6 +32,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       in: window,
       launchOptions: launchOptions
     )
+
+    // Pre-initialize SDK with empty jsonUrl to warm up the player (reduces initialization overhead later)
+    // Using noChromeCast to avoid GoogleCast SDK overhead
+    DispatchQueue.main.async { [weak self] in
+      if let rootVC = self?.window?.rootViewController {
+        self?.preloadedPlayerView = BBNativePlayer.createPlayerView(
+          uiViewController: rootVC,
+          frame: .zero,
+          jsonUrl: "",
+          options: ["noChromeCast": true]
+        )
+        // Don't add to view hierarchy - just keep reference for pre-initialization
+      }
+    }
 
     return true
   }

@@ -22,7 +22,7 @@ const API_ACTIONS = {
   Playback: ['Play', 'Pause', 'Seek +10s', 'Seek -10s'],
   Audio: ['Mute', 'Unmute', 'Volume 50%', 'Volume 100%'],
   Fullscreen: ['Enter Fullscreen', 'Enter FS Landscape', 'Exit Fullscreen'],
-  Getters: ['Get Duration', 'Get Time', 'Get Muted', 'Get Volume', 'Get Phase', 'Get State', 'Get Mode', 'Get Clip Data'],
+  Getters: ['Get Duration', 'Get Muted', 'Get Volume', 'Get Phase', 'Get State', 'Get Mode', 'Get Clip Data'],
   // Load actions use hardcoded IDs from same publication (demo.bbvms.com) - same as native demo
   // Note: Shorts require the separate BBShortsView component - see ShortsScreen
   Load: ['Load Clip 4256575', 'Load Clip 4256593', 'Load ClipList'],
@@ -46,7 +46,9 @@ export function ApiScreen({ onBack }: ApiScreenProps) {
   }, []);
 
   const addEvent = useCallback((event: string) => {
-    const timestamp = new Date().toLocaleTimeString();
+    // Use simple timestamp format to avoid expensive DateTimeFormat initialization
+    const now = new Date();
+    const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     setEventLog(prev => [`[${timestamp}] ${event}`, ...prev.slice(0, 49)]);
   }, []);
 
@@ -108,10 +110,6 @@ export function ApiScreen({ onBack }: ApiScreenProps) {
       case 'Get Duration':
         const duration = await playerRef.current.getDuration();
         showResult('Duration', duration);
-        break;
-      case 'Get Time':
-        const time = await playerRef.current.getCurrentTime();
-        showResult('Current Time', time);
         break;
       case 'Get Muted':
         const muted = await playerRef.current.getMuted();

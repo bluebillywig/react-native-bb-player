@@ -1,6 +1,20 @@
 import type { ViewProps } from "react-native";
 import type { CustomStatistics, MediaClip, Phase, Project, State } from "./types";
 /**
+ * Context for playlist/collection navigation.
+ * Enables "next up" list and proper playlist navigation in the player.
+ */
+export type LoadContext = {
+    /** Context entity type (always 'MediaClipList' for playlists) */
+    contextEntityType?: 'MediaClipList';
+    /** Playlist ID for "next up" list */
+    contextEntityId?: string;
+    /** Context collection type (always 'MediaClipList' for collections) */
+    contextCollectionType?: 'MediaClipList';
+    /** Collection ID if playing within a collection */
+    contextCollectionId?: string;
+};
+/**
  * Options for loading a clip via loadClip()
  */
 export type LoadClipOptions = {
@@ -12,6 +26,8 @@ export type LoadClipOptions = {
     seekTo?: number;
     /** Initiator identifier for analytics */
     initiator?: string;
+    /** Playlist/collection context for navigation */
+    context?: LoadContext;
 };
 /**
  * Options for loading Shorts via loadShorts()
@@ -54,15 +70,14 @@ export type BBPlayerViewMethods = {
      * playerRef.current?.loadClip('12345', { playout: 'default', autoPlay: true });
      */
     loadClip: (clipId: string, options?: LoadClipOptions) => void;
-    loadWithClipId: (clipId: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithClipListId: (clipListId: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithProjectId: (projectId: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithClipJson: (clipJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithClipListJson: (clipListJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithProjectJson: (projectJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number) => void;
-    loadWithJsonUrl: (jsonUrl: string, autoPlay?: boolean) => void;
+    loadWithClipId: (clipId: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithClipListId: (clipListId: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithProjectId: (projectId: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithClipJson: (clipJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithClipListJson: (clipListJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithProjectJson: (projectJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
+    loadWithJsonUrl: (jsonUrl: string, autoPlay?: boolean, context?: LoadContext) => void;
     getDuration: () => Promise<number | null>;
-    getCurrentTime: () => Promise<number | null>;
     getMuted: () => Promise<boolean | null>;
     getVolume: () => Promise<number | null>;
     getPhase: () => Promise<string | null>;
@@ -91,7 +106,7 @@ export type BBPlayerViewMethods = {
      * const state = await playerRef.current?.getPlayerState();
      * if (state) {
      *   console.log(`Playing: ${state.state === 'PLAYING'}`);
-     *   console.log(`Progress: ${state.currentTime}/${state.duration}`);
+     *   console.log(`Duration: ${state.duration}`);
      * }
      */
     getPlayerState: () => Promise<BBPlayerState | null>;
@@ -115,10 +130,6 @@ export type BBPlayerViewProps = {
      * JSON URL to load player configuration from.
      */
     jsonUrl?: string;
-    /**
-     * Enable periodic time update events (onDidTriggerTimeUpdate).
-     */
-    enableTimeUpdates?: boolean;
     onDidFailWithError?: (error: string) => void;
     onDidRequestCollapse?: () => void;
     onDidRequestExpand?: () => void;
@@ -155,7 +166,6 @@ export type BBPlayerViewProps = {
     onDidTriggerSeeking?: () => void;
     onDidTriggerStall?: () => void;
     onDidTriggerStateChange?: (state: State) => void;
-    onDidTriggerTimeUpdate?: (currentTime: number, duration: number) => void;
     onDidTriggerViewFinished?: () => void;
     onDidTriggerViewStarted?: () => void;
     onDidTriggerVolumeChange?: (volume: number) => void;
@@ -171,8 +181,6 @@ export type BBPlayerState = {
     phase: Phase;
     /** Current playback mode */
     mode: string | null;
-    /** Current playback position in seconds */
-    currentTime: number;
     /** Total duration in seconds */
     duration: number;
     /** Whether audio is muted */
@@ -213,10 +221,6 @@ export type BBPlayerEventPayloads = {
     };
     modeChange: {
         mode: string;
-    };
-    timeUpdate: {
-        currentTime: number;
-        duration: number;
     };
     durationChange: {
         duration: number;

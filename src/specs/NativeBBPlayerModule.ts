@@ -19,6 +19,10 @@ export interface Spec extends TurboModule {
   collapse(viewTag: number): void;
   expand(viewTag: number): void;
 
+  // Void methods - modal control (per-view)
+  presentModal(viewTag: number): void;
+  closeModal(viewTag: number): void;
+
   // Void methods - other commands
   autoPlayNextCancel(viewTag: number): void;
   destroy(viewTag: number): void;
@@ -30,48 +34,53 @@ export interface Spec extends TurboModule {
     clipId: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithClipListId(
     viewTag: number,
     clipListId: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithProjectId(
     viewTag: number,
     projectId: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithClipJson(
     viewTag: number,
     clipJson: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithClipListJson(
     viewTag: number,
     clipListJson: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
   loadWithProjectJson(
     viewTag: number,
     projectJson: string,
     initiator: string | null,
     autoPlay: boolean,
-    seekTo: number
+    seekTo: number,
+    contextJson: string | null
   ): void;
-  loadWithJsonUrl(viewTag: number, jsonUrl: string, autoPlay: boolean): void;
+  loadWithJsonUrl(viewTag: number, jsonUrl: string, autoPlay: boolean, contextJson: string | null): void;
 
   // Promise getters
   getDuration(viewTag: number): Promise<number | null>;
-  getCurrentTime(viewTag: number): Promise<number | null>;
   getMuted(viewTag: number): Promise<boolean | null>;
   getVolume(viewTag: number): Promise<number | null>;
   getPhase(viewTag: number): Promise<string | null>;
@@ -80,6 +89,14 @@ export interface Spec extends TurboModule {
   getClipData(viewTag: number): Promise<Object | null>;
   getProjectData(viewTag: number): Promise<Object | null>;
   getPlayoutData(viewTag: number): Promise<Object | null>;
+
+  // Modal player (module-level, no React view needed)
+  presentModalPlayer(jsonUrl: string, optionsJson: string | null): void;
+  dismissModalPlayer(): void;
+
+  // Event emitter support (required for NativeEventEmitter)
+  addListener(eventName: string): void;
+  removeListeners(count: number): void;
 }
 
 // Use get() instead of getEnforcing() to avoid crash when module not registered

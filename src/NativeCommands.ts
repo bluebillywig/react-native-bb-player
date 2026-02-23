@@ -1,6 +1,6 @@
 import { NativeModules, findNodeHandle } from "react-native";
 
-import type { LoadClipOptions, BBPlayerState } from "./BBPlayer.types";
+import type { LoadClipOptions, LoadContext, BBPlayerState } from "./BBPlayer.types";
 import type { State, Phase } from "./types";
 
 // Try TurboModule first, fallback to legacy NativeModules
@@ -110,12 +110,14 @@ export function createCommands(viewRef: React.RefObject<any>) {
       const tag = getViewTag(viewRef);
       if (tag != null) {
         // Use loadWithClipId under the hood, passing playout as initiator if provided
+        const contextJson = options?.context ? JSON.stringify(options.context) : null;
         BBPlayerModule?.loadWithClipId(
           tag,
           clipId,
           options?.initiator ?? options?.playout ?? null,
           options?.autoPlay ?? false,
-          options?.seekTo ?? 0
+          options?.seekTo ?? 0,
+          contextJson
         );
       }
     },
@@ -125,16 +127,19 @@ export function createCommands(viewRef: React.RefObject<any>) {
       clipId: string,
       initiator?: string,
       autoPlay?: boolean,
-      seekTo?: number
+      seekTo?: number,
+      context?: LoadContext
     ) => {
       const tag = getViewTag(viewRef);
       if (tag != null) {
+        const contextJson = context ? JSON.stringify(context) : null;
         BBPlayerModule?.loadWithClipId(
           tag,
           clipId,
           initiator ?? null,
           autoPlay ?? false,
-          seekTo ?? 0
+          seekTo ?? 0,
+          contextJson
         );
       }
     },
@@ -142,16 +147,19 @@ export function createCommands(viewRef: React.RefObject<any>) {
       clipListId: string,
       initiator?: string,
       autoPlay?: boolean,
-      seekTo?: number
+      seekTo?: number,
+      context?: LoadContext
     ) => {
       const tag = getViewTag(viewRef);
       if (tag != null) {
+        const contextJson = context ? JSON.stringify(context) : null;
         BBPlayerModule?.loadWithClipListId(
           tag,
           clipListId,
           initiator ?? null,
           autoPlay ?? false,
-          seekTo ?? 0
+          seekTo ?? 0,
+          contextJson
         );
       }
     },
@@ -159,16 +167,19 @@ export function createCommands(viewRef: React.RefObject<any>) {
       projectId: string,
       initiator?: string,
       autoPlay?: boolean,
-      seekTo?: number
+      seekTo?: number,
+      context?: LoadContext
     ) => {
       const tag = getViewTag(viewRef);
       if (tag != null) {
+        const contextJson = context ? JSON.stringify(context) : null;
         BBPlayerModule?.loadWithProjectId(
           tag,
           projectId,
           initiator ?? null,
           autoPlay ?? false,
-          seekTo ?? 0
+          seekTo ?? 0,
+          contextJson
         );
       }
     },
@@ -176,16 +187,19 @@ export function createCommands(viewRef: React.RefObject<any>) {
       clipJson: string,
       initiator?: string,
       autoPlay?: boolean,
-      seekTo?: number
+      seekTo?: number,
+      context?: LoadContext
     ) => {
       const tag = getViewTag(viewRef);
       if (tag != null) {
+        const contextJson = context ? JSON.stringify(context) : null;
         BBPlayerModule?.loadWithClipJson(
           tag,
           clipJson,
           initiator ?? null,
           autoPlay ?? false,
-          seekTo ?? 0
+          seekTo ?? 0,
+          contextJson
         );
       }
     },
@@ -193,16 +207,19 @@ export function createCommands(viewRef: React.RefObject<any>) {
       clipListJson: string,
       initiator?: string,
       autoPlay?: boolean,
-      seekTo?: number
+      seekTo?: number,
+      context?: LoadContext
     ) => {
       const tag = getViewTag(viewRef);
       if (tag != null) {
+        const contextJson = context ? JSON.stringify(context) : null;
         BBPlayerModule?.loadWithClipListJson(
           tag,
           clipListJson,
           initiator ?? null,
           autoPlay ?? false,
-          seekTo ?? 0
+          seekTo ?? 0,
+          contextJson
         );
       }
     },
@@ -210,23 +227,27 @@ export function createCommands(viewRef: React.RefObject<any>) {
       projectJson: string,
       initiator?: string,
       autoPlay?: boolean,
-      seekTo?: number
+      seekTo?: number,
+      context?: LoadContext
     ) => {
       const tag = getViewTag(viewRef);
       if (tag != null) {
+        const contextJson = context ? JSON.stringify(context) : null;
         BBPlayerModule?.loadWithProjectJson(
           tag,
           projectJson,
           initiator ?? null,
           autoPlay ?? false,
-          seekTo ?? 0
+          seekTo ?? 0,
+          contextJson
         );
       }
     },
-    loadWithJsonUrl: (jsonUrl: string, autoPlay?: boolean) => {
+    loadWithJsonUrl: (jsonUrl: string, autoPlay?: boolean, context?: LoadContext) => {
       const tag = getViewTag(viewRef);
       if (tag != null) {
-        BBPlayerModule?.loadWithJsonUrl(tag, jsonUrl, autoPlay ?? true);
+        const contextJson = context ? JSON.stringify(context) : null;
+        BBPlayerModule?.loadWithJsonUrl(tag, jsonUrl, autoPlay ?? true, contextJson);
       }
     },
 
@@ -237,13 +258,6 @@ export function createCommands(viewRef: React.RefObject<any>) {
       const tag = getViewTag(viewRef);
       if (tag != null && BBPlayerModule?.getDuration) {
         return BBPlayerModule.getDuration(tag);
-      }
-      return null;
-    },
-    getCurrentTime: async (): Promise<number | null> => {
-      const tag = getViewTag(viewRef);
-      if (tag != null && BBPlayerModule?.getCurrentTime) {
-        return BBPlayerModule.getCurrentTime(tag);
       }
       return null;
     },
@@ -330,7 +344,6 @@ export function createCommands(viewRef: React.RefObject<any>) {
           state,
           phase,
           mode,
-          currentTime,
           duration,
           muted,
           volume,
@@ -341,7 +354,6 @@ export function createCommands(viewRef: React.RefObject<any>) {
           BBPlayerModule.getState?.(tag) ?? null,
           BBPlayerModule.getPhase?.(tag) ?? null,
           BBPlayerModule.getMode?.(tag) ?? null,
-          BBPlayerModule.getCurrentTime?.(tag) ?? 0,
           BBPlayerModule.getDuration?.(tag) ?? 0,
           BBPlayerModule.getMuted?.(tag) ?? false,
           BBPlayerModule.getVolume?.(tag) ?? 1,
@@ -354,7 +366,6 @@ export function createCommands(viewRef: React.RefObject<any>) {
           state: (state as State) ?? "IDLE",
           phase: (phase as Phase) ?? "INIT",
           mode: mode ?? null,
-          currentTime: currentTime ?? 0,
           duration: duration ?? 0,
           muted: muted ?? false,
           volume: volume ?? 1,

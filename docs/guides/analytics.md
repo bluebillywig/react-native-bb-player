@@ -187,42 +187,7 @@ The player provides specific events for view tracking:
 
 ## Playback Progress Tracking
 
-Track playback progress using time updates or state changes:
-
-### Using Time Updates
-
-```tsx
-import { useRef, useCallback } from 'react';
-
-function ProgressTrackingPlayer() {
-  const quartilesSent = useRef<Set<number>>(new Set());
-
-  const handleTimeUpdate = useCallback((currentTime: number, duration: number) => {
-    if (duration <= 0) return;
-
-    const progress = currentTime / duration;
-    const quartiles = [0.25, 0.5, 0.75, 1.0];
-
-    for (const quartile of quartiles) {
-      if (progress >= quartile && !quartilesSent.current.has(quartile)) {
-        quartilesSent.current.add(quartile);
-        analytics.track('video_quartile', {
-          video_id: clipId,
-          quartile: Math.round(quartile * 100),
-        });
-      }
-    }
-  }, [clipId]);
-
-  return (
-    <BBPlayerView
-      jsonUrl="..."
-      enableTimeUpdates={true}
-      onDidTriggerTimeUpdate={handleTimeUpdate}
-    />
-  );
-}
-```
+Track playback progress using state changes and built-in events:
 
 ### Using Built-in Quartile Events (Ads)
 

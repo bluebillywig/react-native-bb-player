@@ -1,10 +1,11 @@
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
 #ifdef RCT_NEW_ARCH_ENABLED
 #import <BBPlayerModuleSpec/BBPlayerModuleSpec.h>
 #endif
 
-@interface RCT_EXTERN_MODULE(BBPlayerModule, NSObject)
+@interface RCT_EXTERN_MODULE(BBPlayerModule, RCTEventEmitter)
 
 // Playback control
 RCT_EXTERN_METHOD(play:(nonnull NSNumber *)viewTag)
@@ -29,13 +30,13 @@ RCT_EXTERN_METHOD(destroy:(nonnull NSNumber *)viewTag)
 RCT_EXTERN_METHOD(showCastPicker:(nonnull NSNumber *)viewTag)
 
 // Load methods
-RCT_EXTERN_METHOD(loadWithClipId:(nonnull NSNumber *)viewTag clipId:(NSString *)clipId initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo)
-RCT_EXTERN_METHOD(loadWithClipListId:(nonnull NSNumber *)viewTag clipListId:(NSString *)clipListId initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo)
-RCT_EXTERN_METHOD(loadWithProjectId:(nonnull NSNumber *)viewTag projectId:(NSString *)projectId initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo)
-RCT_EXTERN_METHOD(loadWithClipJson:(nonnull NSNumber *)viewTag clipJson:(NSString *)clipJson initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo)
-RCT_EXTERN_METHOD(loadWithClipListJson:(nonnull NSNumber *)viewTag clipListJson:(NSString *)clipListJson initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo)
-RCT_EXTERN_METHOD(loadWithProjectJson:(nonnull NSNumber *)viewTag projectJson:(NSString *)projectJson initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo)
-RCT_EXTERN_METHOD(loadWithJsonUrl:(nonnull NSNumber *)viewTag jsonUrl:(NSString *)jsonUrl autoPlay:(BOOL)autoPlay)
+RCT_EXTERN_METHOD(loadWithClipId:(nonnull NSNumber *)viewTag clipId:(NSString *)clipId initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo contextJson:(NSString *)contextJson)
+RCT_EXTERN_METHOD(loadWithClipListId:(nonnull NSNumber *)viewTag clipListId:(NSString *)clipListId initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo contextJson:(NSString *)contextJson)
+RCT_EXTERN_METHOD(loadWithProjectId:(nonnull NSNumber *)viewTag projectId:(NSString *)projectId initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo contextJson:(NSString *)contextJson)
+RCT_EXTERN_METHOD(loadWithClipJson:(nonnull NSNumber *)viewTag clipJson:(NSString *)clipJson initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo contextJson:(NSString *)contextJson)
+RCT_EXTERN_METHOD(loadWithClipListJson:(nonnull NSNumber *)viewTag clipListJson:(NSString *)clipListJson initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo contextJson:(NSString *)contextJson)
+RCT_EXTERN_METHOD(loadWithProjectJson:(nonnull NSNumber *)viewTag projectJson:(NSString *)projectJson initiator:(NSString *)initiator autoPlay:(BOOL)autoPlay seekTo:(NSNumber *)seekTo contextJson:(NSString *)contextJson)
+RCT_EXTERN_METHOD(loadWithJsonUrl:(nonnull NSNumber *)viewTag jsonUrl:(NSString *)jsonUrl autoPlay:(BOOL)autoPlay contextJson:(NSString *)contextJson)
 
 // Getter methods with Promise
 RCT_EXTERN_METHOD(getDuration:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
@@ -48,6 +49,14 @@ RCT_EXTERN_METHOD(getMode:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolv
 RCT_EXTERN_METHOD(getClipData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
 RCT_EXTERN_METHOD(getProjectData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
 RCT_EXTERN_METHOD(getPlayoutData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+
+// Modal player (module-level)
+RCT_EXTERN_METHOD(presentModalPlayer:(NSString *)jsonUrl optionsJson:(NSString *)optionsJson)
+RCT_EXTERN_METHOD(dismissModalPlayer)
+
+// Event emitter support
+RCT_EXTERN_METHOD(addListener:(NSString *)eventName)
+RCT_EXTERN_METHOD(removeListeners:(double)count)
 
 #ifdef RCT_NEW_ARCH_ENABLED
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:

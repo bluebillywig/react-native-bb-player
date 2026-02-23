@@ -12,6 +12,7 @@ import android.widget.FrameLayout
 import com.facebook.react.modules.core.ReactChoreographer
 import androidx.collection.ArrayMap
 import androidx.mediarouter.app.MediaRouteButton
+import org.json.JSONObject
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayer
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayerView
 import com.bluebillywig.bbnativeplayersdk.BBNativePlayerViewDelegate
@@ -176,14 +177,8 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     // END NATIVE LAYOUT INTEGRATION
     // ==================================================================================
 
-    // Timer for periodic time updates (opt-in for performance)
-    private val timeUpdateHandler = Handler(Looper.getMainLooper())
-    private var timeUpdateRunnable: Runnable? = null
     private var isPlaying = false
     private var currentDuration: Double = 0.0
-    private var lastKnownTime: Double = 0.0
-    private var playbackStartTimestamp: Long = 0
-    private var enableTimeUpdates: Boolean = false
 
     // Event emission helper using modern EventDispatcher
     private fun sendEvent(eventName: String, params: WritableMap?) {
@@ -220,17 +215,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     fun setAutoPlay(autoPlay: Boolean) {
         debugLog("BBPlayerView") { "setAutoPlay: $autoPlay" }
         this.options["autoPlay"] = autoPlay
-    }
-
-    fun setEnableTimeUpdates(enabled: Boolean) {
-        enableTimeUpdates = enabled
-        debugLog("BBPlayerView") { "Time updates ${if (enabled) "enabled" else "disabled"}" }
-
-        if (!enabled && timeUpdateRunnable != null) {
-            stopTimeUpdates()
-        } else if (enabled && isPlaying && timeUpdateRunnable == null) {
-            startTimeUpdates()
-        }
     }
 
     fun setOptions(optionsMap: ReadableMap?) {
@@ -275,91 +259,36 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
 
         addView(playerView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
 
-        // Set ExoPlayer's resize mode to FILL to prevent letterboxing margins
-        // This addresses top/bottom margin issues caused by AspectRatioFrameLayout
+        // RESIZE_MODE_FILL prevents SurfaceView bleed-through at container edges
+        // when embedding inline above a WebView. The container aspect ratio is
+        // adapted dynamically via onDidTriggerMediaClipLoaded to avoid stretching.
         postDelayed({
-            setExoPlayerResizeMode(playerView, RESIZE_MODE_FILL)
-        }, 1000)
+            setExoPlayerResizeMode(playerView)
+        }, 500)
 
         playerSetup = true
         debugLog("BBPlayerView") { "Player setup complete with URL: $jsonUrl" }
     }
 
-    companion object {
-        // AspectRatioFrameLayout resize mode constants
-        private const val RESIZE_MODE_FILL = 3
-    }
-
     /**
-     * Recursively find ExoPlayer's PlayerView or AspectRatioFrameLayout and set resize mode.
-     * Uses reflection since media3 classes aren't directly available in RN module classpath.
-     * This fixes top/bottom margin issues caused by AspectRatioFrameLayout letterboxing.
+     * Set ExoPlayer's resize mode to FILL via reflection.
+     * FILL prevents SurfaceView bleed-through artifacts at container edges.
      */
-    private fun setExoPlayerResizeMode(view: View, resizeMode: Int): Boolean {
-        // Try Media3 AspectRatioFrameLayout via reflection
-        try {
-            val aspectRatioClass = Class.forName("androidx.media3.ui.AspectRatioFrameLayout")
-            if (aspectRatioClass.isInstance(view)) {
-                val method = aspectRatioClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
-                method.invoke(view, resizeMode)
-                return true
-            }
-        } catch (_: ClassNotFoundException) {
-            // Media3 not available
-        } catch (_: Exception) {
-            // Failed to set resize mode
-        }
-
-        // Try Media3 PlayerView via reflection
+    private fun setExoPlayerResizeMode(view: View): Boolean {
         try {
             val playerViewClass = Class.forName("androidx.media3.ui.PlayerView")
             if (playerViewClass.isInstance(view)) {
                 val method = playerViewClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
-                method.invoke(view, resizeMode)
-                // Continue searching - there might be an AspectRatioFrameLayout inside
-            }
-        } catch (_: ClassNotFoundException) {
-            // Media3 PlayerView not available
-        } catch (_: Exception) {
-            // Failed to set resize mode
-        }
-
-        // Try legacy ExoPlayer2 AspectRatioFrameLayout via reflection
-        try {
-            val legacyAspectRatioClass = Class.forName("com.google.android.exoplayer2.ui.AspectRatioFrameLayout")
-            if (legacyAspectRatioClass.isInstance(view)) {
-                val method = legacyAspectRatioClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
-                method.invoke(view, resizeMode)
+                method.invoke(view, 3) // RESIZE_MODE_FILL = 3
                 return true
             }
-        } catch (_: ClassNotFoundException) {
-            // ExoPlayer2 not available
-        } catch (_: Exception) {
-            // Failed to set resize mode
-        }
+        } catch (_: Exception) {}
 
-        // Try legacy ExoPlayer2 StyledPlayerView via reflection
-        try {
-            val styledPlayerViewClass = Class.forName("com.google.android.exoplayer2.ui.StyledPlayerView")
-            if (styledPlayerViewClass.isInstance(view)) {
-                val method = styledPlayerViewClass.getMethod("setResizeMode", Int::class.javaPrimitiveType)
-                method.invoke(view, resizeMode)
-            }
-        } catch (_: ClassNotFoundException) {
-            // StyledPlayerView not available
-        } catch (_: Exception) {
-            // Failed to set resize mode
-        }
-
-        // Recursively search children
         if (view is ViewGroup) {
             for (i in 0 until view.childCount) {
-                if (setExoPlayerResizeMode(view.getChildAt(i), resizeMode)) {
-                    return true
-                }
+                if (setExoPlayerResizeMode(view.getChildAt(i))) return true
             }
         }
-
         return false
     }
 
@@ -370,13 +299,13 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
      *
      * Note: Shorts URLs (/sh/{id}.json) are NOT supported here - use BBShortsView instead.
      */
-    fun loadWithJsonUrl(url: String, autoPlay: Boolean = true) {
+    fun loadWithJsonUrl(url: String, autoPlay: Boolean = true, contextJson: String? = null) {
         if (!::playerView.isInitialized) {
             Log.w("BBPlayerView", "Cannot load content - playerView not initialized")
             return
         }
 
-        Log.d("BBPlayerView", "loadWithJsonUrl called with URL: $url")
+        Log.d("BBPlayerView", "loadWithJsonUrl called with URL: $url, context: $contextJson")
 
         // Extract ID from URL patterns like:
         // /c/{id}.json or /mediaclip/{id}.json -> clip ID
@@ -387,6 +316,8 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         val clipListIdRegex = Regex("/l/([0-9]+)\\.json|/mediacliplist/([0-9]+)")
         val projectIdRegex = Regex("/pj/([0-9]+)\\.json|/project/([0-9]+)")
         val shortsIdRegex = Regex("/sh/([0-9]+)\\.json")
+
+        val context = parseContext(contextJson)
 
         when {
             shortsIdRegex.containsMatchIn(url) -> {
@@ -401,7 +332,7 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
                 val clipListId = match?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
                 if (clipListId != null) {
                     Log.d("BBPlayerView", "Loading ClipList by ID: $clipListId")
-                    playerView.player?.loadWithClipListId(clipListId, "external", autoPlay, null)
+                    playerView.player?.loadWithClipListId(clipListId, "external", autoPlay, null, context)
                 } else {
                     Log.e("BBPlayerView", "Failed to extract cliplist ID from URL: $url")
                 }
@@ -411,7 +342,7 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
                 val projectId = match?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
                 if (projectId != null) {
                     Log.d("BBPlayerView", "Loading Project by ID: $projectId")
-                    playerView.player?.loadWithProjectId(projectId, "external", autoPlay, null)
+                    playerView.player?.loadWithProjectId(projectId, "external", autoPlay, null, context)
                 } else {
                     Log.e("BBPlayerView", "Failed to extract project ID from URL: $url")
                 }
@@ -421,7 +352,7 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
                 val clipId = match?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }
                 if (clipId != null) {
                     Log.d("BBPlayerView", "Loading Clip by ID: $clipId")
-                    playerView.player?.loadWithClipId(clipId, "external", autoPlay, null)
+                    playerView.player?.loadWithClipId(clipId, "external", autoPlay, null, context)
                 } else {
                     Log.e("BBPlayerView", "Failed to extract clip ID from URL: $url")
                 }
@@ -439,7 +370,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         debugLog("BBPlayerView") { "removePlayer called" }
         playerSetup = false
         isPlaying = false
-        stopTimeUpdates()
         removeAllViews()
 
         if (::playerView.isInitialized) {
@@ -469,9 +399,7 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
 
     fun seekRelative(offsetInSeconds: Double) {
         if (::playerView.isInitialized) {
-            val currentTime = calculateEstimatedCurrentTime()
-            val newPosition = kotlin.math.max(0.0, kotlin.math.min(currentDuration, currentTime + offsetInSeconds))
-            playerView.player?.seek(newPosition)
+            playerView.player?.seekRelative(offsetInSeconds)
         }
     }
 
@@ -566,6 +494,20 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         return null
     }
 
+    fun presentModal() {
+        Log.d("BBPlayerView", "presentModal() called")
+        if (::playerView.isInitialized) {
+            playerView.player?.enterFullScreen()
+        }
+    }
+
+    fun closeModal() {
+        Log.d("BBPlayerView", "closeModal() called")
+        if (::playerView.isInitialized) {
+            playerView.player?.exitFullScreen()
+        }
+    }
+
     fun destroy() {
         Log.d("BBPlayerView", "destroy() called")
         if (::playerView.isInitialized) {
@@ -607,22 +549,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     fun getClipData(): MediaClip? {
         return if (::playerView.isInitialized) {
             playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.clipData) as? MediaClip
-        } else null
-    }
-
-    private fun calculateEstimatedCurrentTime(): Double {
-        return if (isPlaying && playbackStartTimestamp > 0) {
-            val elapsedSeconds = (System.currentTimeMillis() - playbackStartTimestamp) / 1000.0
-            val estimatedTime = lastKnownTime + elapsedSeconds
-            kotlin.math.min(estimatedTime, currentDuration)
-        } else {
-            lastKnownTime
-        }
-    }
-
-    fun getCurrentTime(): Double? {
-        return if (::playerView.isInitialized) {
-            calculateEstimatedCurrentTime()
         } else null
     }
 
@@ -672,73 +598,63 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         return null
     }
 
+    // Helper to parse context JSON into a Map for the native SDK
+    private fun parseContext(contextJson: String?): Map<String, Any?>? {
+        if (contextJson.isNullOrBlank()) return null
+        return try {
+            val json = JSONObject(contextJson)
+            mapOf(
+                "contextEntityType" to json.optString("contextEntityType", null),
+                "contextEntityId" to json.optString("contextEntityId", null),
+                "contextCollectionType" to json.optString("contextCollectionType", null),
+                "contextCollectionId" to json.optString("contextCollectionId", null)
+            ).filterValues { it != null }
+        } catch (e: Exception) {
+            Log.w("BBPlayerView", "Failed to parse context JSON: $contextJson", e)
+            null
+        }
+    }
+
     // Load methods
-    fun loadWithClipId(clipId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithClipId(clipId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithClipId(clipId, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithClipId(clipId, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithClipListId(clipListId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithClipListId(clipListId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithClipListId(clipListId, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithClipListId(clipListId, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithProjectId(projectId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithProjectId(projectId: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithProjectId(projectId, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithProjectId(projectId, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithClipJson(clipJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithClipJson(clipJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithClipJson(clipJson, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithClipJson(clipJson, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithClipListJson(clipListJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithClipListJson(clipListJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithClipListJson(clipListJson, initiator, autoPlay, seekTo)
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithClipListJson(clipListJson, initiator, autoPlay, seekTo, context)
         }
     }
 
-    fun loadWithProjectJson(projectJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null) {
+    fun loadWithProjectJson(projectJson: String, initiator: String? = "external", autoPlay: Boolean? = true, seekTo: Double? = null, contextJson: String? = null) {
         if (::playerView.isInitialized) {
-            playerView.player?.loadWithProjectJson(projectJson, initiator, autoPlay, seekTo)
-        }
-    }
-
-    private fun startTimeUpdates() {
-        if (!enableTimeUpdates || timeUpdateRunnable != null) {
-            return
-        }
-
-        timeUpdateRunnable = object : Runnable {
-            override fun run() {
-                if (::playerView.isInitialized && isPlaying) {
-                    val currentTime = calculateEstimatedCurrentTime()
-
-                    if (currentDuration > 0) {
-                        val params = Arguments.createMap().apply {
-                            putDouble("currentTime", currentTime)
-                            putDouble("duration", currentDuration)
-                        }
-                        sendEvent("onDidTriggerTimeUpdate", params)
-                    }
-
-                    timeUpdateHandler.postDelayed(this, 1000)
-                }
-            }
-        }
-
-        timeUpdateHandler.postDelayed(timeUpdateRunnable!!, 1000)
-    }
-
-    private fun stopTimeUpdates() {
-        timeUpdateRunnable?.let {
-            timeUpdateHandler.removeCallbacks(it)
-            timeUpdateRunnable = null
+            val context = parseContext(contextJson)
+            playerView.player?.loadWithProjectJson(projectJson, initiator, autoPlay, seekTo, context)
         }
     }
 
@@ -756,10 +672,12 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     }
 
     override fun didTriggerMediaClipLoaded(view: BBNativePlayerView, clipData: MediaClip?) {
-        debugLog("BBPlayerView") { "didTriggerMediaClipLoaded: ${clipData?.title}" }
+        debugLog("BBPlayerView") { "didTriggerMediaClipLoaded: ${clipData?.title} (${clipData?.width}x${clipData?.height})" }
         val params = Arguments.createMap().apply {
             putString("title", clipData?.title)
             putString("id", clipData?.id)
+            clipData?.width?.let { putDouble("width", it.toDouble()) }
+            clipData?.height?.let { putDouble("height", it.toDouble()) }
         }
         sendEvent("onDidTriggerMediaClipLoaded", params)
     }
@@ -839,24 +757,20 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     }
 
     override fun didTriggerPlaying(view: BBNativePlayerView) {
-        debugLog("BBPlayerView") { "didTriggerPlaying - starting periodic time updates" }
+        debugLog("BBPlayerView") { "didTriggerPlaying" }
         isPlaying = true
-        playbackStartTimestamp = System.currentTimeMillis()
-        startTimeUpdates()
         sendEvent("onDidTriggerPlaying")
     }
 
     override fun didTriggerPause(view: BBNativePlayerView) {
-        debugLog("BBPlayerView") { "didTriggerPause - stopping periodic time updates" }
+        debugLog("BBPlayerView") { "didTriggerPause" }
         isPlaying = false
-        stopTimeUpdates()
         sendEvent("onDidTriggerPause")
     }
 
     override fun didTriggerEnded(view: BBNativePlayerView) {
-        debugLog("BBPlayerView") { "didTriggerEnded - stopping periodic time updates" }
+        debugLog("BBPlayerView") { "didTriggerEnded" }
         isPlaying = false
-        stopTimeUpdates()
         sendEvent("onDidTriggerEnded")
     }
 
@@ -867,9 +781,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
 
     override fun didTriggerSeeked(view: BBNativePlayerView, seekOffset: Double?) {
         debugLog("BBPlayerView") { "didTriggerSeeked: $seekOffset" }
-        lastKnownTime = seekOffset ?: 0.0
-        playbackStartTimestamp = System.currentTimeMillis()
-
         val params = Arguments.createMap().apply {
             putDouble("payload", seekOffset ?: 0.0)
         }
@@ -1062,8 +973,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
 
     override fun onDetachedFromWindow() {
         debugLog("BBPlayerView") { "onDetachedFromWindow - cleaning up player" }
-        stopTimeUpdates()
-        timeUpdateHandler.removeCallbacksAndMessages(null)
         removePlayer()
         super.onDetachedFromWindow()
     }

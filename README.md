@@ -85,6 +85,7 @@ See the [Expo Setup Guide](docs/guides/expo-setup.md) for detailed configuration
 ### Guides
 
 - [Expo Setup Guide](docs/guides/expo-setup.md) - Expo configuration and prebuild
+- [Fullscreen & Modal Player Guide](docs/guides/fullscreen.md) - Fullscreen, landscape, and modal-style presentation
 - [Advertising Guide](docs/guides/advertising.md) - Ad integration and VAST/VPAID
 - [Analytics Guide](docs/guides/analytics.md) - Analytics integration and custom statistics
 - [Shorts Guide](docs/guides/shorts.md) - Vertical video player (TikTok-style experience)
@@ -201,7 +202,6 @@ export function EventListenerExample() {
   const [playerState, setPlayerState] = useState<State>('IDLE');
   const [playerPhase, setPlayerPhase] = useState<Phase>('INIT');
   const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
 
   return (
     <View style={{ flex: 1 }}>
@@ -212,7 +212,6 @@ export function EventListenerExample() {
         onDidTriggerStateChange={(state) => setPlayerState(state)}
         onDidTriggerPhaseChange={(phase) => setPlayerPhase(phase)}
         onDidTriggerDurationChange={(dur) => setDuration(dur)}
-        onDidTriggerTimeUpdate={(time) => setCurrentTime(time)}
         onDidTriggerPlay={() => console.log('Playback started')}
         onDidTriggerPause={() => console.log('Playback paused')}
         onDidTriggerEnded={() => console.log('Playback ended')}
@@ -220,7 +219,7 @@ export function EventListenerExample() {
       <View style={{ padding: 20, backgroundColor: '#f0f0f0' }}>
         <Text>State: {playerState}</Text>
         <Text>Phase: {playerPhase}</Text>
-        <Text>Time: {currentTime.toFixed(1)}s / {duration.toFixed(1)}s</Text>
+        <Text>Duration: {duration.toFixed(1)}s</Text>
       </View>
     </View>
   );
@@ -267,6 +266,55 @@ export function DynamicLoading() {
 }
 ```
 
+### Loading with Playlist Context
+
+When loading clips within a playlist, pass context to enable "next up" navigation and proper playlist handling:
+
+```tsx
+import React, { useRef } from 'react';
+import { View, Button } from 'react-native';
+import { BBPlayerView, type BBPlayerViewMethods, type LoadContext } from '@bluebillywig/react-native-bb-player';
+
+export function PlaylistPlayer() {
+  const playerRef = useRef<BBPlayerViewMethods>(null);
+  const playlistId = '12345';
+
+  // Load a clip from a playlist with context for "next up" navigation
+  const loadClipFromPlaylist = (clipId: string) => {
+    playerRef.current?.loadClip(clipId, {
+      autoPlay: true,
+      playout: 'default',
+      context: {
+        contextEntityType: 'MediaClipList',
+        contextEntityId: playlistId,
+        contextCollectionType: 'MediaClipList',
+        contextCollectionId: playlistId,
+      },
+    });
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <BBPlayerView
+        ref={playerRef}
+        jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
+        style={{ flex: 1 }}
+      />
+      <View style={{ flexDirection: 'row', padding: 10 }}>
+        <Button title="Load Video 1" onPress={() => loadClipFromPlaylist('clip1')} />
+        <Button title="Load Video 2" onPress={() => loadClipFromPlaylist('clip2')} />
+        <Button title="Load Video 3" onPress={() => loadClipFromPlaylist('clip3')} />
+      </View>
+    </View>
+  );
+}
+```
+
+The context enables:
+- **Next Up List**: Shows upcoming videos from the playlist
+- **Playlist Navigation**: Previous/next buttons work correctly within the playlist
+- **Proper Analytics**: Analytics correctly attribute views to the playlist context
+
 ### Fullscreen Player
 
 Launch player in fullscreen mode:
@@ -278,29 +326,25 @@ import { BBPlayerView, type BBPlayerViewMethods } from '@bluebillywig/react-nati
 export function FullscreenPlayer() {
   const playerRef = useRef<BBPlayerViewMethods>(null);
 
-  useEffect(() => {
-    // Enter fullscreen after player is ready
-    const timer = setTimeout(() => {
-      playerRef.current?.enterFullscreen();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <BBPlayerView
       ref={playerRef}
       jsonUrl="https://demo.bbvms.com/p/default/c/4701337.json"
-      options={{
-        autoPlay: true,
-      }}
+      options={{ autoPlay: true }}
       style={{ flex: 1 }}
-      onDidTriggerFullscreen={() => console.log('Entered fullscreen')}
-      onDidTriggerRetractFullscreen={() => console.log('Exited fullscreen')}
+      onDidTriggerApiReady={() => {
+        // Enter fullscreen landscape once the player is ready
+        playerRef.current?.enterFullscreenLandscape();
+      }}
+      onDidTriggerRetractFullscreen={() => {
+        console.log('User exited fullscreen');
+      }}
     />
   );
 }
 ```
+
+See the [Fullscreen & Modal Player Guide](docs/guides/fullscreen.md) for advanced patterns including modal-style presentation and handling orientation.
 
 ### Chromecast Support
 
@@ -344,7 +388,6 @@ export function ChromecastPlayer() {
 | `jwt` | `string` | No | JWT token for authenticated playback |
 | `options` | `Record<string, unknown>` | No | Player configuration options |
 | `style` | `ViewStyle` | No | React Native style object |
-| `enableTimeUpdates` | `boolean` | No | Enable time update events (default: false) |
 | Event props | See below | No | Event callback handlers |
 
 ### Methods (via ref)
@@ -373,21 +416,20 @@ showCastPicker(): void
 // Load Content (Primary API)
 loadClip(clipId: string, options?: LoadClipOptions): void
 
-// Load Content (Legacy)
-loadWithClipId(clipId: string, initiator?: string, autoPlay?: boolean, seekTo?: number): void
-loadWithClipListId(clipListId: string, initiator?: string, autoPlay?: boolean, seekTo?: number): void
-loadWithProjectId(projectId: string, initiator?: string, autoPlay?: boolean, seekTo?: number): void
-loadWithClipJson(clipJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number): void
-loadWithClipListJson(clipListJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number): void
-loadWithProjectJson(projectJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number): void
-loadWithJsonUrl(jsonUrl: string, autoPlay?: boolean): void
+// Load Content (Legacy - all support optional context parameter)
+loadWithClipId(clipId: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext): void
+loadWithClipListId(clipListId: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext): void
+loadWithProjectId(projectId: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext): void
+loadWithClipJson(clipJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext): void
+loadWithClipListJson(clipListJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext): void
+loadWithProjectJson(projectJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext): void
+loadWithJsonUrl(jsonUrl: string, autoPlay?: boolean, context?: LoadContext): void
 
 // Async Getters (Primary API)
 getPlayerState(): Promise<BBPlayerState | null>  // Returns complete player state
 
 // Async Getters (Individual)
 getDuration(): Promise<number | null>
-getCurrentTime(): Promise<number | null>
 getMuted(): Promise<boolean | null>
 getVolume(): Promise<number | null>
 getPhase(): Promise<string | null>
@@ -419,7 +461,6 @@ onDidTriggerCanPlay?: () => void
 onDidTriggerSeeking?: () => void
 onDidTriggerSeeked?: (position: number) => void
 onDidTriggerStall?: () => void
-onDidTriggerTimeUpdate?: (currentTime: number, duration: number) => void
 onDidTriggerDurationChange?: (duration: number) => void
 onDidTriggerVolumeChange?: (volume: number) => void
 
@@ -481,6 +522,15 @@ type LoadClipOptions = {
   autoPlay?: boolean;  // Auto-play after loading
   seekTo?: number;     // Seek to position (seconds)
   initiator?: string;  // Analytics initiator
+  context?: LoadContext; // Playlist/collection context
+};
+
+// Context for playlist/collection navigation
+type LoadContext = {
+  contextEntityType?: 'MediaClipList';   // Type of the containing entity
+  contextEntityId?: string;              // Playlist ID for "next up" list
+  contextCollectionType?: 'MediaClipList'; // Type of the collection
+  contextCollectionId?: string;          // Collection ID if playing within a collection
 };
 
 // Complete player state object (returned by getPlayerState())
@@ -488,7 +538,6 @@ type BBPlayerState = {
   state: State;
   phase: Phase;
   mode: string | null;
-  currentTime: number;
   duration: number;
   muted: boolean;
   volume: number;
@@ -503,39 +552,11 @@ type BBPlayerEventPayloads = {
   pause: void;
   stateChange: { state: State };
   phaseChange: { phase: Phase };
-  timeUpdate: { currentTime: number; duration: number };
   // ... and more
 };
 ```
 
-## Performance Optimization
-
-### Time Updates (Opt-In)
-
-By default, the player does **not** emit `onDidTriggerTimeUpdate` events to reduce CPU overhead. Enable only when needed:
-
-```tsx
-<BBPlayerView
-  enableTimeUpdates={true}
-  onDidTriggerTimeUpdate={(time, dur) => {
-    setCurrentTime(time);
-    setDuration(dur);
-  }}
-/>
-```
-
-### Polling Current Time (Alternative)
-
-If you only need the current time occasionally, use the async getter:
-
-```tsx
-const handleGetTime = async () => {
-  const time = await playerRef.current?.getCurrentTime();
-  console.log('Current time:', time);
-};
-```
-
-### Getting Complete Player State
+## Getting Complete Player State
 
 Use `getPlayerState()` to fetch all player state at once:
 
@@ -544,7 +565,7 @@ const handleGetState = async () => {
   const state = await playerRef.current?.getPlayerState();
   if (state) {
     console.log(`Playing: ${state.state === 'PLAYING'}`);
-    console.log(`Progress: ${state.currentTime}/${state.duration}`);
+    console.log(`Duration: ${state.duration}`);
     console.log(`Clip: ${state.clip?.title}`);
     console.log(`Volume: ${state.volume}, Muted: ${state.muted}`);
   }

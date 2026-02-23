@@ -1,5 +1,6 @@
 import Foundation
 import React
+import BBNativePlayerKit
 
 /**
  * Global registry for BBPlayerView instances.
@@ -39,19 +40,42 @@ class BBPlayerViewRegistry: NSObject {
 
 /**
  * Native Module for BBPlayer commands.
+ * Extends RCTEventEmitter to support module-level events (modal player).
  * This module looks up BBPlayerView instances by their React tag and dispatches commands to them.
  */
 @objc(BBPlayerModule)
-class BBPlayerModule: NSObject {
+class BBPlayerModule: RCTEventEmitter {
 
-    @objc var bridge: RCTBridge?
+    private var modalPlayerView: BBNativePlayerView?
+    private var modalDelegate: ModalPlayerDelegate?
+    private var hasListeners = false
 
-    @objc static func requiresMainQueueSetup() -> Bool {
+    @objc override static func requiresMainQueueSetup() -> Bool {
         return true
     }
 
-    @objc static func moduleName() -> String {
+    @objc override static func moduleName() -> String! {
         return "BBPlayerModule"
+    }
+
+    override func supportedEvents() -> [String]! {
+        return [
+            "modalPlayerDismissed",
+            "modalPlayerPlay",
+            "modalPlayerPause",
+            "modalPlayerEnded",
+            "modalPlayerError",
+            "modalPlayerApiReady",
+            "modalPlayerCanPlay",
+        ]
+    }
+
+    override func startObserving() {
+        hasListeners = true
+    }
+
+    override func stopObserving() {
+        hasListeners = false
     }
 
     // MARK: - Helper to get view by tag
@@ -159,50 +183,50 @@ class BBPlayerModule: NSObject {
         }
     }
 
-    @objc func loadWithClipId(_ viewTag: NSNumber, clipId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithClipId(_ viewTag: NSNumber, clipId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithClipId(clipId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithClipId(clipId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithClipListId(_ viewTag: NSNumber, clipListId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithClipListId(_ viewTag: NSNumber, clipListId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithClipListId(clipListId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithClipListId(clipListId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithProjectId(_ viewTag: NSNumber, projectId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithProjectId(_ viewTag: NSNumber, projectId: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithProjectId(projectId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithProjectId(projectId ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithClipJson(_ viewTag: NSNumber, clipJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithClipJson(_ viewTag: NSNumber, clipJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithClipJson(clipJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithClipJson(clipJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithClipListJson(_ viewTag: NSNumber, clipListJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithClipListJson(_ viewTag: NSNumber, clipListJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithClipListJson(clipListJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithClipListJson(clipListJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithProjectJson(_ viewTag: NSNumber, projectJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?) {
+    @objc func loadWithProjectJson(_ viewTag: NSNumber, projectJson: String?, initiator: String?, autoPlay: Bool, seekTo: NSNumber?, contextJson: String?) {
         DispatchQueue.main.async {
-            self.getView(viewTag)?.loadWithProjectJson(projectJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue)
+            self.getView(viewTag)?.loadWithProjectJson(projectJson ?? "", initiator: initiator, autoPlay: autoPlay, seekTo: seekTo?.doubleValue, contextJson: contextJson)
         }
     }
 
-    @objc func loadWithJsonUrl(_ viewTag: NSNumber, jsonUrl: String?, autoPlay: Bool) {
-        NSLog("BBPlayerModule.loadWithJsonUrl called - viewTag: %@, jsonUrl: %@, autoPlay: %d", viewTag, jsonUrl ?? "nil", autoPlay)
+    @objc func loadWithJsonUrl(_ viewTag: NSNumber, jsonUrl: String?, autoPlay: Bool, contextJson: String?) {
+        NSLog("BBPlayerModule.loadWithJsonUrl called - viewTag: %@, jsonUrl: %@, autoPlay: %d, context: %@", viewTag, jsonUrl ?? "nil", autoPlay, contextJson ?? "nil")
         DispatchQueue.main.async {
             let view = self.getView(viewTag)
             NSLog("BBPlayerModule.loadWithJsonUrl - view found: %@", view != nil ? "YES" : "NO")
             if let view = view, let url = jsonUrl {
                 NSLog("BBPlayerModule.loadWithJsonUrl - calling view.loadWithJsonUrl with url: %@", url)
-                view.loadWithJsonUrl(url, autoPlay: autoPlay)
+                view.loadWithJsonUrl(url, autoPlay: autoPlay, contextJson: contextJson)
             } else {
                 NSLog("BBPlayerModule.loadWithJsonUrl - FAILED: view=%@, url=%@", view != nil ? "found" : "nil", jsonUrl ?? "nil")
             }
@@ -215,13 +239,6 @@ class BBPlayerModule: NSObject {
         DispatchQueue.main.async {
             let duration = self.getView(viewTag)?.duration()
             resolver(duration)
-        }
-    }
-
-    @objc func getCurrentTime(_ viewTag: NSNumber, resolver: @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
-        DispatchQueue.main.async {
-            let currentTime = self.getView(viewTag)?.currentTime()
-            resolver(currentTime)
         }
     }
 
@@ -278,6 +295,101 @@ class BBPlayerModule: NSObject {
         DispatchQueue.main.async {
             let playoutData = self.getView(viewTag)?.playoutData()
             resolver(playoutData)
+        }
+    }
+
+    // MARK: - Modal Player API
+
+    @objc func presentModalPlayer(_ jsonUrl: String, optionsJson: String?) {
+        DispatchQueue.main.async {
+            guard let rootVC = RCTPresentedViewController() else {
+                NSLog("BBPlayerModule: No root view controller found")
+                return
+            }
+
+            // Parse options from JSON string
+            var options: [String: Any]? = nil
+            if let json = optionsJson, let data = json.data(using: .utf8) {
+                options = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            }
+
+            // Create modal player via native SDK
+            let playerView = BBNativePlayer.createModalPlayerView(
+                uiViewContoller: rootVC,
+                jsonUrl: jsonUrl,
+                options: options
+            )
+
+            // Set up delegate for event forwarding
+            let delegate = ModalPlayerDelegate(module: self)
+            playerView.delegate = delegate
+
+            self.modalPlayerView = playerView
+            self.modalDelegate = delegate
+
+            NSLog("BBPlayerModule: Modal player presented with URL: %@", jsonUrl)
+        }
+    }
+
+    @objc func dismissModalPlayer() {
+        DispatchQueue.main.async {
+            self.modalPlayerView?.player.closeModalPlayer()
+            self.modalPlayerView = nil
+            self.modalDelegate = nil
+        }
+    }
+
+    @objc override func addListener(_ eventName: String) {
+        // Required for RCTEventEmitter
+    }
+
+    @objc override func removeListeners(_ count: Double) {
+        // Required for RCTEventEmitter
+    }
+
+    private func emitEvent(_ name: String, body: Any? = nil) {
+        if hasListeners {
+            sendEvent(withName: name, body: body)
+        }
+    }
+
+    // MARK: - Modal Player Delegate
+
+    private class ModalPlayerDelegate: NSObject, BBNativePlayerViewDelegate {
+        weak var module: BBPlayerModule?
+
+        init(module: BBPlayerModule) {
+            self.module = module
+        }
+
+        func bbNativePlayerView(didTriggerPlay playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerPlay")
+        }
+
+        func bbNativePlayerView(didTriggerPause playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerPause")
+        }
+
+        func bbNativePlayerView(didTriggerEnded playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerEnded")
+        }
+
+        func bbNativePlayerView(playerView: BBNativePlayerView, didFailWithError error: String?) {
+            module?.emitEvent("modalPlayerError", body: ["error": error ?? "Unknown error"])
+        }
+
+        func bbNativePlayerView(didTriggerApiReady playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerApiReady")
+        }
+
+        func bbNativePlayerView(didTriggerCanPlay playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerCanPlay")
+        }
+
+        func bbNativePlayerView(didCloseModalPlayer playerView: BBNativePlayerView) {
+            module?.emitEvent("modalPlayerDismissed")
+            module?.modalPlayerView = nil
+            module?.modalDelegate = nil
         }
     }
 }

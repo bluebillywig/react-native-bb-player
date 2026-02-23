@@ -7,7 +7,6 @@
 // Props
 RCT_EXPORT_VIEW_PROPERTY(jsonUrl, NSString)
 RCT_EXPORT_VIEW_PROPERTY(options, NSDictionary)
-RCT_EXPORT_VIEW_PROPERTY(enableTimeUpdates, BOOL)
 
 // Event handlers
 RCT_EXPORT_VIEW_PROPERTY(onDidFailWithError, RCTDirectEventBlock)
@@ -48,7 +47,6 @@ RCT_EXPORT_VIEW_PROPERTY(onDidTriggerStateChange, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onDidTriggerViewFinished, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onDidTriggerViewStarted, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onDidTriggerVolumeChange, RCTDirectEventBlock)
-RCT_EXPORT_VIEW_PROPERTY(onDidTriggerTimeUpdate, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onDidTriggerApiReady, RCTDirectEventBlock)
 
 // Commands (methods callable from JS)
