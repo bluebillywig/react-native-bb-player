@@ -13,7 +13,6 @@ declare const BBPlayerView: React.ForwardRefExoticComponent<{
     jwt?: string | undefined;
     options?: Record<string, unknown> | undefined;
     jsonUrl?: string | undefined;
-    enableTimeUpdates?: boolean | undefined;
     onDidFailWithError?: ((error: string) => void) | undefined;
     onDidRequestCollapse?: (() => void) | undefined;
     onDidRequestExpand?: (() => void) | undefined;
@@ -50,7 +49,6 @@ declare const BBPlayerView: React.ForwardRefExoticComponent<{
     onDidTriggerSeeking?: (() => void) | undefined;
     onDidTriggerStall?: (() => void) | undefined;
     onDidTriggerStateChange?: ((state: State) => void) | undefined;
-    onDidTriggerTimeUpdate?: ((currentTime: number, duration: number) => void) | undefined;
     onDidTriggerViewFinished?: (() => void) | undefined;
     onDidTriggerViewStarted?: (() => void) | undefined;
     onDidTriggerVolumeChange?: ((volume: number) => void) | undefined;

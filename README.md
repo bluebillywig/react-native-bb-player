@@ -202,7 +202,6 @@ export function EventListenerExample() {
   const [playerState, setPlayerState] = useState<State>('IDLE');
   const [playerPhase, setPlayerPhase] = useState<Phase>('INIT');
   const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
 
   return (
     <View style={{ flex: 1 }}>
@@ -213,7 +212,6 @@ export function EventListenerExample() {
         onDidTriggerStateChange={(state) => setPlayerState(state)}
         onDidTriggerPhaseChange={(phase) => setPlayerPhase(phase)}
         onDidTriggerDurationChange={(dur) => setDuration(dur)}
-        onDidTriggerTimeUpdate={(time) => setCurrentTime(time)}
         onDidTriggerPlay={() => console.log('Playback started')}
         onDidTriggerPause={() => console.log('Playback paused')}
         onDidTriggerEnded={() => console.log('Playback ended')}
@@ -221,7 +219,7 @@ export function EventListenerExample() {
       <View style={{ padding: 20, backgroundColor: '#f0f0f0' }}>
         <Text>State: {playerState}</Text>
         <Text>Phase: {playerPhase}</Text>
-        <Text>Time: {currentTime.toFixed(1)}s / {duration.toFixed(1)}s</Text>
+        <Text>Duration: {duration.toFixed(1)}s</Text>
       </View>
     </View>
   );
@@ -390,7 +388,6 @@ export function ChromecastPlayer() {
 | `jwt` | `string` | No | JWT token for authenticated playback |
 | `options` | `Record<string, unknown>` | No | Player configuration options |
 | `style` | `ViewStyle` | No | React Native style object |
-| `enableTimeUpdates` | `boolean` | No | Enable time update events (default: false) |
 | Event props | See below | No | Event callback handlers |
 
 ### Methods (via ref)
@@ -433,7 +430,6 @@ getPlayerState(): Promise<BBPlayerState | null>  // Returns complete player stat
 
 // Async Getters (Individual)
 getDuration(): Promise<number | null>
-getCurrentTime(): Promise<number | null>
 getMuted(): Promise<boolean | null>
 getVolume(): Promise<number | null>
 getPhase(): Promise<string | null>
@@ -465,7 +461,6 @@ onDidTriggerCanPlay?: () => void
 onDidTriggerSeeking?: () => void
 onDidTriggerSeeked?: (position: number) => void
 onDidTriggerStall?: () => void
-onDidTriggerTimeUpdate?: (currentTime: number, duration: number) => void
 onDidTriggerDurationChange?: (duration: number) => void
 onDidTriggerVolumeChange?: (volume: number) => void
 
@@ -543,7 +538,6 @@ type BBPlayerState = {
   state: State;
   phase: Phase;
   mode: string | null;
-  currentTime: number;
   duration: number;
   muted: boolean;
   volume: number;
@@ -558,39 +552,11 @@ type BBPlayerEventPayloads = {
   pause: void;
   stateChange: { state: State };
   phaseChange: { phase: Phase };
-  timeUpdate: { currentTime: number; duration: number };
   // ... and more
 };
 ```
 
-## Performance Optimization
-
-### Time Updates (Opt-In)
-
-By default, the player does **not** emit `onDidTriggerTimeUpdate` events to reduce CPU overhead. Enable only when needed:
-
-```tsx
-<BBPlayerView
-  enableTimeUpdates={true}
-  onDidTriggerTimeUpdate={(time, dur) => {
-    setCurrentTime(time);
-    setDuration(dur);
-  }}
-/>
-```
-
-### Polling Current Time (Alternative)
-
-If you only need the current time occasionally, use the async getter:
-
-```tsx
-const handleGetTime = async () => {
-  const time = await playerRef.current?.getCurrentTime();
-  console.log('Current time:', time);
-};
-```
-
-### Getting Complete Player State
+## Getting Complete Player State
 
 Use `getPlayerState()` to fetch all player state at once:
 
@@ -599,7 +565,7 @@ const handleGetState = async () => {
   const state = await playerRef.current?.getPlayerState();
   if (state) {
     console.log(`Playing: ${state.state === 'PLAYING'}`);
-    console.log(`Progress: ${state.currentTime}/${state.duration}`);
+    console.log(`Duration: ${state.duration}`);
     console.log(`Clip: ${state.clip?.title}`);
     console.log(`Volume: ${state.volume}, Muted: ${state.muted}`);
   }

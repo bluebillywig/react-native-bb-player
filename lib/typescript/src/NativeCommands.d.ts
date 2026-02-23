@@ -32,7 +32,6 @@ export declare function createCommands(viewRef: React.RefObject<any>): {
     loadWithProjectJson: (projectJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
     loadWithJsonUrl: (jsonUrl: string, autoPlay?: boolean, context?: LoadContext) => void;
     getDuration: () => Promise<number | null>;
-    getCurrentTime: () => Promise<number | null>;
     getMuted: () => Promise<boolean | null>;
     getVolume: () => Promise<number | null>;
     getPhase: () => Promise<string | null>;

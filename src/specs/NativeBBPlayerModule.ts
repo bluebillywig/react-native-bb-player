@@ -81,7 +81,6 @@ export interface Spec extends TurboModule {
 
   // Promise getters
   getDuration(viewTag: number): Promise<number | null>;
-  getCurrentTime(viewTag: number): Promise<number | null>;
   getMuted(viewTag: number): Promise<boolean | null>;
   getVolume(viewTag: number): Promise<number | null>;
   getPhase(viewTag: number): Promise<string | null>;

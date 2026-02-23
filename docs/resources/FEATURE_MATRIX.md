@@ -115,7 +115,6 @@ This document outlines platform support and feature availability for the Blue Bi
 | Getter | iOS | Android | Return Type |
 |--------|-----|---------|-------------|
 | `getDuration()` | ✅ | ✅ | `Promise<number>` |
-| `getCurrentTime()` | ✅ | ✅ | `Promise<number>` |
 | `getVolume()` | ✅ | ✅ | `Promise<number>` |
 | `getMuted()` | ✅ | ✅ | `Promise<boolean>` |
 | `getPhase()` | ✅ | ✅ | `Promise<string>` |

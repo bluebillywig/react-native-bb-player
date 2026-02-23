@@ -82,9 +82,6 @@ type NativeBBPlayerViewProps = Override<
     onDidTriggerStateChange?: (
       event: NativeSyntheticEvent<{ state: State }>
     ) => void;
-    onDidTriggerTimeUpdate?: (
-      event: NativeSyntheticEvent<{ currentTime: number; duration: number }>
-    ) => void;
     onDidTriggerViewFinished?: (event: NativeSyntheticEvent<{}>) => void;
     onDidTriggerViewStarted?: (event: NativeSyntheticEvent<{}>) => void;
     onDidTriggerVolumeChange?: (
@@ -308,15 +305,6 @@ const BBPlayerView = forwardRef<BBPlayerViewMethods, BBPlayerViewProps>(
           props.onDidTriggerStateChange
             ? (event) =>
                 props.onDidTriggerStateChange?.(event.nativeEvent.state)
-            : undefined
-        }
-        onDidTriggerTimeUpdate={
-          props.onDidTriggerTimeUpdate
-            ? (event) =>
-                props.onDidTriggerTimeUpdate?.(
-                  event.nativeEvent.currentTime,
-                  event.nativeEvent.duration
-                )
             : undefined
         }
         onDidTriggerViewFinished={

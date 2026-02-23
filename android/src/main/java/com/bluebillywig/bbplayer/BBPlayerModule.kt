@@ -399,19 +399,6 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    override fun getCurrentTime(viewTag: Double, promise: Promise) {
-        UiThreadUtil.runOnUiThread {
-            val view = findPlayerView(viewTag.toInt())
-            if (view != null) {
-                val currentTime = view.getCurrentTime()
-                promise.resolve(currentTime)
-            } else {
-                promise.resolve(null)
-            }
-        }
-    }
-
-    @ReactMethod
     override fun getMuted(viewTag: Double, promise: Promise) {
         UiThreadUtil.runOnUiThread {
             val view = findPlayerView(viewTag.toInt())

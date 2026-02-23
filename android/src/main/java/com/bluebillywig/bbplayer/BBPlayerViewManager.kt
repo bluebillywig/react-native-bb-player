@@ -43,11 +43,6 @@ class BBPlayerViewManager : ViewGroupManager<BBPlayerView>() {
         view.setAutoPlay(autoPlay)
     }
 
-    @ReactProp(name = "enableTimeUpdates")
-    fun setEnableTimeUpdates(view: BBPlayerView, enabled: Boolean) {
-        view.setEnableTimeUpdates(enabled)
-    }
-
     @ReactProp(name = "options")
     fun setOptions(view: BBPlayerView, options: ReadableMap?) {
         view.setOptions(options)
@@ -186,7 +181,6 @@ class BBPlayerViewManager : ViewGroupManager<BBPlayerView>() {
             "onDidTriggerEnded",
             "onDidTriggerSeeking",
             "onDidTriggerSeeked",
-            "onDidTriggerTimeUpdate",
             "onDidTriggerDurationChange",
             "onDidTriggerVolumeChange",
             "onDidTriggerCanPlay",

@@ -242,13 +242,6 @@ class BBPlayerModule: RCTEventEmitter {
         }
     }
 
-    @objc func getCurrentTime(_ viewTag: NSNumber, resolver: @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
-        DispatchQueue.main.async {
-            let currentTime = self.getView(viewTag)?.currentTime()
-            resolver(currentTime)
-        }
-    }
-
     @objc func getMuted(_ viewTag: NSNumber, resolver: @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
         DispatchQueue.main.async {
             let muted = self.getView(viewTag)?.muted()

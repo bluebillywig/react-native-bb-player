@@ -133,7 +133,6 @@ export type BBPlayerViewMethods = {
 
   // Getter methods (async)
   getDuration: () => Promise<number | null>;
-  getCurrentTime: () => Promise<number | null>;
   getMuted: () => Promise<boolean | null>;
   getVolume: () => Promise<number | null>;
   getPhase: () => Promise<string | null>;
@@ -163,7 +162,7 @@ export type BBPlayerViewMethods = {
    * const state = await playerRef.current?.getPlayerState();
    * if (state) {
    *   console.log(`Playing: ${state.state === 'PLAYING'}`);
-   *   console.log(`Progress: ${state.currentTime}/${state.duration}`);
+   *   console.log(`Duration: ${state.duration}`);
    * }
    */
   getPlayerState: () => Promise<BBPlayerState | null>;
@@ -188,10 +187,6 @@ export type BBPlayerViewProps = {
    * JSON URL to load player configuration from.
    */
   jsonUrl?: string;
-  /**
-   * Enable periodic time update events (onDidTriggerTimeUpdate).
-   */
-  enableTimeUpdates?: boolean;
   onDidFailWithError?: (error: string) => void;
   onDidRequestCollapse?: () => void;
   onDidRequestExpand?: () => void;
@@ -228,7 +223,6 @@ export type BBPlayerViewProps = {
   onDidTriggerSeeking?: () => void;
   onDidTriggerStall?: () => void;
   onDidTriggerStateChange?: (state: State) => void;
-  onDidTriggerTimeUpdate?: (currentTime: number, duration: number) => void;
   onDidTriggerViewFinished?: () => void;
   onDidTriggerViewStarted?: () => void;
   onDidTriggerVolumeChange?: (volume: number) => void;
@@ -249,8 +243,6 @@ export type BBPlayerState = {
   phase: Phase;
   /** Current playback mode */
   mode: string | null;
-  /** Current playback position in seconds */
-  currentTime: number;
   /** Total duration in seconds */
   duration: number;
   /** Whether audio is muted */
@@ -287,7 +279,6 @@ export type BBPlayerEventPayloads = {
   stateChange: { state: State };
   phaseChange: { phase: Phase };
   modeChange: { mode: string };
-  timeUpdate: { currentTime: number; duration: number };
   durationChange: { duration: number };
   volumeChange: { volume: number; muted: boolean };
   seeked: { position: number };

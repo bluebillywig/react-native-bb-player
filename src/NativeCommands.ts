@@ -261,13 +261,6 @@ export function createCommands(viewRef: React.RefObject<any>) {
       }
       return null;
     },
-    getCurrentTime: async (): Promise<number | null> => {
-      const tag = getViewTag(viewRef);
-      if (tag != null && BBPlayerModule?.getCurrentTime) {
-        return BBPlayerModule.getCurrentTime(tag);
-      }
-      return null;
-    },
     getMuted: async (): Promise<boolean | null> => {
       const tag = getViewTag(viewRef);
       if (tag != null && BBPlayerModule?.getMuted) {
@@ -351,7 +344,6 @@ export function createCommands(viewRef: React.RefObject<any>) {
           state,
           phase,
           mode,
-          currentTime,
           duration,
           muted,
           volume,
@@ -362,7 +354,6 @@ export function createCommands(viewRef: React.RefObject<any>) {
           BBPlayerModule.getState?.(tag) ?? null,
           BBPlayerModule.getPhase?.(tag) ?? null,
           BBPlayerModule.getMode?.(tag) ?? null,
-          BBPlayerModule.getCurrentTime?.(tag) ?? 0,
           BBPlayerModule.getDuration?.(tag) ?? 0,
           BBPlayerModule.getMuted?.(tag) ?? false,
           BBPlayerModule.getVolume?.(tag) ?? 1,
@@ -375,7 +366,6 @@ export function createCommands(viewRef: React.RefObject<any>) {
           state: (state as State) ?? "IDLE",
           phase: (phase as Phase) ?? "INIT",
           mode: mode ?? null,
-          currentTime: currentTime ?? 0,
           duration: duration ?? 0,
           muted: muted ?? false,
           volume: volume ?? 1,

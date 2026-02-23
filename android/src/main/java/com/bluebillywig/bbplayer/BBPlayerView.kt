@@ -177,14 +177,8 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     // END NATIVE LAYOUT INTEGRATION
     // ==================================================================================
 
-    // Timer for periodic time updates (opt-in for performance)
-    private val timeUpdateHandler = Handler(Looper.getMainLooper())
-    private var timeUpdateRunnable: Runnable? = null
     private var isPlaying = false
     private var currentDuration: Double = 0.0
-    private var lastKnownTime: Double = 0.0
-    private var playbackStartTimestamp: Long = 0
-    private var enableTimeUpdates: Boolean = false
 
     // Event emission helper using modern EventDispatcher
     private fun sendEvent(eventName: String, params: WritableMap?) {
@@ -221,17 +215,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     fun setAutoPlay(autoPlay: Boolean) {
         debugLog("BBPlayerView") { "setAutoPlay: $autoPlay" }
         this.options["autoPlay"] = autoPlay
-    }
-
-    fun setEnableTimeUpdates(enabled: Boolean) {
-        enableTimeUpdates = enabled
-        debugLog("BBPlayerView") { "Time updates ${if (enabled) "enabled" else "disabled"}" }
-
-        if (!enabled && timeUpdateRunnable != null) {
-            stopTimeUpdates()
-        } else if (enabled && isPlaying && timeUpdateRunnable == null) {
-            startTimeUpdates()
-        }
     }
 
     fun setOptions(optionsMap: ReadableMap?) {
@@ -387,7 +370,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         debugLog("BBPlayerView") { "removePlayer called" }
         playerSetup = false
         isPlaying = false
-        stopTimeUpdates()
         removeAllViews()
 
         if (::playerView.isInitialized) {
@@ -417,9 +399,7 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
 
     fun seekRelative(offsetInSeconds: Double) {
         if (::playerView.isInitialized) {
-            val currentTime = calculateEstimatedCurrentTime()
-            val newPosition = kotlin.math.max(0.0, kotlin.math.min(currentDuration, currentTime + offsetInSeconds))
-            playerView.player?.seek(newPosition)
+            playerView.player?.seekRelative(offsetInSeconds)
         }
     }
 
@@ -572,22 +552,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         } else null
     }
 
-    private fun calculateEstimatedCurrentTime(): Double {
-        return if (isPlaying && playbackStartTimestamp > 0) {
-            val elapsedSeconds = (System.currentTimeMillis() - playbackStartTimestamp) / 1000.0
-            val estimatedTime = lastKnownTime + elapsedSeconds
-            kotlin.math.min(estimatedTime, currentDuration)
-        } else {
-            lastKnownTime
-        }
-    }
-
-    fun getCurrentTime(): Double? {
-        return if (::playerView.isInitialized) {
-            calculateEstimatedCurrentTime()
-        } else null
-    }
-
     fun getDuration(): Double? {
         return if (::playerView.isInitialized) {
             playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.duration) as? Double
@@ -694,39 +658,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         }
     }
 
-    private fun startTimeUpdates() {
-        if (!enableTimeUpdates || timeUpdateRunnable != null) {
-            return
-        }
-
-        timeUpdateRunnable = object : Runnable {
-            override fun run() {
-                if (::playerView.isInitialized && isPlaying) {
-                    val currentTime = calculateEstimatedCurrentTime()
-
-                    if (currentDuration > 0) {
-                        val params = Arguments.createMap().apply {
-                            putDouble("currentTime", currentTime)
-                            putDouble("duration", currentDuration)
-                        }
-                        sendEvent("onDidTriggerTimeUpdate", params)
-                    }
-
-                    timeUpdateHandler.postDelayed(this, 1000)
-                }
-            }
-        }
-
-        timeUpdateHandler.postDelayed(timeUpdateRunnable!!, 1000)
-    }
-
-    private fun stopTimeUpdates() {
-        timeUpdateRunnable?.let {
-            timeUpdateHandler.removeCallbacks(it)
-            timeUpdateRunnable = null
-        }
-    }
-
     // BBNativePlayerViewDelegate implementations
     override fun didSetupWithJsonUrl(view: BBNativePlayerView, url: String?) {
         debugLog("BBPlayerView") { "didSetupWithJsonUrl: $url" }
@@ -826,24 +757,20 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     }
 
     override fun didTriggerPlaying(view: BBNativePlayerView) {
-        debugLog("BBPlayerView") { "didTriggerPlaying - starting periodic time updates" }
+        debugLog("BBPlayerView") { "didTriggerPlaying" }
         isPlaying = true
-        playbackStartTimestamp = System.currentTimeMillis()
-        startTimeUpdates()
         sendEvent("onDidTriggerPlaying")
     }
 
     override fun didTriggerPause(view: BBNativePlayerView) {
-        debugLog("BBPlayerView") { "didTriggerPause - stopping periodic time updates" }
+        debugLog("BBPlayerView") { "didTriggerPause" }
         isPlaying = false
-        stopTimeUpdates()
         sendEvent("onDidTriggerPause")
     }
 
     override fun didTriggerEnded(view: BBNativePlayerView) {
-        debugLog("BBPlayerView") { "didTriggerEnded - stopping periodic time updates" }
+        debugLog("BBPlayerView") { "didTriggerEnded" }
         isPlaying = false
-        stopTimeUpdates()
         sendEvent("onDidTriggerEnded")
     }
 
@@ -854,9 +781,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
 
     override fun didTriggerSeeked(view: BBNativePlayerView, seekOffset: Double?) {
         debugLog("BBPlayerView") { "didTriggerSeeked: $seekOffset" }
-        lastKnownTime = seekOffset ?: 0.0
-        playbackStartTimestamp = System.currentTimeMillis()
-
         val params = Arguments.createMap().apply {
             putDouble("payload", seekOffset ?: 0.0)
         }
@@ -1049,8 +973,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
 
     override fun onDetachedFromWindow() {
         debugLog("BBPlayerView") { "onDetachedFromWindow - cleaning up player" }
-        stopTimeUpdates()
-        timeUpdateHandler.removeCallbacksAndMessages(null)
         removePlayer()
         super.onDetachedFromWindow()
     }

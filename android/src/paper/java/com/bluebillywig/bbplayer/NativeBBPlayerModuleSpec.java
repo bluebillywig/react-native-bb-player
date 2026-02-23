@@ -59,7 +59,6 @@ public abstract class NativeBBPlayerModuleSpec extends ReactContextBaseJavaModul
 
     // Promise getters
     public abstract void getDuration(int viewTag, Promise promise);
-    public abstract void getCurrentTime(int viewTag, Promise promise);
     public abstract void getMuted(int viewTag, Promise promise);
     public abstract void getVolume(int viewTag, Promise promise);
     public abstract void getPhase(int viewTag, Promise promise);
