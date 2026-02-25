@@ -91,7 +91,7 @@ export interface Spec extends TurboModule {
   getPlayoutData(viewTag: number): Promise<Object | null>;
 
   // Modal player (module-level, no React view needed)
-  presentModalPlayer(jsonUrl: string, optionsJson: string | null): void;
+  presentModalPlayer(jsonUrl: string, optionsJson: string | null, contextJson: string | null): void;
   dismissModalPlayer(): void;
 
   // Event emitter support (required for NativeEventEmitter)

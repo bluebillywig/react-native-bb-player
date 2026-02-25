@@ -300,7 +300,7 @@ class BBPlayerModule: RCTEventEmitter {
 
     // MARK: - Modal Player API
 
-    @objc func presentModalPlayer(_ jsonUrl: String, optionsJson: String?) {
+    @objc func presentModalPlayer(_ jsonUrl: String, optionsJson: String?, contextJson: String?) {
         DispatchQueue.main.async {
             guard let rootVC = RCTPresentedViewController() else {
                 NSLog("BBPlayerModule: No root view controller found")
@@ -313,12 +313,36 @@ class BBPlayerModule: RCTEventEmitter {
                 options = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             }
 
-            // Create modal player via native SDK
-            let playerView = BBNativePlayer.createModalPlayerView(
-                uiViewContoller: rootVC,
-                jsonUrl: jsonUrl,
-                options: options
-            )
+            // Parse context for playlist auto-advance
+            var context: [String: Any]? = nil
+            if let ctxJson = contextJson, let data = ctxJson.data(using: .utf8) {
+                context = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            }
+
+            // Create modal player view
+            let playerView = BBNativePlayerView(frame: rootVC.view.frame)
+            playerView.showBackArrow = options?["showBackArrow"] as? Bool ?? false
+
+            var loadOptions: [String: Any] = options ?? [:]
+            if loadOptions["autoPlay"] == nil {
+                loadOptions["autoPlay"] = true
+            }
+
+            // When context has a contextCollectionId, load the cliplist directly
+            // so the SDK gets all items and auto-advances naturally.
+            // The listOffset starts playback from the clicked item.
+            let collectionId = context?["contextCollectionId"] as? String
+            let listIndex = context?["listIndex"] as? Int
+
+            // Set up player with options (playout config, JWT, etc.)
+            playerView.setupWithJsonUrl(jsonUrl: jsonUrl, options: loadOptions)
+            playerView.presentModal(uiViewContoller: rootVC, animated: true)
+
+            if let collectionId = collectionId {
+                // Load the full cliplist to get all items for auto-advance.
+                // listOffset starts playback from the clicked item's position.
+                playerView.player.loadWithClipListId(clipListId: collectionId, initiator: "external", autoPlay: true, seekTo: nil, context: context, listOffset: listIndex)
+            }
 
             // Set up delegate for event forwarding
             let delegate = ModalPlayerDelegate(module: self)
@@ -327,8 +351,28 @@ class BBPlayerModule: RCTEventEmitter {
             self.modalPlayerView = playerView
             self.modalDelegate = delegate
 
-            NSLog("BBPlayerModule: Modal player presented with URL: %@", jsonUrl)
+            NSLog("BBPlayerModule: Modal player presented with URL: %@, context: %@", jsonUrl, contextJson ?? "nil")
         }
+    }
+
+    private func extractIdFromUrl(_ url: String, pattern: String) -> String? {
+        do {
+            let regex = try NSRegularExpression(pattern: pattern, options: [])
+            let range = NSRange(url.startIndex..., in: url)
+            if let match = regex.firstMatch(in: url, options: [], range: range) {
+                for i in 1..<match.numberOfRanges {
+                    if let groupRange = Range(match.range(at: i), in: url) {
+                        let extracted = String(url[groupRange])
+                        if !extracted.isEmpty {
+                            return extracted
+                        }
+                    }
+                }
+            }
+        } catch {
+            NSLog("BBPlayerModule: Regex error: %@", error.localizedDescription)
+        }
+        return nil
     }
 
     @objc func dismissModalPlayer() {

@@ -51,7 +51,7 @@ RCT_EXTERN_METHOD(getProjectData:(nonnull NSNumber *)viewTag resolver:(RCTPromis
 RCT_EXTERN_METHOD(getPlayoutData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
 
 // Modal player (module-level)
-RCT_EXTERN_METHOD(presentModalPlayer:(NSString *)jsonUrl optionsJson:(NSString *)optionsJson)
+RCT_EXTERN_METHOD(presentModalPlayer:(NSString *)jsonUrl optionsJson:(NSString *)optionsJson contextJson:(NSString *)contextJson)
 RCT_EXTERN_METHOD(dismissModalPlayer)
 
 // Event emitter support

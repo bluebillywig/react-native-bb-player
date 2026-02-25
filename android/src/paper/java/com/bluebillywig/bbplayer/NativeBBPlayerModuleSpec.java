@@ -41,7 +41,7 @@ public abstract class NativeBBPlayerModuleSpec extends ReactContextBaseJavaModul
     public abstract void showCastPicker(int viewTag);
 
     // Modal player (module-level)
-    public abstract void presentModalPlayer(String jsonUrl, String optionsJson);
+    public abstract void presentModalPlayer(String jsonUrl, String optionsJson, String contextJson);
     public abstract void dismissModalPlayer();
 
     // Event emitter support

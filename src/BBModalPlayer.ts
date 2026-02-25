@@ -12,10 +12,11 @@ export interface ModalPlayerOptions {
 }
 
 export const BBModalPlayer = {
-  present(jsonUrl: string, options?: ModalPlayerOptions) {
+  present(jsonUrl: string, options?: ModalPlayerOptions, context?: Record<string, string>) {
     BBPlayerModule?.presentModalPlayer(
       jsonUrl,
       options ? JSON.stringify(options) : null,
+      context ? JSON.stringify(context) : null,
     );
   },
 

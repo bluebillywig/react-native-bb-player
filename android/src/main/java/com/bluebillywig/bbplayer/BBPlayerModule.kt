@@ -318,7 +318,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    override fun presentModalPlayer(jsonUrl: String, optionsJson: String?) {
+    override fun presentModalPlayer(jsonUrl: String, optionsJson: String?, contextJson: String?) {
         UiThreadUtil.runOnUiThread {
             val activity = reactContext.currentActivity as? AppCompatActivity
             if (activity == null) {
@@ -355,7 +355,24 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
             playerView.delegate = modalPlayerDelegate
             modalPlayerView = playerView
 
-            Log.d(NAME, "Modal player presented with URL: $jsonUrl")
+            // If context has a contextCollectionId, load the full cliplist for auto-advance
+            if (contextJson != null) {
+                try {
+                    val ctxJson = JSONObject(contextJson)
+                    val collectionId = ctxJson.optString("contextCollectionId", null)
+                    val listIndex = if (ctxJson.has("listIndex")) ctxJson.optInt("listIndex", 0) else null
+                    val context = BBPlayerView.parseContextStatic(contextJson)
+
+                    if (collectionId != null && context != null) {
+                        playerView.player?.loadWithClipListId(collectionId, "external", true, null, context)
+                        // TODO: pass listIndex as listOffset when Android SDK supports it
+                    }
+                } catch (e: Exception) {
+                    Log.w(NAME, "presentModalPlayer: failed to parse context", e)
+                }
+            }
+
+            Log.d(NAME, "Modal player presented with URL: $jsonUrl, context: $contextJson")
         }
     }
 
