@@ -520,6 +520,20 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
     playerView?.player.expand()
   }
 
+  func presentModal() {
+    guard let parentVC = parentViewController else {
+      log("Cannot present modal - no parent view controller", level: .warning)
+      return
+    }
+    isInFullscreen = true
+    playerView?.player.presentModal(uiViewController: parentVC, animated: true)
+  }
+
+  func closeModal() {
+    playerView?.player.closeModalPlayer()
+    isInFullscreen = false
+  }
+
   func enterFullscreen() {
     enterFullscreenWithLandscapeForce(forceLandscape: false)
   }

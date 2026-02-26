@@ -56,6 +56,8 @@ RCT_EXTERN_METHOD(seek:(nonnull NSNumber *)reactTag offsetInSeconds:(nonnull NSN
 RCT_EXTERN_METHOD(seekRelative:(nonnull NSNumber *)reactTag offsetInSeconds:(nonnull NSNumber *)offsetInSeconds)
 RCT_EXTERN_METHOD(setMuted:(nonnull NSNumber *)reactTag muted:(BOOL)muted)
 RCT_EXTERN_METHOD(setVolume:(nonnull NSNumber *)reactTag volume:(nonnull NSNumber *)volume)
+RCT_EXTERN_METHOD(presentModal:(nonnull NSNumber *)reactTag)
+RCT_EXTERN_METHOD(closeModal:(nonnull NSNumber *)reactTag)
 RCT_EXTERN_METHOD(enterFullscreen:(nonnull NSNumber *)reactTag)
 RCT_EXTERN_METHOD(enterFullscreenLandscape:(nonnull NSNumber *)reactTag)
 RCT_EXTERN_METHOD(exitFullscreen:(nonnull NSNumber *)reactTag)

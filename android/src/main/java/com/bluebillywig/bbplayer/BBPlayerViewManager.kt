@@ -69,7 +69,9 @@ class BBPlayerViewManager : ViewGroupManager<BBPlayerView>() {
         "loadWithProjectId" to COMMAND_LOAD_WITH_PROJECT_ID,
         "loadWithClipJson" to COMMAND_LOAD_WITH_CLIP_JSON,
         "loadWithClipListJson" to COMMAND_LOAD_WITH_CLIP_LIST_JSON,
-        "loadWithProjectJson" to COMMAND_LOAD_WITH_PROJECT_JSON
+        "loadWithProjectJson" to COMMAND_LOAD_WITH_PROJECT_JSON,
+        "presentModal" to COMMAND_PRESENT_MODAL,
+        "closeModal" to COMMAND_CLOSE_MODAL
     )
 
     // Override for Old Architecture (numeric command IDs)
@@ -97,6 +99,8 @@ class BBPlayerViewManager : ViewGroupManager<BBPlayerView>() {
             COMMAND_LOAD_WITH_CLIP_JSON -> "loadWithClipJson"
             COMMAND_LOAD_WITH_CLIP_LIST_JSON -> "loadWithClipListJson"
             COMMAND_LOAD_WITH_PROJECT_JSON -> "loadWithProjectJson"
+            COMMAND_PRESENT_MODAL -> "presentModal"
+            COMMAND_CLOSE_MODAL -> "closeModal"
             else -> return
         }
         receiveCommand(view, commandName, args)
@@ -119,6 +123,8 @@ class BBPlayerViewManager : ViewGroupManager<BBPlayerView>() {
             "exitFullscreen" -> view.exitFullscreen()
             "showCastPicker" -> view.showCastPicker()
             "destroy" -> view.destroy()
+            "presentModal" -> view.presentModal()
+            "closeModal" -> view.closeModal()
             "loadWithClipId" -> {
                 val clipId = args?.getString(0) ?: return
                 val initiator = args.getString(1)
@@ -243,5 +249,7 @@ class BBPlayerViewManager : ViewGroupManager<BBPlayerView>() {
         private const val COMMAND_LOAD_WITH_CLIP_JSON = 18
         private const val COMMAND_LOAD_WITH_CLIP_LIST_JSON = 19
         private const val COMMAND_LOAD_WITH_PROJECT_JSON = 20
+        private const val COMMAND_PRESENT_MODAL = 21
+        private const val COMMAND_CLOSE_MODAL = 22
     }
 }

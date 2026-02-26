@@ -62,6 +62,18 @@ class BBPlayerViewManager: RCTViewManager {
         }
     }
 
+    @objc func presentModal(_ reactTag: NSNumber) {
+        DispatchQueue.main.async {
+            self.getView(reactTag)?.presentModal()
+        }
+    }
+
+    @objc func closeModal(_ reactTag: NSNumber) {
+        DispatchQueue.main.async {
+            self.getView(reactTag)?.closeModal()
+        }
+    }
+
     @objc func enterFullscreen(_ reactTag: NSNumber) {
         DispatchQueue.main.async {
             self.getView(reactTag)?.enterFullscreen()

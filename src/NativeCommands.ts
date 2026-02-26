@@ -81,6 +81,14 @@ export function createCommands(viewRef: React.RefObject<any>) {
       const tag = getViewTag(viewRef);
       if (tag != null) BBPlayerModule?.exitFullscreen(tag);
     },
+    presentModal: () => {
+      const tag = getViewTag(viewRef);
+      if (tag != null) BBPlayerModule?.presentModal(tag);
+    },
+    closeModal: () => {
+      const tag = getViewTag(viewRef);
+      if (tag != null) BBPlayerModule?.closeModal(tag);
+    },
     collapse: () => {
       const tag = getViewTag(viewRef);
       if (tag != null) BBPlayerModule?.collapse(tag);
