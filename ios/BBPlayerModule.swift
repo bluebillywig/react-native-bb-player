@@ -48,6 +48,7 @@ class BBPlayerModule: RCTEventEmitter {
 
     private var modalPlayerView: BBNativePlayerView?
     private var modalDelegate: ModalPlayerDelegate?
+    private var pendingModalLoad: (() -> Void)?
     private var hasListeners = false
 
     @objc override static func requiresMainQueueSetup() -> Bool {
@@ -331,6 +332,7 @@ class BBPlayerModule: RCTEventEmitter {
             // When context has a cliplist (contextCollectionId), load clip by ID
             // with cliplist context. ProgramController will swap to loading the
             // cliplist and find the clip by ID (matching web standardplayer pattern).
+            // Deferred until apiReady to avoid racing with initial jsonUrl load.
             let collectionId = context?["contextCollectionId"] as? String
             let clipId = context?["contextEntityId"] as? String
 
@@ -338,12 +340,14 @@ class BBPlayerModule: RCTEventEmitter {
             playerView.setupWithJsonUrl(jsonUrl: jsonUrl, options: loadOptions)
             playerView.presentModal(uiViewContoller: rootVC, animated: true)
 
-            if let collectionId = collectionId, let clipId = clipId as? String {
+            if let collectionId = collectionId, let clipId = clipId {
                 let clipContext: [String: Any] = [
-                    "contextCollectionType": "MediaClipList",
+                    "contextCollectionType": context?["contextCollectionType"] as? String ?? "MediaClipList",
                     "contextCollectionId": collectionId,
                 ]
-                playerView.player.loadWithClipId(clipId: clipId, initiator: "external", autoPlay: true, seekTo: nil, context: clipContext)
+                self.pendingModalLoad = {
+                    playerView.player.loadWithClipId(clipId: clipId, initiator: "external", autoPlay: true, seekTo: nil, context: clipContext)
+                }
             }
 
             // Set up delegate for event forwarding
@@ -382,6 +386,7 @@ class BBPlayerModule: RCTEventEmitter {
             self.modalPlayerView?.player.closeModalPlayer()
             self.modalPlayerView = nil
             self.modalDelegate = nil
+            self.pendingModalLoad = nil
         }
     }
 
@@ -425,6 +430,8 @@ class BBPlayerModule: RCTEventEmitter {
         }
 
         func bbNativePlayerView(didTriggerApiReady playerView: BBNativePlayerView) {
+            module?.pendingModalLoad?()
+            module?.pendingModalLoad = nil
             module?.emitEvent("modalPlayerApiReady")
         }
 
@@ -436,6 +443,7 @@ class BBPlayerModule: RCTEventEmitter {
             module?.emitEvent("modalPlayerDismissed")
             module?.modalPlayerView = nil
             module?.modalDelegate = nil
+            module?.pendingModalLoad = nil
         }
     }
 }
