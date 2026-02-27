@@ -77,9 +77,9 @@ dependencies {
   implementation 'com.facebook.react:react-android'
 
   // Blue Billywig Native Player SDK
-  // Flexible version constraint allows patch updates (8.42.x)
-  // Customers can override by using resolutionStrategy in their app's build.gradle
-  implementation 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:0.0.11.8-SNAPSHOT'
+  // Uses latest available version by default
+  // Customers can pin a specific version using resolutionStrategy in their app's build.gradle
+  implementation 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:+'
 
   // AndroidX MediaRouter for Chromecast support
   implementation 'androidx.mediarouter:mediarouter:1.7.0'
