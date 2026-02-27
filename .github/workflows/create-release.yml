@@ -146,8 +146,8 @@ jobs:
           echo "Updating native SDK versions to ${SDK_VERSION}.x"
 
           # Update Android build.gradle
-          # Changes: bbnativeplayersdk:X.Y.+ to bbnativeplayersdk:SDK_VERSION.+
-          sed -i "s/bbnativeplayersdk:[0-9]\+\.[0-9]\+\.\+/bbnativeplayersdk:${SDK_VERSION}.+/g" android/build.gradle
+          # Changes: bbnativeplayersdk:VERSION to bbnativeplayersdk:SDK_VERSION.+
+          sed -i "s/bbnativeplayersdk:[^'\"]*/bbnativeplayersdk:${SDK_VERSION}.+/g" android/build.gradle
           echo "✅ Updated Android SDK to ${SDK_VERSION}.+"
 
           # Update iOS podspec
@@ -157,7 +157,7 @@ jobs:
           echo "✅ Updated iOS SDK to ~> ${SDK_VERSION}.0"
 
           # Update CLAUDE.md documentation
-          sed -i "s/BB Native Player SDK\*\*: \`[0-9]\+\.[0-9]\+\.\+\`/BB Native Player SDK**: \`${SDK_VERSION}.+\`/g" CLAUDE.md
+          sed -i "s/BB Native Player SDK\*\*: \`[^']*\`/BB Native Player SDK**: \`${SDK_VERSION}.+\`/g" CLAUDE.md
           sed -i "s/BB Native Player Kit\*\*: \`~> [0-9]\+\.[0-9]\+\.[0-9]\+\`/BB Native Player Kit**: \`~> ${SDK_VERSION}.0\`/g" CLAUDE.md
 
           # Show changes

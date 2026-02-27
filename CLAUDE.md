@@ -38,7 +38,7 @@ This is a **pure React Native native module** (not Expo) for the Blue Billywig N
 ## Native SDK Versions
 
 ### Android
-- **BB Native Player SDK**: `8.42.+` (flexible patch version)
+- **BB Native Player SDK**: `+` (latest available, consumers can pin via resolutionStrategy)
 - **Location**: `android/build.gradle`
 - **Maven repo**: `https://maven.bluebillywig.com/releases`
 
