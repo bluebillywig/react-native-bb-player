@@ -43,7 +43,7 @@ This is a **pure React Native native module** (not Expo) for the Blue Billywig N
 - **Maven repo**: `https://maven.bluebillywig.com/releases`
 
 ### iOS
-- **BB Native Player Kit**: `~> 8.40.0`
+- **BB Native Player Kit**: latest (no version constraint)
 - **Location**: `react-native-bb-player.podspec`
 
 ## Project Structure
