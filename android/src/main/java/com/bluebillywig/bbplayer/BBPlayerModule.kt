@@ -360,12 +360,18 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
                 try {
                     val ctxJson = JSONObject(contextJson)
                     val collectionId = ctxJson.optString("contextCollectionId", null)
-                    val listIndex = if (ctxJson.has("listIndex")) ctxJson.optInt("listIndex", 0) else null
-                    val context = BBPlayerView.parseContextStatic(contextJson)
 
-                    if (collectionId != null && context != null) {
+                    if (collectionId != null) {
+                        val context = mutableMapOf<String, Any?>(
+                            "contextCollectionType" to ctxJson.optString("contextCollectionType", null),
+                            "contextCollectionId" to collectionId,
+                            "contextEntityType" to ctxJson.optString("contextEntityType", null),
+                            "contextEntityId" to ctxJson.optString("contextEntityId", null),
+                        )
+                        if (ctxJson.has("listIndex")) {
+                            context["listOffset"] = ctxJson.optInt("listIndex", 0)
+                        }
                         playerView.player?.loadWithClipListId(collectionId, "external", true, null, context)
-                        // TODO: pass listIndex as listOffset when Android SDK supports it
                     }
                 } catch (e: Exception) {
                     Log.w(NAME, "presentModalPlayer: failed to parse context", e)

@@ -398,9 +398,8 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
     }
 
     fun seekRelative(offsetInSeconds: Double) {
-        if (::playerView.isInitialized) {
-            playerView.player?.seekRelative(offsetInSeconds)
-        }
+        // seekRelative not yet available in native SDK
+        android.util.Log.w("BBPlayerView", "seekRelative not supported by native SDK")
     }
 
     fun setVolume(volume: Double) {
