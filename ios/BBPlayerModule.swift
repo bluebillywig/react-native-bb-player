@@ -328,20 +328,22 @@ class BBPlayerModule: RCTEventEmitter {
                 loadOptions["autoPlay"] = true
             }
 
-            // When context has a contextCollectionId, load the cliplist directly
-            // so the SDK gets all items and auto-advances naturally.
-            // The listOffset starts playback from the clicked item.
+            // When context has a cliplist (contextCollectionId), load clip by ID
+            // with cliplist context. ProgramController will swap to loading the
+            // cliplist and find the clip by ID (matching web standardplayer pattern).
             let collectionId = context?["contextCollectionId"] as? String
-            let listIndex = context?["listIndex"] as? Int
+            let clipId = context?["contextEntityId"] as? String
 
             // Set up player with options (playout config, JWT, etc.)
             playerView.setupWithJsonUrl(jsonUrl: jsonUrl, options: loadOptions)
             playerView.presentModal(uiViewContoller: rootVC, animated: true)
 
-            if let collectionId = collectionId {
-                // Load the full cliplist to get all items for auto-advance.
-                // listOffset starts playback from the clicked item's position.
-                playerView.player.loadWithClipListId(clipListId: collectionId, initiator: "external", autoPlay: true, seekTo: nil, context: context, listOffset: listIndex)
+            if let collectionId = collectionId, let clipId = clipId as? String {
+                let clipContext: [String: Any] = [
+                    "contextCollectionType": "MediaClipList",
+                    "contextCollectionId": collectionId,
+                ]
+                playerView.player.loadWithClipId(clipId: clipId, initiator: "external", autoPlay: true, seekTo: nil, context: clipContext)
             }
 
             // Set up delegate for event forwarding

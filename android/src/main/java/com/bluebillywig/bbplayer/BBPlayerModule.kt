@@ -360,25 +360,22 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
             playerView.delegate = modalPlayerDelegate
             modalPlayerView = playerView
 
-            // If context has a contextCollectionId, defer cliplist load until apiReady
-            // to avoid racing with the initial jsonUrl load
+            // If context has a contextCollectionId (cliplist), load clip by ID with
+            // cliplist context. ProgramController will swap to loading the cliplist
+            // and find the clip by ID (matching web standardplayer pattern).
             if (contextJson != null) {
                 try {
                     val ctxJson = JSONObject(contextJson)
                     val collectionId = ctxJson.optString("contextCollectionId", null)
+                    val clipId = ctxJson.optString("contextEntityId", null)
 
-                    if (collectionId != null) {
+                    if (collectionId != null && clipId != null) {
                         val context = mutableMapOf<String, Any?>(
-                            "contextCollectionType" to ctxJson.optString("contextCollectionType", null),
+                            "contextCollectionType" to (ctxJson.optString("contextCollectionType", null) ?: "MediaClipList"),
                             "contextCollectionId" to collectionId,
-                            "contextEntityType" to ctxJson.optString("contextEntityType", null),
-                            "contextEntityId" to ctxJson.optString("contextEntityId", null),
                         )
-                        if (ctxJson.has("listIndex")) {
-                            context["listOffset"] = ctxJson.optInt("listIndex", 0)
-                        }
                         pendingClipListLoad = {
-                            playerView.player?.loadWithClipListId(collectionId, "external", true, null, context)
+                            playerView.player?.loadWithClipId(clipId, "external", true, null, context)
                         }
                     }
                 } catch (e: Exception) {
