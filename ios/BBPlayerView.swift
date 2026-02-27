@@ -526,7 +526,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       return
     }
     isInFullscreen = true
-    playerView?.player.presentModal(uiViewController: parentVC, animated: true)
+    playerView?.presentModal(uiViewContoller: parentVC, animated: true)
   }
 
   func closeModal() {
