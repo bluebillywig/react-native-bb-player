@@ -21,10 +21,6 @@ export interface Spec extends TurboModule {
   collapse(viewTag: number): void;
   expand(viewTag: number): void;
 
-  // Void methods - modal control (per-view)
-  presentModal(viewTag: number): void;
-  closeModal(viewTag: number): void;
-
   // Void methods - other commands
   autoPlayNextCancel(viewTag: number): void;
   destroy(viewTag: number): void;

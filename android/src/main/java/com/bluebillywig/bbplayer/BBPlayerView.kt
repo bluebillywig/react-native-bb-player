@@ -502,20 +502,6 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         return null
     }
 
-    fun presentModal() {
-        Log.d("BBPlayerView", "presentModal() called")
-        if (::playerView.isInitialized) {
-            playerView.player?.enterFullScreen()
-        }
-    }
-
-    fun closeModal() {
-        Log.d("BBPlayerView", "closeModal() called")
-        if (::playerView.isInitialized) {
-            playerView.player?.exitFullScreen()
-        }
-    }
-
     fun destroy() {
         Log.d("BBPlayerView", "destroy() called")
         if (::playerView.isInitialized) {

@@ -283,6 +283,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
     // MARK: - Modal Player API (module-level, no React view needed)
 
     private var modalPlayerView: BBNativePlayerView? = null
+    private var pendingClipListLoad: (() -> Unit)? = null
 
     private fun emitEvent(eventName: String, params: com.facebook.react.bridge.WritableMap? = null) {
         reactContext
@@ -306,6 +307,9 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
             })
         }
         override fun didTriggerApiReady(playerView: BBNativePlayerView) {
+            // Load cliplist for auto-advance once player API is ready
+            pendingClipListLoad?.invoke()
+            pendingClipListLoad = null
             emitEvent("modalPlayerApiReady")
         }
         override fun didTriggerCanPlay(playerView: BBNativePlayerView) {
@@ -314,6 +318,7 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
         override fun didCloseModalPlayer(playerView: BBNativePlayerView) {
             emitEvent("modalPlayerDismissed")
             modalPlayerView = null
+            pendingClipListLoad = null
         }
     }
 
@@ -355,7 +360,8 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
             playerView.delegate = modalPlayerDelegate
             modalPlayerView = playerView
 
-            // If context has a contextCollectionId, load the full cliplist for auto-advance
+            // If context has a contextCollectionId, defer cliplist load until apiReady
+            // to avoid racing with the initial jsonUrl load
             if (contextJson != null) {
                 try {
                     val ctxJson = JSONObject(contextJson)
@@ -371,7 +377,9 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
                         if (ctxJson.has("listIndex")) {
                             context["listOffset"] = ctxJson.optInt("listIndex", 0)
                         }
-                        playerView.player?.loadWithClipListId(collectionId, "external", true, null, context)
+                        pendingClipListLoad = {
+                            playerView.player?.loadWithClipListId(collectionId, "external", true, null, context)
+                        }
                     }
                 } catch (e: Exception) {
                     Log.w(NAME, "presentModalPlayer: failed to parse context", e)
