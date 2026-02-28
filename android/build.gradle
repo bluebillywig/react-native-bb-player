@@ -79,7 +79,7 @@ dependencies {
   // Blue Billywig Native Player SDK
   // Uses latest available version by default
   // Customers can pin a specific version using resolutionStrategy in their app's build.gradle
-  implementation 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:8.45.+'
+  implementation 'com.bluebillywig.bbnativeplayersdk:bbnativeplayersdk:8.44.+'
 
   // AndroidX MediaRouter for Chromecast support
   implementation 'androidx.mediarouter:mediarouter:1.7.0'
