@@ -57,7 +57,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>CFBundleURLName</key>
-			<string>com.bluebillywig.bbplayerexample</string>
+			<string>com.bluebillywig.bbplayerrnexample</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>bbplayer</string>

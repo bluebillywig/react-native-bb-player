@@ -1,4 +1,4 @@
-package com.bbplayerexample
+package com.bluebillywig.bbplayerrnexample
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

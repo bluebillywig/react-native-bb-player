@@ -1,4 +1,4 @@
-name: Publish to npm + GitHub Packages
+name: Release — npm, GitHub Packages, APK, TestFlight
 
 on:
   push:
@@ -127,3 +127,299 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Extract version from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package version from tag
+        run: npm version "${{ env.VERSION }}" --no-git-tag-version --allow-same-version
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Install example dependencies
+        working-directory: example
+        run: npm ci
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Build Android Release APK
+        working-directory: example/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: example/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 90
+
+  attach-apk-to-release:
+    name: Attach APK to GitHub Release
+    needs: [publish-npm, build-android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Extract version from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-apk
+
+      - name: Rename APK
+        run: mv app-release.apk "BBPlayerExample-${TAG}.apk"
+
+      - name: Upload APK to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ env.TAG }}" "BBPlayerExample-${{ env.TAG }}.apk" --repo "${{ github.repository }}"
+
+  build-ios-testflight:
+    name: Build iOS & Upload to TestFlight
+    runs-on: macos-15
+    env:
+      SCHEME: BBPlayerExample
+      WORKSPACE: example/ios/BBPlayerExample.xcworkspace
+      BUNDLE_ID: com.bluebillywig.bbplayerrnexample
+      TEAM_ID: PFYB2YN255
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Determine build number
+        id: build
+        run: |
+          BUILD_NUMBER=$(date +%Y%m%d%H%M)
+          echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+          echo "::notice::Build number: ${BUILD_NUMBER}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package version from tag
+        run: npm version "${{ env.VERSION }}" --no-git-tag-version --allow-same-version
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Install example dependencies
+        working-directory: example
+        run: npm ci
+
+      - name: Setup Ruby and CocoaPods
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+
+      - name: Install CocoaPods
+        run: gem install cocoapods
+
+      - name: Pod install
+        working-directory: example/ios
+        run: LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install
+
+      - name: Set version and build number
+        working-directory: example/ios
+        run: |
+          agvtool new-marketing-version "${{ env.VERSION }}"
+          agvtool new-version -all ${{ steps.build.outputs.build_number }}
+
+      - name: Install Apple certificate and provisioning profile
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          echo -n "$IOS_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -P "$IOS_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+          # Install provisioning profile
+          PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
+          echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
+
+          echo "PROFILE_UUID=${PROFILE_UUID}" >> $GITHUB_ENV
+          echo "KEYCHAIN_PATH=${KEYCHAIN_PATH}" >> $GITHUB_ENV
+          echo "KEYCHAIN_PASSWORD=${KEYCHAIN_PASSWORD}" >> $GITHUB_ENV
+          echo "::notice::Provisioning profile UUID: ${PROFILE_UUID}"
+
+      - name: Verify signing certificate
+        run: |
+          echo "Available signing identities:"
+          security find-identity -v -p codesigning
+          echo ""
+          echo "Identities in CI keychain:"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+      - name: Build archive
+        run: |
+          set -o pipefail
+
+          xcodebuild archive \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath $RUNNER_TEMP/BBPlayerExample.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            "CODE_SIGN_IDENTITY=Apple Distribution" \
+            DEVELOPMENT_TEAM=${TEAM_ID} \
+            PROVISIONING_PROFILE_SPECIFIER=${PROFILE_UUID} \
+            CURRENT_PROJECT_VERSION=${{ steps.build.outputs.build_number }} \
+            2>&1 | xcbeautify
+
+      - name: Create ExportOptions.plist
+        run: |
+          cat > $RUNNER_TEMP/ExportOptions.plist << PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key>
+              <string>${PROFILE_UUID}</string>
+            </dict>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>destination</key>
+            <string>export</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Export IPA
+        run: |
+          set -o pipefail
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/BBPlayerExample.xcarchive \
+            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
+            -exportPath $RUNNER_TEMP/export \
+            2>&1 | xcbeautify
+
+      - name: Setup App Store Connect API key
+        run: |
+          mkdir -p ~/private_keys
+          echo -n "${{ secrets.APPSTORE_API_KEY_BASE64 }}" | base64 --decode \
+            > ~/private_keys/AuthKey_${{ secrets.APPSTORE_API_KEY_ID }}.p8
+
+      - name: Upload to TestFlight
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            --file $RUNNER_TEMP/export/BBPlayerExample.ipa \
+            --apiKey "${{ secrets.APPSTORE_API_KEY_ID }}" \
+            --apiIssuer "${{ secrets.APPSTORE_API_ISSUER_ID }}"
+
+      - name: Upload IPA artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BBPlayerExample-${{ steps.build.outputs.build_number }}
+          path: ${{ runner.temp }}/export/*.ipa
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "## TestFlight Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ env.TAG }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** $(git rev-parse --short HEAD)" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Number:** ${{ steps.build.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Bundle ID:** ${BUNDLE_ID}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "IPA uploaded to TestFlight. It may take a few minutes to process." >> $GITHUB_STEP_SUMMARY

@@ -1,4 +1,4 @@
-package com.bbplayerexample
+package com.bluebillywig.bbplayerrnexample
 
 import android.app.Application
 import com.facebook.react.PackageList
