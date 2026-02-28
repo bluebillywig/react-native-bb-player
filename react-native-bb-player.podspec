@@ -23,8 +23,8 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'React-Core'
-  s.dependency 'BlueBillywigNativePlayerKit-iOS'
-  s.dependency 'BlueBillywigNativePlayerKit-iOS/GoogleCastSDK'
+  s.dependency 'BlueBillywigNativePlayerKit-iOS', '~> 8.45.0'
+  s.dependency 'BlueBillywigNativePlayerKit-iOS/GoogleCastSDK', '~> 8.45.0'
 
   # Note: TurboModule/New Architecture dependencies (React-Codegen, RCT-Folly, etc.)
   # are automatically provided by React Native when New Architecture is enabled.
