@@ -329,6 +329,11 @@ jobs:
           echo "Identities in CI keychain:"
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
+      - name: Symlink node for Xcode build phases
+        run: |
+          sudo ln -sf "$(which node)" /usr/local/bin/node
+          echo "Linked node: $(which node) -> /usr/local/bin/node"
+
       - name: Build archive
         run: |
           xcodebuild archive \
