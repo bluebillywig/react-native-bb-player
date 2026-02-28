@@ -50,6 +50,10 @@ export type BBPlayerViewMethods = {
     enterFullscreen: () => void;
     enterFullscreenLandscape: () => void;
     exitFullscreen: () => void;
+    /** Present native SDK modal (iOS: overFullScreen with swipe-to-close, Android: in-place fullscreen) */
+    presentModal: () => void;
+    /** Close native SDK modal */
+    closeModal: () => void;
     collapse: () => void;
     expand: () => void;
     autoPlayNextCancel: () => void;

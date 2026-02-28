@@ -357,7 +357,6 @@ class BBPlayerModule: RCTEventEmitter {
             self.modalPlayerView = playerView
             self.modalDelegate = delegate
 
-            NSLog("BBPlayerModule: Modal player presented with URL: %@, context: %@", jsonUrl, contextJson ?? "nil")
         }
     }
 

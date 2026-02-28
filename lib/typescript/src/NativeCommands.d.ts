@@ -14,6 +14,8 @@ export declare function createCommands(viewRef: React.RefObject<any>): {
     enterFullscreen: () => void;
     enterFullscreenLandscape: () => void;
     exitFullscreen: () => void;
+    presentModal: () => void;
+    closeModal: () => void;
     collapse: () => void;
     expand: () => void;
     autoPlayNextCancel: () => void;
