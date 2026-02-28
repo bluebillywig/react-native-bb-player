@@ -331,8 +331,6 @@ jobs:
 
       - name: Build archive
         run: |
-          set -o pipefail
-
           xcodebuild archive \
             -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
@@ -343,8 +341,7 @@ jobs:
             "CODE_SIGN_IDENTITY=Apple Distribution" \
             DEVELOPMENT_TEAM=${TEAM_ID} \
             PROVISIONING_PROFILE_SPECIFIER=${PROFILE_UUID} \
-            CURRENT_PROJECT_VERSION=${{ steps.build.outputs.build_number }} \
-            2>&1 | xcbeautify
+            CURRENT_PROJECT_VERSION=${{ steps.build.outputs.build_number }}
 
       - name: Create ExportOptions.plist
         run: |
@@ -374,12 +371,10 @@ jobs:
 
       - name: Export IPA
         run: |
-          set -o pipefail
           xcodebuild -exportArchive \
             -archivePath $RUNNER_TEMP/BBPlayerExample.xcarchive \
             -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
-            -exportPath $RUNNER_TEMP/export \
-            2>&1 | xcbeautify
+            -exportPath $RUNNER_TEMP/export
 
       - name: Setup App Store Connect API key
         run: |
