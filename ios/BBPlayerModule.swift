@@ -320,14 +320,11 @@ class BBPlayerModule: RCTEventEmitter {
                 context = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             }
 
-            // Create modal player view
-            let playerView = BBNativePlayerView(frame: rootVC.view.frame)
-            playerView.showBackArrow = options?["showBackArrow"] as? Bool ?? false
-
             var loadOptions: [String: Any] = options ?? [:]
             if loadOptions["autoPlay"] == nil {
                 loadOptions["autoPlay"] = true
             }
+            loadOptions["showBackArrow"] = options?["showBackArrow"] as? Bool ?? false
 
             // When context has a cliplist (contextCollectionId), load clip by ID
             // with cliplist context. ProgramController will swap to loading the
@@ -336,9 +333,8 @@ class BBPlayerModule: RCTEventEmitter {
             let collectionId = context?["contextCollectionId"] as? String
             let clipId = context?["contextEntityId"] as? String
 
-            // Set up player with options (playout config, JWT, etc.)
-            playerView.setupWithJsonUrl(jsonUrl: jsonUrl, options: loadOptions)
-            playerView.presentModal(uiViewContoller: rootVC, animated: true)
+            // Create and present modal player using SDK factory method
+            let playerView = BBNativePlayer.createModalPlayerView(uiViewContoller: rootVC, jsonUrl: jsonUrl, options: loadOptions)
 
             if let collectionId = collectionId, let clipId = clipId {
                 let clipContext: [String: Any] = [

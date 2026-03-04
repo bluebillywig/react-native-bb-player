@@ -526,7 +526,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
       return
     }
     isInFullscreen = true
-    playerView?.presentModal(uiViewContoller: parentVC, animated: true)
+    playerView?.player.enterFullScreen()
   }
 
   func closeModal() {
@@ -586,7 +586,8 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
   }
 
   func seekRelative(_ offsetInSeconds: Double) {
-    playerView?.player.seekRelative(offsetInSeconds: offsetInSeconds as NSNumber)
+    // seekRelative removed in newer BBNativePlayerKit; no-op
+    log("seekRelative not available in this SDK version", level: .warning)
   }
 
   func setMuted(_ muted: Bool) {
