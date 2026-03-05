@@ -1,6 +1,16 @@
 import { NativeEventEmitter, NativeModules } from 'react-native';
 
-const BBPlayerModule = NativeModules.BBPlayerModule;
+// Resolve BBPlayerModule: TurboModuleRegistry (New Arch) with NativeModules fallback
+let BBPlayerModule: any = null;
+try {
+  BBPlayerModule = require('./specs/NativeBBPlayerModule').default;
+} catch {
+  // TurboModule not available
+}
+if (!BBPlayerModule) {
+  BBPlayerModule = NativeModules.BBPlayerModule;
+}
+
 const eventEmitter = new NativeEventEmitter(BBPlayerModule);
 
 export interface ModalPlayerOptions {
