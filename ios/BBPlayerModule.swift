@@ -303,7 +303,13 @@ class BBPlayerModule: RCTEventEmitter {
 
     @objc func presentModalPlayer(_ jsonUrl: String, optionsJson: String?, contextJson: String?) {
         DispatchQueue.main.async {
-            guard let rootVC = RCTPresentedViewController() else {
+            // RCTPresentedViewController() can return nil with RCTReactNativeFactory (RN 0.83+).
+            // Fallback to UIScene-based lookup to find the root view controller.
+            guard let rootVC = RCTPresentedViewController()
+                    ?? UIApplication.shared.connectedScenes
+                        .compactMap({ ($0 as? UIWindowScene)?.windows.first(where: { $0.isKeyWindow })?.rootViewController })
+                        .first
+            else {
                 NSLog("BBPlayerModule: No root view controller found")
                 return
             }
