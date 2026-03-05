@@ -64,6 +64,10 @@ android {
 }
 
 repositories {
+  def localRepo = file("$projectDir/repo")
+  if (localRepo.exists()) {
+    maven { url localRepo.toURI() }
+  }
   mavenLocal()
   mavenCentral()
   google()

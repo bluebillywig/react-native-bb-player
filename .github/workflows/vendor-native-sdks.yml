@@ -1,0 +1,45 @@
+name: Vendor Native SDK Binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      ios_sdk_version:
+        description: 'iOS SDK version (cocoapod tag, e.g. 8.45.1)'
+        required: true
+      android_sdk_version:
+        description: 'Android SDK version (Maven Central, e.g. 8.45.0)'
+        required: true
+
+jobs:
+  vendor:
+    name: Vendor native binaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          token: ${{ secrets.PAT_GITHUB_TOKEN }}
+
+      - name: Install Git LFS
+        run: git lfs install
+
+      - name: Run vendor script
+        run: |
+          chmod +x scripts/vendor-native-sdks.sh
+          ./scripts/vendor-native-sdks.sh \
+            --ios-version "${{ inputs.ios_sdk_version }}" \
+            --android-version "${{ inputs.android_sdk_version }}"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ios/Frameworks/ android/repo/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: vendor native SDKs — iOS ${{ inputs.ios_sdk_version }}, Android ${{ inputs.android_sdk_version }}"
+            git push
+          fi

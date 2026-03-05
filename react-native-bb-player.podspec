@@ -23,12 +23,19 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'React-Core'
-  s.dependency 'BlueBillywigNativePlayerKit-iOS'
-  s.dependency 'BlueBillywigNativePlayerKit-iOS/GoogleCastSDK'
 
-  # Note: TurboModule/New Architecture dependencies (React-Codegen, RCT-Folly, etc.)
-  # are automatically provided by React Native when New Architecture is enabled.
-  # No need to specify them here as they would create duplicate/conflicting deps.
+  # Prefer vendored frameworks (from npm package) over CocoaPods remote
+  frameworks_dir = File.join(__dir__, 'ios', 'Frameworks')
+  if File.exist?(File.join(frameworks_dir, 'BBNativePlayerKit.xcframework'))
+    s.vendored_frameworks = 'ios/Frameworks/BBNativePlayerKit.xcframework',
+                            'ios/Frameworks/bbnativeshared.xcframework'
+    s.dependency 'GoogleAds-IMA-iOS-SDK', '3.23.0'
+    s.dependency 'GoogleUserMessagingPlatform', '~> 2.1'
+    s.dependency 'google-cast-sdk-dynamic-xcframework-ios-bb', '4.8.0'
+  else
+    s.dependency 'BlueBillywigNativePlayerKit-iOS'
+    s.dependency 'BlueBillywigNativePlayerKit-iOS/GoogleCastSDK'
+  end
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {
@@ -36,5 +43,5 @@ Pod::Spec.new do |s|
     'SWIFT_COMPILATION_MODE' => 'wholemodule'
   }
 
-  s.source_files = "ios/**/*.{h,m,mm,swift,hpp,cpp}"
+  s.source_files = "ios/*.{h,m,mm,swift,hpp,cpp}"
 end
