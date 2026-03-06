@@ -1,4 +1,4 @@
-name: Build Android Example
+name: Build Android Example APK
 
 on:
   pull_request:
@@ -58,9 +58,26 @@ jobs:
         working-directory: example/android
         run: ./gradlew assembleRelease --no-daemon
 
+      - name: Get version info
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-release-apk
+          name: BBPlayerExample-${{ steps.version.outputs.version }}-${{ steps.version.outputs.date }}-android
           path: example/android/app/build/outputs/apk/release/app-release.apk
-          retention-days: 14
+          retention-days: 90
+
+      - name: Add download info to summary
+        run: |
+          echo "## Android APK Build" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Build:** #${{ github.run_number }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Date:** ${{ steps.version.outputs.date }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the APK from the **Artifacts** section above." >> "$GITHUB_STEP_SUMMARY"

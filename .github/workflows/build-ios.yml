@@ -1,20 +1,16 @@
-name: Build iOS Example
+name: Build & Upload iOS Example to TestFlight
 
 on:
-  pull_request:
-    branches: [master]
-    paths:
-      - 'ios/**'
-      - 'src/**'
-      - 'example/**'
-      - 'package.json'
-      - '*.podspec'
-      - '.github/workflows/build-ios.yml'
   workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number (auto-incremented if empty)'
+        required: false
+        type: string
 
 jobs:
   build-ios:
-    name: Build iOS Example App
+    name: Build iOS & Upload to TestFlight
     runs-on: macos-15
 
     steps:
@@ -51,21 +47,116 @@ jobs:
         working-directory: example/ios
         run: pod install
 
-      - name: Build iOS Release
+      - name: Install Apple certificate and provisioning profile
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 20)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          echo "$IOS_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          security import "$CERTIFICATE_PATH" -P "$IOS_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+          # Install provisioning profile
+          PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
+          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      - name: Determine build number
+        id: build_number
+        run: |
+          if [ -n "${{ inputs.build_number }}" ]; then
+            echo "number=${{ inputs.build_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set build number in Xcode project
+        working-directory: example/ios
+        run: |
+          agvtool new-version -all ${{ steps.build_number.outputs.number }}
+
+      - name: Generate ExportOptions.plist
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>signingStyle</key>
+              <string>automatic</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>uploadSymbols</key>
+              <true/>
+              <key>destination</key>
+              <string>upload</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Archive iOS app
         working-directory: example/ios
         run: |
           xcodebuild \
             -workspace BBPlayerExample.xcworkspace \
             -scheme BBPlayerExample \
             -configuration Release \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+            -destination 'generic/platform=iOS' \
+            -archivePath $RUNNER_TEMP/BBPlayerExample.xcarchive \
+            archive
 
-      - name: Upload iOS build artifact
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/BBPlayerExample.xcarchive \
+            -exportPath $RUNNER_TEMP/ipa \
+            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist
+
+      - name: Upload to TestFlight
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          APPSTORE_API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
+        run: |
+          # Write API key to file
+          mkdir -p ~/private_keys
+          echo "$APPSTORE_API_KEY_BASE64" | base64 --decode \
+            > ~/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8
+
+          xcrun altool --upload-app \
+            -f $RUNNER_TEMP/ipa/*.ipa \
+            -t ios \
+            --apiKey "$APPSTORE_API_KEY_ID" \
+            --apiIssuer "$APPSTORE_API_ISSUER_ID"
+
+      - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: ios-release-build
-          path: example/ios/build/Build/Products/Release-iphonesimulator/
-          retention-days: 14
+          name: ios-release-ipa
+          path: ${{ runner.temp }}/ipa/*.ipa
+          retention-days: 30
+
+      - name: Clean up keychain
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
