@@ -15,8 +15,9 @@ import { OutstreamScreen } from './src/screens/OutstreamScreen';
 import { DeepLinkPlayerScreen } from './src/screens/DeepLinkPlayerScreen';
 import { SimplePlayerScreen } from './src/screens/SimplePlayerScreen';
 import { BarePlayerScreen } from './src/screens/BarePlayerScreen';
+import { ModalPlayerScreen } from './src/screens/ModalPlayerScreen';
 
-type Screen = 'home' | 'api' | 'shorts' | 'outstream' | 'deeplink' | 'simple' | 'bare';
+type Screen = 'home' | 'api' | 'shorts' | 'outstream' | 'deeplink' | 'simple' | 'bare' | 'modal';
 
 // Demo menu items - matching native SDK demo app structure
 const DEMO_ITEMS = [
@@ -49,6 +50,12 @@ const DEMO_ITEMS = [
     title: 'Outstream Ads',
     description: 'Standalone ad player with collapse/expand for article placements',
     icon: '📰',
+  },
+  {
+    id: 'modal',
+    title: 'Modal Player',
+    description: 'Native full-screen modal overlay with swipe-to-close (iOS)',
+    icon: '🖥️',
   },
 ] as const;
 
@@ -167,15 +174,17 @@ function App(): React.JSX.Element {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'simple':
-        return <SimplePlayerScreen />;
+        return <SimplePlayerScreen onBack={handleBack} />;
       case 'bare':
-        return <BarePlayerScreen />;
+        return <BarePlayerScreen onBack={handleBack} />;
       case 'api':
         return <ApiScreen onBack={handleBack} />;
       case 'shorts':
         return <ShortsScreen onBack={handleBack} />;
       case 'outstream':
         return <OutstreamScreen onBack={handleBack} />;
+      case 'modal':
+        return <ModalPlayerScreen onBack={handleBack} />;
       case 'deeplink':
         return deepLinkClipId ? (
           <DeepLinkPlayerScreen clipId={deepLinkClipId} onBack={handleBack} />
