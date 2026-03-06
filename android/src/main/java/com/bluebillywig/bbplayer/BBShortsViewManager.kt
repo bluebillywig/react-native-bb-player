@@ -2,16 +2,20 @@ package com.bluebillywig.bbplayer
 
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.annotations.ReactProp
 
 /**
  * ViewManager for BBShortsView - manages the React Native native view for Shorts playback.
+ * Uses ViewGroupManager (not SimpleViewManager) because the native Shorts view has child views
+ * that need custom layout propagation via needsCustomLayoutForChildren().
  */
-class BBShortsViewManager : SimpleViewManager<BBShortsView>() {
+class BBShortsViewManager : ViewGroupManager<BBShortsView>() {
 
     override fun getName(): String = REACT_CLASS
+
+    override fun needsCustomLayoutForChildren(): Boolean = true
 
     override fun createViewInstance(reactContext: ThemedReactContext): BBShortsView {
         return BBShortsView(reactContext)
