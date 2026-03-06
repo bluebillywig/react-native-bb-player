@@ -1,6 +1,6 @@
 # Build iOS example app and release to TestFlight
 #
-# Triggered manually.
+# Triggered manually. Uses a published npm release of the SDK.
 #
 # Required secrets:
 #   IOS_CERTIFICATE_BASE64          - Distribution certificate (.p12), base64 encoded
@@ -15,6 +15,11 @@ name: "Release to TestFlight"
 on:
   workflow_dispatch:
     inputs:
+      sdk_version:
+        description: 'SDK version to use (npm @bluebillywig/react-native-bb-player)'
+        required: true
+        type: string
+        default: '8.45.10'
       build_number:
         description: 'Build number (leave empty to auto-increment from timestamp)'
         required: false
@@ -53,16 +58,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - name: Install dependencies and build TypeScript
+      - name: Fix Node.js path for Xcode build scripts
         run: |
-          npm ci
-          npm run build
+          # Hermes build script looks for node at /usr/local/bin/node
+          # but actions/setup-node installs it elsewhere
+          sudo ln -sf "$(which node)" /usr/local/bin/node
+          echo "Node symlinked: $(ls -la /usr/local/bin/node)"
 
-      - name: Install example dependencies
+      - name: Install SDK from npm and example dependencies
         working-directory: example
-        run: npm ci
+        run: |
+          # Replace local file dependency with published npm version
+          SDK_VERSION="${{ inputs.sdk_version }}"
+          echo "::notice::Using SDK version: ${SDK_VERSION}"
+
+          # Update package.json to use npm version instead of file:..
+          node -e "
+            const pkg = require('./package.json');
+            pkg.dependencies['@bluebillywig/react-native-bb-player'] = '${SDK_VERSION}';
+            require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+          cat package.json | grep bb-player
+          npm install
 
       - name: Setup Ruby and CocoaPods
         uses: ruby/setup-ruby@v1
@@ -130,6 +149,8 @@ jobs:
 
       - name: Build archive
         run: |
+          set -o pipefail
+
           xcodebuild archive \
             -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
@@ -140,7 +161,8 @@ jobs:
             "CODE_SIGN_IDENTITY=Apple Distribution" \
             DEVELOPMENT_TEAM=${TEAM_ID} \
             PROVISIONING_PROFILE_SPECIFIER=${PROFILE_UUID} \
-            CURRENT_PROJECT_VERSION=${{ steps.build.outputs.build_number }}
+            CURRENT_PROJECT_VERSION=${{ steps.build.outputs.build_number }} \
+            2>&1 | xcbeautify
 
       - name: Create ExportOptions.plist
         run: |
@@ -212,6 +234,7 @@ jobs:
         run: |
           echo "## TestFlight Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**SDK Version:** ${{ inputs.sdk_version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** $(git rev-parse --short HEAD)" >> $GITHUB_STEP_SUMMARY
           echo "**Build Number:** ${{ steps.build.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
           echo "**Bundle ID:** ${BUNDLE_ID}" >> $GITHUB_STEP_SUMMARY
