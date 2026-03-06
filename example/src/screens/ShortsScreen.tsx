@@ -7,6 +7,8 @@ import {
   StatusBar,
   FlatList,
   ActivityIndicator,
+  TextInput,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -14,13 +16,15 @@ import {
   type BBShortsViewMethods,
 } from '@bluebillywig/react-native-bb-player';
 
-const PUBLICATIONS = [
+const DEFAULT_PUBLICATIONS = [
   { name: 'bb.dev', label: 'BB Dev' },
   { name: 'testsuite.acc', label: 'Testsuite ACC' },
   { name: 'demo', label: 'Demo' },
   { name: 'cosdemo', label: 'COS Demo' },
-  { name: 'omroepbrabant', label: 'Omroep Brabant' },
 ];
+
+// Remember chosen publication across navigations (module-level state)
+let rememberedPublication: string = DEFAULT_PUBLICATIONS[0]!.name;
 
 type ShortsItem = {
   id: string;
@@ -35,26 +39,36 @@ interface ShortsScreenProps {
 
 export function ShortsScreen({ onBack }: ShortsScreenProps) {
   const shortsRef = useRef<BBShortsViewMethods>(null);
-  const [selectedPub, setSelectedPub] = useState(PUBLICATIONS[0]);
+  const [customPub, setCustomPub] = useState(rememberedPublication);
+  const [activePub, setActivePub] = useState(rememberedPublication);
   const [shortsList, setShortsList] = useState<ShortsItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeShorts, setActiveShorts] = useState<{ pub: string; id: string } | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchShorts = useCallback(async (pub: typeof PUBLICATIONS[number]) => {
+  const selectPublication = useCallback((name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setCustomPub(trimmed);
+    setActivePub(trimmed);
+    rememberedPublication = trimmed;
+    Keyboard.dismiss();
+  }, []);
+
+  const fetchShorts = useCallback(async (pub: string) => {
     setLoading(true);
     setShortsList([]);
     try {
       const res = await fetch(
-        `https://${pub.name}.bbvms.com/papi/search?q=*:*&className[]=Shorts`
+        `https://${pub}.bbvms.com/papi/search?q=*:*&className[]=Shorts&sort=createddate&order=desc`
       );
       const data = await res.json();
       const items: ShortsItem[] = (data.items || []).map((item: any) => ({
         id: item.id,
         name: item.name || `Shorts ${item.id}`,
         status: item.status || 'unknown',
-        publication: pub.name,
+        publication: pub,
       }));
       setShortsList(items);
     } catch (err) {
@@ -65,8 +79,8 @@ export function ShortsScreen({ onBack }: ShortsScreenProps) {
   }, []);
 
   useEffect(() => {
-    fetchShorts(selectedPub);
-  }, [selectedPub, fetchShorts]);
+    fetchShorts(activePub);
+  }, [activePub, fetchShorts]);
 
   // Cleanup shorts when screen unmounts
   useEffect(() => {
@@ -156,26 +170,44 @@ export function ShortsScreen({ onBack }: ShortsScreenProps) {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Publication selector */}
+      {/* Publication input */}
       <View style={styles.pubSelector}>
+        <View style={styles.pubInputRow}>
+          <TextInput
+            style={styles.pubInput}
+            value={customPub}
+            onChangeText={setCustomPub}
+            onSubmitEditing={() => selectPublication(customPub)}
+            placeholder="Enter publication name..."
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+          />
+          <TouchableOpacity
+            style={styles.pubGoButton}
+            onPress={() => selectPublication(customPub)}
+          >
+            <Text style={styles.pubGoButtonText}>Go</Text>
+          </TouchableOpacity>
+        </View>
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={PUBLICATIONS}
+          data={DEFAULT_PUBLICATIONS}
           keyExtractor={(item) => item.name}
           contentContainerStyle={styles.pubSelectorContent}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[
                 styles.pubButton,
-                selectedPub.name === item.name && styles.pubButtonActive,
+                activePub === item.name && styles.pubButtonActive,
               ]}
-              onPress={() => setSelectedPub(item)}
+              onPress={() => selectPublication(item.name)}
             >
               <Text
                 style={[
                   styles.pubButtonText,
-                  selectedPub.name === item.name && styles.pubButtonTextActive,
+                  activePub === item.name && styles.pubButtonTextActive,
                 ]}
               >
                 {item.label}
@@ -318,6 +350,35 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
     backgroundColor: '#fff',
+  },
+  pubInputRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    gap: 8,
+  },
+  pubInput: {
+    flex: 1,
+    height: 36,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    fontSize: 14,
+    backgroundColor: '#fafafa',
+  },
+  pubGoButton: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pubGoButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   pubSelectorContent: {
     paddingHorizontal: 12,
