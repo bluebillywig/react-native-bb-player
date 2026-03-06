@@ -122,6 +122,7 @@ Key differences from full mode:
 - Horizontal scroll instead of vertical swipe
 - Compact view — give it a fixed height rather than `flex: 1`
 - `shelfStartSpacing` / `shelfEndSpacing` control padding at the edges of the scroll
+- Tapping a thumbnail opens the full-screen Shorts player as a modal overlay
 
 ## URL Format
 
