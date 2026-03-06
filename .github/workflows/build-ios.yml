@@ -143,7 +143,16 @@ jobs:
             DEVELOPMENT_TEAM=${TEAM_ID} \
             PROVISIONING_PROFILE_SPECIFIER=${PROFILE_UUID} \
             CURRENT_PROJECT_VERSION=${{ steps.build.outputs.build_number }} \
-            2>&1 | xcbeautify
+            2>&1 | tee $RUNNER_TEMP/xcodebuild.log | xcbeautify
+
+      - name: Show raw xcodebuild errors on failure
+        if: failure()
+        run: |
+          echo "=== Last 100 lines of xcodebuild log ==="
+          tail -100 $RUNNER_TEMP/xcodebuild.log || true
+          echo ""
+          echo "=== All error lines ==="
+          grep -i "error:" $RUNNER_TEMP/xcodebuild.log || echo "No error lines found"
 
       - name: Create ExportOptions.plist
         run: |
