@@ -40,6 +40,7 @@ private enum LogLevel {
  */
 class BBShortsView: UIView, BBNativeShortsViewDelegate {
   private var shortsView: BBNativeShortsView?
+  private var navController: UINavigationController?
   private var hasSetup: Bool = false
 
   // MARK: - Props (set from React Native)
@@ -136,6 +137,17 @@ class BBShortsView: UIView, BBNativeShortsViewDelegate {
       return
     }
 
+    // Wrap in a UINavigationController so the native SDK can present
+    // shelf-mode modals (openShortsPlayerAsModal uses navigationController?.present).
+    // Hide the nav bar since we don't need visible navigation chrome.
+    let nav = UINavigationController(rootViewController: UIViewController())
+    nav.isNavigationBarHidden = true
+    nav.view.frame = bounds
+    nav.view.backgroundColor = .clear
+    viewController.addChild(nav)
+    nav.didMove(toParent: viewController)
+    self.navController = nav
+
     // Convert options to Swift dictionary
     var optionsDict: [String: Any]? = nil
     if let dict = options as? [String: Any], !dict.isEmpty {
@@ -143,8 +155,9 @@ class BBShortsView: UIView, BBNativeShortsViewDelegate {
     }
 
     // Create the shorts view using the factory method
+    // Pass the nav controller so the native SDK's shelf tap can present modals
     shortsView = BBNativeShorts.createShortsView(
-      uiViewController: viewController,
+      uiViewController: nav,
       frame: bounds,
       jsonUrl: jsonUrl,
       options: optionsDict
@@ -176,6 +189,10 @@ class BBShortsView: UIView, BBNativeShortsViewDelegate {
     shortsView?.destroy()
     shortsView?.removeFromSuperview()
     shortsView = nil
+    navController?.willMove(toParent: nil)
+    navController?.view.removeFromSuperview()
+    navController?.removeFromParent()
+    navController = nil
     hasSetup = false
   }
 
