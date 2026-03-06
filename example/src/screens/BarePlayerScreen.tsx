@@ -1,16 +1,25 @@
-import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, StatusBar, requireNativeComponent } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Use the native view directly without the wrapper's JS layer
-const RawBBPlayerView = requireNativeComponent('BBPlayerView');
+import {
+  BBPlayerView,
+  type BBPlayerViewMethods,
+} from '@bluebillywig/react-native-bb-player';
 
 interface BarePlayerScreenProps {
   onBack?: () => void;
 }
 
-// Bare minimum player - native view only, no wrapper overhead
+// Bare minimum player - BBPlayerView with no event handlers, for baseline comparison
 export function BarePlayerScreen({ onBack }: BarePlayerScreenProps) {
+  const playerRef = useRef<BBPlayerViewMethods>(null);
+
+  useEffect(() => {
+    return () => {
+      playerRef.current?.destroy();
+    };
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
@@ -22,7 +31,8 @@ export function BarePlayerScreen({ onBack }: BarePlayerScreenProps) {
         </View>
       )}
       <View style={styles.playerContainer}>
-        <RawBBPlayerView
+        <BBPlayerView
+          ref={playerRef}
           jsonUrl="https://demo.bbvms.com/p/native_sdk/c/4256593.json"
           options={{ noChromeCast: true }}
           style={styles.player}
