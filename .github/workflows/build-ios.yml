@@ -1,23 +1,53 @@
-name: Build & Upload iOS Example to TestFlight
+# Build iOS example app and release to TestFlight
+#
+# Triggered manually.
+#
+# Required secrets:
+#   IOS_CERTIFICATE_BASE64          - Distribution certificate (.p12), base64 encoded
+#   IOS_CERTIFICATE_PASSWORD        - Password for the .p12
+#   IOS_PROVISIONING_PROFILE_BASE64 - App Store provisioning profile, base64 encoded
+#   APPSTORE_API_KEY_ID             - App Store Connect API key ID
+#   APPSTORE_API_ISSUER_ID          - App Store Connect API issuer ID
+#   APPSTORE_API_KEY_BASE64         - App Store Connect API key (.p8), base64 encoded
+#
+name: "Release to TestFlight"
 
 on:
   workflow_dispatch:
     inputs:
       build_number:
-        description: 'Build number (auto-incremented if empty)'
+        description: 'Build number (leave empty to auto-increment from timestamp)'
         required: false
         type: string
 
+permissions:
+  contents: read
+
 jobs:
-  build-ios:
-    name: Build iOS & Upload to TestFlight
+  build-and-upload:
     runs-on: macos-15
+    env:
+      SCHEME: BBPlayerExample
+      WORKSPACE: example/ios/BBPlayerExample.xcworkspace
+      BUNDLE_ID: com.bluebillywig.bbplayerrnexample
+      TEAM_ID: PFYB2YN255
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Determine build number
+        id: build
+        run: |
+          if [ -n "${{ inputs.build_number }}" ]; then
+            BUILD_NUMBER="${{ inputs.build_number }}"
+          else
+            BUILD_NUMBER=$(date +%Y%m%d%H%M)
+          fi
+          echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+          echo "::notice::Build number: ${BUILD_NUMBER}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,27 +55,31 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build TypeScript
-        run: npm run build
+      - name: Install dependencies and build TypeScript
+        run: |
+          npm ci
+          npm run build
 
       - name: Install example dependencies
         working-directory: example
         run: npm ci
 
-      - name: Cache CocoaPods
-        uses: actions/cache@v4
+      - name: Setup Ruby and CocoaPods
+        uses: ruby/setup-ruby@v1
         with:
-          path: example/ios/Pods
-          key: pods-${{ runner.os }}-${{ hashFiles('example/ios/Podfile.lock') }}
-          restore-keys: |
-            pods-${{ runner.os }}-
+          ruby-version: '3.2'
+          bundler-cache: false
 
-      - name: Install CocoaPods dependencies
+      - name: Install CocoaPods
+        run: gem install cocoapods
+
+      - name: Pod install
         working-directory: example/ios
-        run: pod install
+        run: LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install
+
+      - name: Set build number
+        working-directory: example/ios
+        run: agvtool new-version -all ${{ steps.build.outputs.build_number }}
 
       - name: Install Apple certificate and provisioning profile
         env:
@@ -55,7 +89,7 @@ jobs:
         run: |
           # Create temporary keychain
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          KEYCHAIN_PASSWORD=$(openssl rand -hex 20)
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
 
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
@@ -63,100 +97,126 @@ jobs:
 
           # Import certificate
           CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
-          echo "$IOS_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
-          security import "$CERTIFICATE_PATH" -P "$IOS_CERTIFICATE_PASSWORD" \
-            -A -t cert -f pkcs12 \
+          echo -n "$IOS_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -P "$IOS_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
             -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S apple-tool:,apple: \
-            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
 
-          # Install provisioning profile
+          # Install provisioning profile (with UUID filename)
           PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
-          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+          echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
 
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
 
-      - name: Determine build number
-        id: build_number
-        run: |
-          if [ -n "${{ inputs.build_number }}" ]; then
-            echo "number=${{ inputs.build_number }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "number=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
-          fi
+          echo "PROFILE_UUID=${PROFILE_UUID}" >> $GITHUB_ENV
+          echo "KEYCHAIN_PATH=${KEYCHAIN_PATH}" >> $GITHUB_ENV
+          echo "KEYCHAIN_PASSWORD=${KEYCHAIN_PASSWORD}" >> $GITHUB_ENV
+          echo "::notice::Provisioning profile UUID: ${PROFILE_UUID}"
 
-      - name: Set build number in Xcode project
-        working-directory: example/ios
+      - name: Verify signing certificate
         run: |
-          agvtool new-version -all ${{ steps.build_number.outputs.number }}
+          echo "Available signing identities:"
+          security find-identity -v -p codesigning
+          echo ""
+          echo "Identities in CI keychain:"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
-      - name: Generate ExportOptions.plist
+      - name: Build archive
         run: |
-          cat > "$RUNNER_TEMP/ExportOptions.plist" << 'PLIST'
+          set -o pipefail
+
+          xcodebuild archive \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath $RUNNER_TEMP/BBPlayerExample.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            "CODE_SIGN_IDENTITY=Apple Distribution" \
+            DEVELOPMENT_TEAM=${TEAM_ID} \
+            PROVISIONING_PROFILE_SPECIFIER=${PROFILE_UUID} \
+            CURRENT_PROJECT_VERSION=${{ steps.build.outputs.build_number }} \
+            2>&1 | xcbeautify
+
+      - name: Create ExportOptions.plist
+        run: |
+          cat > $RUNNER_TEMP/ExportOptions.plist << PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>signingStyle</key>
-              <string>automatic</string>
-              <key>stripSwiftSymbols</key>
-              <true/>
-              <key>uploadSymbols</key>
-              <true/>
-              <key>destination</key>
-              <string>upload</string>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key>
+              <string>${PROFILE_UUID}</string>
+            </dict>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>destination</key>
+            <string>export</string>
           </dict>
           </plist>
           PLIST
 
-      - name: Archive iOS app
-        working-directory: example/ios
-        run: |
-          xcodebuild \
-            -workspace BBPlayerExample.xcworkspace \
-            -scheme BBPlayerExample \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath $RUNNER_TEMP/BBPlayerExample.xcarchive \
-            archive
-
       - name: Export IPA
         run: |
+          set -o pipefail
           xcodebuild -exportArchive \
             -archivePath $RUNNER_TEMP/BBPlayerExample.xcarchive \
-            -exportPath $RUNNER_TEMP/ipa \
-            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist
+            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
+            -exportPath $RUNNER_TEMP/export \
+            2>&1 | xcbeautify
+
+      - name: Setup App Store Connect API key
+        run: |
+          mkdir -p ~/private_keys
+          echo -n "${{ secrets.APPSTORE_API_KEY_BASE64 }}" | base64 --decode \
+            > ~/private_keys/AuthKey_${{ secrets.APPSTORE_API_KEY_ID }}.p8
 
       - name: Upload to TestFlight
-        env:
-          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
-          APPSTORE_API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
         run: |
-          # Write API key to file
-          mkdir -p ~/private_keys
-          echo "$APPSTORE_API_KEY_BASE64" | base64 --decode \
-            > ~/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8
-
           xcrun altool --upload-app \
-            -f $RUNNER_TEMP/ipa/*.ipa \
-            -t ios \
-            --apiKey "$APPSTORE_API_KEY_ID" \
-            --apiIssuer "$APPSTORE_API_ISSUER_ID"
+            --type ios \
+            --file $RUNNER_TEMP/export/BBPlayerExample.ipa \
+            --apiKey "${{ secrets.APPSTORE_API_KEY_ID }}" \
+            --apiIssuer "${{ secrets.APPSTORE_API_ISSUER_ID }}"
 
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: ios-release-ipa
-          path: ${{ runner.temp }}/ipa/*.ipa
+          name: BBPlayerExample-${{ steps.build.outputs.build_number }}
+          path: ${{ runner.temp }}/export/*.ipa
           retention-days: 30
+          if-no-files-found: warn
 
-      - name: Clean up keychain
+      - name: Cleanup keychain
         if: always()
         run: |
-          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "## TestFlight Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** $(git rev-parse --short HEAD)" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Number:** ${{ steps.build.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Bundle ID:** ${BUNDLE_ID}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "IPA uploaded to TestFlight. It may take a few minutes to process." >> $GITHUB_STEP_SUMMARY
