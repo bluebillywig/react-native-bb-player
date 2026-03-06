@@ -14,10 +14,9 @@ import { ShortsScreen } from './src/screens/ShortsScreen';
 import { OutstreamScreen } from './src/screens/OutstreamScreen';
 import { DeepLinkPlayerScreen } from './src/screens/DeepLinkPlayerScreen';
 import { SimplePlayerScreen } from './src/screens/SimplePlayerScreen';
-import { BarePlayerScreen } from './src/screens/BarePlayerScreen';
 import { ModalPlayerScreen } from './src/screens/ModalPlayerScreen';
 
-type Screen = 'home' | 'api' | 'shorts' | 'outstream' | 'deeplink' | 'simple' | 'bare' | 'modal';
+type Screen = 'home' | 'api' | 'shorts' | 'outstream' | 'deeplink' | 'simple' | 'modal';
 
 // Demo menu items - matching native SDK demo app structure
 const DEMO_ITEMS = [
@@ -27,13 +26,7 @@ const DEMO_ITEMS = [
     description: 'Minimal player with no event handlers - for performance testing',
     icon: '▶️',
   },
-  {
-    id: 'bare',
-    title: 'Bare Player',
-    description: 'Native view only, bypasses JS wrapper - for baseline comparison',
-    icon: '⚡',
-  },
-  {
+{
     id: 'api',
     title: 'API Reference',
     description: 'Test all player API methods: play, pause, seek, volume, fullscreen, and more',
@@ -175,8 +168,6 @@ function App(): React.JSX.Element {
     switch (currentScreen) {
       case 'simple':
         return <SimplePlayerScreen onBack={handleBack} />;
-      case 'bare':
-        return <BarePlayerScreen onBack={handleBack} />;
       case 'api':
         return <ApiScreen onBack={handleBack} />;
       case 'shorts':
