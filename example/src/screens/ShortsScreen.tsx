@@ -62,7 +62,7 @@ export function ShortsScreen({ onBack }: ShortsScreenProps) {
     setShortsList([]);
     try {
       const res = await fetch(
-        `https://${pub}.bbvms.com/papi/search?q=*:*&className[]=Shorts&sort=createddate%20desc`
+        `https://${pub}.bbvms.com/papi/search?q=*:*&className[]=Shorts&sort=createddate desc`
       );
       const data = await res.json();
       const items: ShortsItem[] = (data.items || []).map((item: any) => ({
