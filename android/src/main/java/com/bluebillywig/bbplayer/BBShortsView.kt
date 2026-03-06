@@ -2,6 +2,8 @@ package com.bluebillywig.bbplayer
 
 import android.app.Activity
 import android.util.Log
+import android.view.Choreographer
+import android.view.View.MeasureSpec
 import android.widget.FrameLayout
 import com.bluebillywig.bbnativeplayersdk.BBNativeShorts
 import com.bluebillywig.bbnativeplayersdk.BBNativeShortsView
@@ -9,6 +11,7 @@ import com.bluebillywig.bbnativeplayersdk.BBNativeShortsViewDelegate
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
+import com.facebook.react.modules.core.ReactChoreographer
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
@@ -48,20 +51,47 @@ class BBShortsView(private val reactContext: ThemedReactContext) : FrameLayout(r
 
     private var shortsView: BBNativeShortsView? = null
 
+    // ReactChoreographer layout pattern - same as BBPlayerView
+    private var isLayoutEnqueued = false
+    private var constructorComplete = false
+
+    private val layoutCallback = Choreographer.FrameCallback {
+        isLayoutEnqueued = false
+        measure(
+            MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+        )
+        layout(left, top, right, bottom)
+    }
+
     init {
         // Default to black background for Shorts
         setBackgroundColor(android.graphics.Color.BLACK)
+        setPadding(0, 0, 0, 0)
+        clipToPadding = false
+        clipChildren = false
+        constructorComplete = true
     }
 
-    /**
-     * Override onLayout to ensure child views receive proper bounds.
-     * This is critical for React Native Fabric where layout isn't automatically propagated.
-     */
+    override fun requestLayout() {
+        super.requestLayout()
+        if (!constructorComplete) return
+        if (!isLayoutEnqueued) {
+            isLayoutEnqueued = true
+            ReactChoreographer.getInstance()
+                .postFrameCallback(
+                    ReactChoreographer.CallbackType.NATIVE_ANIMATED_MODULE,
+                    layoutCallback
+                )
+        }
+    }
+
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        // Explicitly layout all children to fill the container
+        val w = right - left
+        val h = bottom - top
         for (i in 0 until childCount) {
-            getChildAt(i)?.layout(0, 0, right - left, bottom - top)
+            getChildAt(i)?.layout(0, 0, w, h)
         }
     }
 
