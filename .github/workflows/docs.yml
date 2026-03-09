@@ -1,22 +1,19 @@
-name: Generate API Docs
+name: Deploy Documentation
 
 on:
   push:
     branches: [master]
     paths:
+      - 'website/**'
       - 'src/**'
-      - 'typedoc.json'
-      - 'package.json'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -35,12 +32,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: website/package-lock.json
 
       - name: Install dependencies
+        working-directory: website
         run: npm ci
 
-      - name: Generate API documentation
-        run: npm run docs
+      - name: Build website
+        working-directory: website
+        run: npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -48,7 +48,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'docs/api'
+          path: 'website/build'
 
   deploy:
     name: Deploy to GitHub Pages
