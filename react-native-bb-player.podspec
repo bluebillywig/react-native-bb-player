@@ -33,8 +33,8 @@ Pod::Spec.new do |s|
     s.dependency 'GoogleUserMessagingPlatform', '~> 2.1'
     s.dependency 'google-cast-sdk-dynamic-xcframework-ios-bb', '4.8.0'
   else
-    s.dependency 'BlueBillywigNativePlayerKit-iOS'
-    s.dependency 'BlueBillywigNativePlayerKit-iOS/GoogleCastSDK'
+    s.dependency 'BlueBillywigNativePlayerKit-iOS', '~> 8.45.0'
+    s.dependency 'BlueBillywigNativePlayerKit-iOS/GoogleCastSDK', '~> 8.45.0'
   end
 
   # Swift/Objective-C compatibility
