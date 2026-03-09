@@ -147,8 +147,9 @@ jobs:
           echo "Updating native SDK versions to ${SDK_VERSION}.x"
 
           # Update Android build.gradle
-          # Changes: bbnativeplayersdk:VERSION to bbnativeplayersdk:SDK_VERSION.+
-          sed -i "s/bbnativeplayersdk:[^'\"]*/bbnativeplayersdk:${SDK_VERSION}.+/g" android/build.gradle
+          # Changes: bbnativeplayersdk:bbnativeplayersdk:VERSION to pinned version
+          # Match the full Maven coordinate (group:artifact:version)
+          sed -i "s/bbnativeplayersdk:bbnativeplayersdk:[^'\"]*/bbnativeplayersdk:bbnativeplayersdk:${SDK_VERSION}.+/g" android/build.gradle
           echo "✅ Updated Android SDK to ${SDK_VERSION}.+"
 
           # Update iOS podspec
