@@ -90,9 +90,39 @@ The `options` prop allows you to customize the Shorts experience:
 
 | Format | Description |
 |--------|-------------|
-| `full` | Full-screen swipe experience (default) |
-| `list` | Thumbnail shelf/list view |
+| `full` | Full-screen vertical swipe experience (default) |
+| `list` | Horizontal shelf/carousel — compact, scrollable thumbnails |
 | `player` | Single player mode |
+
+### Shelf Mode (List Format)
+
+Shelf mode displays Shorts as a horizontal carousel, ideal for embedding within a page alongside other content:
+
+```tsx
+import { BBShortsView } from '@bluebillywig/react-native-bb-player';
+
+function ShortsShelf({ shortsId }: { shortsId: string }) {
+  return (
+    <View style={{ height: 400, marginHorizontal: 16, borderRadius: 16, overflow: 'hidden' }}>
+      <BBShortsView
+        jsonUrl={`https://your-domain.bbvms.com/sh/${shortsId}.json`}
+        options={{
+          displayFormat: 'list',
+          shelfStartSpacing: 16,
+          shelfEndSpacing: 16,
+        }}
+        style={{ flex: 1 }}
+      />
+    </View>
+  );
+}
+```
+
+Key differences from full mode:
+- Horizontal scroll instead of vertical swipe
+- Compact view — give it a fixed height rather than `flex: 1`
+- `shelfStartSpacing` / `shelfEndSpacing` control padding at the edges of the scroll
+- Tapping a thumbnail opens the full-screen Shorts player as a modal overlay
 
 ## URL Format
 
@@ -202,7 +232,7 @@ const styles = StyleSheet.create({
 | Standard video playback | ❌ | ✅ |
 | Play/pause control | N/A (automatic) | ✅ |
 | Seek control | N/A | ✅ |
-| Fullscreen control | N/A (always full) | ✅ |
+| Fullscreen control | Via `displayFormat` option | ✅ |
 
 **Note:** Do not try to load Shorts URLs (`.../sh/{id}.json`) in `BBPlayerView`. The regular player view does not support Shorts-specific features like swipe navigation.
 

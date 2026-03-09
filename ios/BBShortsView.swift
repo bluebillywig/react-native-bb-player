@@ -40,6 +40,7 @@ private enum LogLevel {
  */
 class BBShortsView: UIView, BBNativeShortsViewDelegate {
   private var shortsView: BBNativeShortsView?
+  private var navController: UINavigationController?
   private var hasSetup: Bool = false
 
   // MARK: - Props (set from React Native)
@@ -136,15 +137,38 @@ class BBShortsView: UIView, BBNativeShortsViewDelegate {
       return
     }
 
+    // Wrap in a UINavigationController so the native SDK can present
+    // shelf-mode modals (openShortsPlayerAsModal uses navigationController?.present).
+    // The native SDK adds BBNativeShortsViewController as a child of the VC we pass.
+    // That child then uses its navigationController to present modals.
+    let containerVC = UIViewController()
+    containerVC.view.backgroundColor = .clear
+    let nav = UINavigationController(rootViewController: containerVC)
+    nav.isNavigationBarHidden = true
+    nav.view.frame = bounds
+    nav.view.backgroundColor = .clear
+    viewController.addChild(nav)
+    addSubview(nav.view)
+    nav.view.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      nav.view.topAnchor.constraint(equalTo: topAnchor),
+      nav.view.leadingAnchor.constraint(equalTo: leadingAnchor),
+      nav.view.trailingAnchor.constraint(equalTo: trailingAnchor),
+      nav.view.bottomAnchor.constraint(equalTo: bottomAnchor),
+    ])
+    nav.didMove(toParent: viewController)
+    self.navController = nav
+
     // Convert options to Swift dictionary
     var optionsDict: [String: Any]? = nil
     if let dict = options as? [String: Any], !dict.isEmpty {
       optionsDict = dict
     }
 
-    // Create the shorts view using the factory method
+    // Create the shorts view using the container VC inside the nav controller
+    // so the native SDK's shelf tap can present modals via navigationController
     shortsView = BBNativeShorts.createShortsView(
-      uiViewController: viewController,
+      uiViewController: containerVC,
       frame: bounds,
       jsonUrl: jsonUrl,
       options: optionsDict
@@ -158,14 +182,15 @@ class BBShortsView: UIView, BBNativeShortsViewDelegate {
 
     shorts.delegate = self
 
-    // Add to view hierarchy with autolayout
-    addSubview(shorts)
+    // Add shorts view inside the container VC's view so it sits within the
+    // navigation controller hierarchy (required for shelf modal presentation)
+    containerVC.view.addSubview(shorts)
     shorts.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-      shorts.topAnchor.constraint(equalTo: topAnchor),
-      shorts.leadingAnchor.constraint(equalTo: leadingAnchor),
-      shorts.trailingAnchor.constraint(equalTo: trailingAnchor),
-      shorts.bottomAnchor.constraint(equalTo: bottomAnchor)
+      shorts.topAnchor.constraint(equalTo: containerVC.view.topAnchor),
+      shorts.leadingAnchor.constraint(equalTo: containerVC.view.leadingAnchor),
+      shorts.trailingAnchor.constraint(equalTo: containerVC.view.trailingAnchor),
+      shorts.bottomAnchor.constraint(equalTo: containerVC.view.bottomAnchor)
     ])
 
     log("BBShortsView.setupShorts() completed")
@@ -176,6 +201,10 @@ class BBShortsView: UIView, BBNativeShortsViewDelegate {
     shortsView?.destroy()
     shortsView?.removeFromSuperview()
     shortsView = nil
+    navController?.willMove(toParent: nil)
+    navController?.view.removeFromSuperview()
+    navController?.removeFromParent()
+    navController = nil
     hasSetup = false
   }
 

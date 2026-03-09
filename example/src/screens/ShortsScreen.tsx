@@ -7,6 +7,8 @@ import {
   StatusBar,
   FlatList,
   ActivityIndicator,
+  TextInput,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -14,13 +16,15 @@ import {
   type BBShortsViewMethods,
 } from '@bluebillywig/react-native-bb-player';
 
-const PUBLICATIONS = [
+const DEFAULT_PUBLICATIONS = [
   { name: 'bb.dev', label: 'BB Dev' },
   { name: 'testsuite.acc', label: 'Testsuite ACC' },
   { name: 'demo', label: 'Demo' },
   { name: 'cosdemo', label: 'COS Demo' },
-  { name: 'omroepbrabant', label: 'Omroep Brabant' },
 ];
+
+// Remember chosen publication across navigations (module-level state)
+let rememberedPublication: string = DEFAULT_PUBLICATIONS[0]!.name;
 
 type ShortsItem = {
   id: string;
@@ -35,26 +39,37 @@ interface ShortsScreenProps {
 
 export function ShortsScreen({ onBack }: ShortsScreenProps) {
   const shortsRef = useRef<BBShortsViewMethods>(null);
-  const [selectedPub, setSelectedPub] = useState(PUBLICATIONS[0]);
+  const [customPub, setCustomPub] = useState(rememberedPublication);
+  const [activePub, setActivePub] = useState(rememberedPublication);
   const [shortsList, setShortsList] = useState<ShortsItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeShorts, setActiveShorts] = useState<{ pub: string; id: string } | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [displayFormat, setDisplayFormat] = useState<'full' | 'list'>('full');
 
-  const fetchShorts = useCallback(async (pub: typeof PUBLICATIONS[number]) => {
+  const selectPublication = useCallback((name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setCustomPub(trimmed);
+    setActivePub(trimmed);
+    rememberedPublication = trimmed;
+    Keyboard.dismiss();
+  }, []);
+
+  const fetchShorts = useCallback(async (pub: string) => {
     setLoading(true);
     setShortsList([]);
     try {
       const res = await fetch(
-        `https://${pub.name}.bbvms.com/papi/search?q=*:*&className[]=Shorts`
+        `https://${pub}.bbvms.com/papi/search?q=*:*&className[]=Shorts&sort=createddate desc`
       );
       const data = await res.json();
       const items: ShortsItem[] = (data.items || []).map((item: any) => ({
         id: item.id,
         name: item.name || `Shorts ${item.id}`,
         status: item.status || 'unknown',
-        publication: pub.name,
+        publication: pub,
       }));
       setShortsList(items);
     } catch (err) {
@@ -65,8 +80,8 @@ export function ShortsScreen({ onBack }: ShortsScreenProps) {
   }, []);
 
   useEffect(() => {
-    fetchShorts(selectedPub);
-  }, [selectedPub, fetchShorts]);
+    fetchShorts(activePub);
+  }, [activePub, fetchShorts]);
 
   // Cleanup shorts when screen unmounts
   useEffect(() => {
@@ -104,37 +119,48 @@ export function ShortsScreen({ onBack }: ShortsScreenProps) {
   // Shorts player view
   if (activeShorts) {
     const jsonUrl = `https://${activeShorts.pub}.bbvms.com/sh/${activeShorts.id}.json`;
-    return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+    const isShelf = displayFormat === 'list';
+    const shortsOptions = isShelf
+      ? { displayFormat: 'list' as const, shelfStartSpacing: 16, shelfEndSpacing: 16 }
+      : undefined;
 
-        <SafeAreaView style={styles.playerHeader}>
+    return (
+      <View style={isShelf ? styles.shelfContainer : styles.container}>
+        <StatusBar
+          barStyle={isShelf ? 'dark-content' : 'light-content'}
+          backgroundColor={isShelf ? '#f5f5f5' : '#000000'}
+        />
+
+        <SafeAreaView style={isShelf ? styles.shelfHeader : styles.playerHeader}>
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Text style={isShelf ? styles.listBackText : styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <Text style={isShelf ? styles.shelfHeaderTitle : styles.headerTitle} numberOfLines={1}>
             {activeShorts.pub} / Shorts {activeShorts.id}
           </Text>
           <View style={styles.headerSpacer} />
         </SafeAreaView>
 
-        <View style={styles.playerContainer}>
+        <View style={isShelf ? styles.shelfPlayerContainer : styles.playerContainer}>
           <BBShortsView
             ref={shortsRef}
             jsonUrl={jsonUrl}
-            style={styles.player}
+            options={shortsOptions}
+            style={isShelf ? styles.shelfPlayer : styles.player}
             onDidSetupWithJsonUrl={handleSetupWithJsonUrl}
             onDidFailWithError={handleError}
           />
         </View>
 
-        <SafeAreaView style={styles.statusOverlay} pointerEvents="none">
+        <SafeAreaView style={isShelf ? styles.shelfStatusOverlay : styles.statusOverlay} pointerEvents="none">
           <View style={styles.statusContainer}>
             {errorMessage ? (
               <Text style={styles.errorText}>{errorMessage}</Text>
             ) : (
-              <Text style={styles.statusText}>
-                {isReady ? 'Swipe to navigate' : 'Loading Shorts...'}
+              <Text style={isShelf ? styles.shelfStatusText : styles.statusText}>
+                {isReady
+                  ? isShelf ? 'Shelf mode · Scroll horizontally' : 'Swipe to navigate'
+                  : 'Loading Shorts...'}
               </Text>
             )}
           </View>
@@ -156,26 +182,44 @@ export function ShortsScreen({ onBack }: ShortsScreenProps) {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Publication selector */}
+      {/* Publication input */}
       <View style={styles.pubSelector}>
+        <View style={styles.pubInputRow}>
+          <TextInput
+            style={styles.pubInput}
+            value={customPub}
+            onChangeText={setCustomPub}
+            onSubmitEditing={() => selectPublication(customPub)}
+            placeholder="Enter publication name..."
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+          />
+          <TouchableOpacity
+            style={styles.pubGoButton}
+            onPress={() => selectPublication(customPub)}
+          >
+            <Text style={styles.pubGoButtonText}>Go</Text>
+          </TouchableOpacity>
+        </View>
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={PUBLICATIONS}
+          data={DEFAULT_PUBLICATIONS}
           keyExtractor={(item) => item.name}
           contentContainerStyle={styles.pubSelectorContent}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[
                 styles.pubButton,
-                selectedPub.name === item.name && styles.pubButtonActive,
+                activePub === item.name && styles.pubButtonActive,
               ]}
-              onPress={() => setSelectedPub(item)}
+              onPress={() => selectPublication(item.name)}
             >
               <Text
                 style={[
                   styles.pubButtonText,
-                  selectedPub.name === item.name && styles.pubButtonTextActive,
+                  activePub === item.name && styles.pubButtonTextActive,
                 ]}
               >
                 {item.label}
@@ -183,6 +227,26 @@ export function ShortsScreen({ onBack }: ShortsScreenProps) {
             </TouchableOpacity>
           )}
         />
+      </View>
+
+      {/* Display mode toggle */}
+      <View style={styles.modeToggleRow}>
+        <TouchableOpacity
+          style={[styles.modeButton, displayFormat === 'full' && styles.modeButtonActive]}
+          onPress={() => setDisplayFormat('full')}
+        >
+          <Text style={[styles.modeButtonText, displayFormat === 'full' && styles.modeButtonTextActive]}>
+            Full
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modeButton, displayFormat === 'list' && styles.modeButtonActive]}
+          onPress={() => setDisplayFormat('list')}
+        >
+          <Text style={[styles.modeButtonText, displayFormat === 'list' && styles.modeButtonTextActive]}>
+            Shelf
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Shorts list */}
@@ -292,6 +356,72 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  // Shelf mode styles
+  shelfContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  shelfHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  shelfHeaderTitle: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+  },
+  shelfPlayerContainer: {
+    height: 400,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  shelfPlayer: {
+    flex: 1,
+  },
+  shelfStatusOverlay: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  shelfStatusText: {
+    color: '#666',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+
+  // Mode toggle
+  modeToggleRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  modeButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  modeButtonTextActive: {
+    color: '#fff',
+  },
+
   // List styles
   listContainer: {
     flex: 1,
@@ -318,6 +448,35 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
     backgroundColor: '#fff',
+  },
+  pubInputRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    gap: 8,
+  },
+  pubInput: {
+    flex: 1,
+    height: 36,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    fontSize: 14,
+    backgroundColor: '#fafafa',
+  },
+  pubGoButton: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pubGoButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   pubSelectorContent: {
     paddingHorizontal: 12,

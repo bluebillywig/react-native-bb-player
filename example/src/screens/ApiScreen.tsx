@@ -22,10 +22,10 @@ const API_ACTIONS = {
   Playback: ['Play', 'Pause', 'Seek +10s', 'Seek -10s'],
   Audio: ['Mute', 'Unmute', 'Volume 50%', 'Volume 100%'],
   Fullscreen: ['Enter Fullscreen', 'Enter FS Landscape', 'Exit Fullscreen'],
-  Getters: ['Get Duration', 'Get Muted', 'Get Volume', 'Get Phase', 'Get State', 'Get Mode', 'Get Clip Data'],
+  Getters: ['Get Duration', 'Get Muted', 'Get Volume', 'Get Phase', 'Get State', 'Get Mode', 'Get Clip Data', 'Get Player State'],
   // Load actions use hardcoded IDs from same publication (demo.bbvms.com) - same as native demo
   // Note: Shorts require the separate BBShortsView component - see ShortsScreen
-  Load: ['Load Clip 4256575', 'Load Clip 4256593', 'Load ClipList'],
+  Load: ['Load Clip (new API)', 'Load Clip 4256575', 'Load Clip 4256593', 'Load ClipList'],
   Other: ['Destroy', 'Show Cast Picker'],
 };
 
@@ -135,8 +135,15 @@ export function ApiScreen({ onBack }: ApiScreenProps) {
         const clipData = await playerRef.current.getClipData();
         showResult('Clip Data', clipData);
         break;
+      case 'Get Player State':
+        const playerState = await playerRef.current.getPlayerState();
+        showResult('Player State', playerState);
+        break;
 
       // Load - using hardcoded IDs from same publication (demo.bbvms.com), same as native demo
+      case 'Load Clip (new API)':
+        playerRef.current.loadClip('4256575', { playout: 'native_sdk', autoPlay: true });
+        break;
       case 'Load Clip 4256575':
         playerRef.current.loadWithClipId('4256575', 'external', true, 0);
         break;

@@ -14,9 +14,9 @@ import { ShortsScreen } from './src/screens/ShortsScreen';
 import { OutstreamScreen } from './src/screens/OutstreamScreen';
 import { DeepLinkPlayerScreen } from './src/screens/DeepLinkPlayerScreen';
 import { SimplePlayerScreen } from './src/screens/SimplePlayerScreen';
-import { BarePlayerScreen } from './src/screens/BarePlayerScreen';
+import { ModalPlayerScreen } from './src/screens/ModalPlayerScreen';
 
-type Screen = 'home' | 'api' | 'shorts' | 'outstream' | 'deeplink' | 'simple' | 'bare';
+type Screen = 'home' | 'api' | 'shorts' | 'outstream' | 'deeplink' | 'simple' | 'modal';
 
 // Demo menu items - matching native SDK demo app structure
 const DEMO_ITEMS = [
@@ -26,13 +26,7 @@ const DEMO_ITEMS = [
     description: 'Minimal player with no event handlers - for performance testing',
     icon: '▶️',
   },
-  {
-    id: 'bare',
-    title: 'Bare Player',
-    description: 'Native view only, bypasses JS wrapper - for baseline comparison',
-    icon: '⚡',
-  },
-  {
+{
     id: 'api',
     title: 'API Reference',
     description: 'Test all player API methods: play, pause, seek, volume, fullscreen, and more',
@@ -49,6 +43,12 @@ const DEMO_ITEMS = [
     title: 'Outstream Ads',
     description: 'Standalone ad player with collapse/expand for article placements',
     icon: '📰',
+  },
+  {
+    id: 'modal',
+    title: 'Modal Player',
+    description: 'Native full-screen modal overlay with swipe-to-close (iOS)',
+    icon: '🖥️',
   },
 ] as const;
 
@@ -167,15 +167,15 @@ function App(): React.JSX.Element {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'simple':
-        return <SimplePlayerScreen />;
-      case 'bare':
-        return <BarePlayerScreen />;
+        return <SimplePlayerScreen onBack={handleBack} />;
       case 'api':
         return <ApiScreen onBack={handleBack} />;
       case 'shorts':
         return <ShortsScreen onBack={handleBack} />;
       case 'outstream':
         return <OutstreamScreen onBack={handleBack} />;
+      case 'modal':
+        return <ModalPlayerScreen onBack={handleBack} />;
       case 'deeplink':
         return deepLinkClipId ? (
           <DeepLinkPlayerScreen clipId={deepLinkClipId} onBack={handleBack} />

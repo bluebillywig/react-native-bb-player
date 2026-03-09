@@ -377,6 +377,34 @@ export function ChromecastPlayer() {
 
 > **Note:** Chromecast functionality is available on both iOS and Android platforms.
 
+## Example App
+
+The included example app (`example/`) demonstrates all SDK features. It's available on TestFlight (iOS) and as an APK download on each [GitHub release](https://github.com/bluebillywig/react-native-bb-player/releases).
+
+### Screens
+
+| Screen | Description |
+|--------|-------------|
+| **Simple Player** | Minimal player for performance testing |
+| **API Reference** | Interactive demo of all player methods: play, pause, seek, volume, fullscreen |
+| **Shorts** | Vertical video with swipe navigation, supports full and shelf display modes |
+| **Outstream Ads** | Standalone ad player with collapse/expand for article placements |
+| **Modal Player** | Native full-screen modal overlay with swipe-to-close (iOS) |
+
+### Running Locally
+
+```bash
+# Install dependencies
+npm ci && cd example && npm ci
+
+# iOS
+cd ios && pod install && cd ..
+npx react-native run-ios
+
+# Android
+npx react-native run-android
+```
+
 ## API Reference
 
 ### Component Props
