@@ -586,8 +586,7 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
   }
 
   func seekRelative(_ offsetInSeconds: Double) {
-    // seekRelative removed in newer BBNativePlayerKit; no-op
-    log("seekRelative not available in this SDK version", level: .warning)
+    playerView?.player.seekRelative(offsetInSeconds: offsetInSeconds as NSNumber)
   }
 
   func setMuted(_ muted: Bool) {
