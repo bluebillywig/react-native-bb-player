@@ -129,7 +129,7 @@ type MediaClipList = {
   createddate?: string;
   publishedDate?: string;
   count?: number;
-  items?: MediaClip[];
+  items?: (MediaClip | MediaClipList | Project)[];
 };
 ```
 
