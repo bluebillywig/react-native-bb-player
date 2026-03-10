@@ -13,7 +13,7 @@ description: Install and set up the Blue Billywig React Native Player SDK in min
 - True native playback — no WebView
 - Full ad support (VAST, VPAID, Google IMA)
 - Built-in analytics
-- Content protection (DRM)
+- [Content protection](https://support.bluebillywig.com/content-protection/)
 - TypeScript-first API
 - Expo config plugin (optional)
 

@@ -18,7 +18,7 @@ function HomepageHeader() {
         </Heading>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
         <p style={{color: 'rgba(255,255,255,0.8)', fontSize: '1.1rem', marginBottom: '1.5rem'}}>
-          iOS AVPlayer + Android ExoPlayer. Ads, analytics, DRM. TypeScript-first.
+          iOS AVPlayer + Android ExoPlayer. Ads, analytics, content protection. TypeScript-first.
         </p>
         <div className={styles.buttons}>
           <Link
