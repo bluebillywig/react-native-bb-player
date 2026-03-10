@@ -117,9 +117,19 @@ Represents a playlist:
 type MediaClipList = {
   id?: string;
   title?: string;
-  description?: string;
-  type?: string;
-  clips?: MediaClip[];
+  deeplink?: string;
+  numfound?: number;
+  offset?: number;
+  parentid?: string;
+  status?: string;
+  publication?: string[];
+  mediatype?: string;
+  usetype?: string;
+  modifieddate?: string;
+  createddate?: string;
+  publishedDate?: string;
+  count?: number;
+  items?: MediaClip[];
 };
 ```
 
