@@ -1,45 +1,194 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+
 :root {
-  --ifm-color-primary: #0066cc;
-  --ifm-color-primary-dark: #005cb8;
-  --ifm-color-primary-darker: #0057ad;
-  --ifm-color-primary-darkest: #00478f;
-  --ifm-color-primary-light: #0070e0;
-  --ifm-color-primary-lighter: #0075eb;
-  --ifm-color-primary-lightest: #1a85ff;
+  /* BB Support site colors */
+  --ifm-color-primary: #2358a1;
+  --ifm-color-primary-dark: #174798;
+  --ifm-color-primary-darker: #15408a;
+  --ifm-color-primary-darkest: #19376b;
+  --ifm-color-primary-light: #2d65b3;
+  --ifm-color-primary-lighter: #3570be;
+  --ifm-color-primary-lightest: #4a84cc;
+
+  --ifm-font-family-base: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ifm-heading-font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ifm-font-size-base: 17px;
+  --ifm-line-height-base: 1.7;
+  --ifm-heading-font-weight: 700;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+  /* BB accent orange for highlights */
+  --bb-accent: #e8a53a;
+  --bb-accent-hover: #d4922e;
+  --bb-navy: #002837;
+
+  --ifm-navbar-background-color: #002837;
+  --ifm-navbar-link-color: #ffffff;
+  --ifm-navbar-link-hover-color: #e8a53a;
+
+  --ifm-footer-background-color: #002837;
+  --ifm-footer-color: rgba(255, 255, 255, 0.8);
+  --ifm-footer-link-color: rgba(255, 255, 255, 0.8);
+  --ifm-footer-link-hover-color: #e8a53a;
+  --ifm-footer-title-color: #ffffff;
 }
 
 [data-theme='dark'] {
-  --ifm-color-primary: #4da3ff;
-  --ifm-color-primary-dark: #3394ff;
-  --ifm-color-primary-darker: #268dff;
-  --ifm-color-primary-darkest: #0075eb;
-  --ifm-color-primary-light: #67b2ff;
-  --ifm-color-primary-lighter: #74b9ff;
-  --ifm-color-primary-lightest: #a1d2ff;
+  --ifm-color-primary: #5b9bd5;
+  --ifm-color-primary-dark: #468fce;
+  --ifm-color-primary-darker: #3b87ca;
+  --ifm-color-primary-darkest: #2d72b0;
+  --ifm-color-primary-light: #70a7dc;
+  --ifm-color-primary-lighter: #7bafe0;
+  --ifm-color-primary-lightest: #a0c7ea;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+
+  --ifm-navbar-background-color: #001a24;
+  --ifm-footer-background-color: #001a24;
 }
 
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--ifm-heading-font-family);
+  letter-spacing: -0.01em;
+}
+
+/* Navbar */
+.navbar {
+  box-shadow: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navbar__title {
+  font-family: var(--ifm-heading-font-family);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.navbar__link {
+  font-family: var(--ifm-heading-font-family);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Hero */
 .hero--primary {
-  background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+  background: #002837;
 }
 
 [data-theme='dark'] .hero--primary {
-  background: linear-gradient(135deg, #003366 0%, #001a33 100%);
+  background: #001a24;
 }
 
+.hero__title {
+  font-family: var(--ifm-heading-font-family);
+  font-size: 2.8rem;
+  font-weight: 700;
+}
+
+.hero__subtitle {
+  font-family: var(--ifm-font-family-base);
+  font-weight: 300;
+  font-size: 1.3rem;
+}
+
+/* Buttons — BB style */
+.button--secondary {
+  background-color: #e8a53a;
+  border-color: #e8a53a;
+  color: #002837;
+  font-family: var(--ifm-heading-font-family);
+  font-weight: 700;
+}
+
+.button--secondary:hover {
+  background-color: #d4922e;
+  border-color: #d4922e;
+  color: #002837;
+}
+
+.hero--primary .button--outline {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+  font-family: var(--ifm-heading-font-family);
+  font-weight: 600;
+}
+
+.hero--primary .button--outline:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #e8a53a;
+  border-color: #e8a53a;
+}
+
+/* Feature cards */
 .feature-card {
   padding: 1.5rem;
   border-radius: 8px;
   border: 1px solid var(--ifm-color-emphasis-200);
   height: 100%;
+  transition: border-color 0.2s;
+}
+
+.feature-card:hover {
+  border-color: #e8a53a;
 }
 
 .feature-card h3 {
+  font-family: var(--ifm-heading-font-family);
+  font-weight: 700;
   margin-bottom: 0.5rem;
+  color: var(--bb-navy);
 }
 
+[data-theme='dark'] .feature-card h3 {
+  color: var(--ifm-heading-color);
+}
+
+/* Sidebar */
+.menu__link {
+  font-family: var(--ifm-font-family-base);
+}
+
+.menu__link--active:not(.menu__link--sublist) {
+  border-left: 3px solid #e8a53a;
+  padding-left: calc(var(--ifm-menu-link-padding-horizontal) - 3px);
+}
+
+/* Footer */
+.footer--dark {
+  background-color: var(--ifm-footer-background-color);
+}
+
+.footer__title {
+  font-family: var(--ifm-heading-font-family);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.footer__link-item {
+  font-size: 0.9rem;
+}
+
+/* Code blocks */
 .install-tabs pre {
   margin-bottom: 0;
+}
+
+/* Breadcrumbs */
+.breadcrumbs__link {
+  font-size: 0.85rem;
+}
+
+/* Table of contents */
+.table-of-contents__link--active {
+  color: #2358a1;
+  font-weight: 700;
+}
+
+/* Admonitions — use BB orange for caution */
+.admonition-caution {
+  border-left-color: #e8a53a;
 }

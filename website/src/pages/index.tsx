@@ -29,7 +29,7 @@ function HomepageHeader() {
           <Link
             className="button button--outline button--lg"
             to="/docs/api/components"
-            style={{color: 'white', borderColor: 'rgba(255,255,255,0.5)', marginLeft: '1rem'}}>
+            style={{marginLeft: '1rem'}}>
             API Reference
           </Link>
         </div>

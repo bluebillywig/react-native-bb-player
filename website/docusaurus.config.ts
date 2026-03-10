@@ -3,7 +3,7 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'BB Player SDK',
+  title: 'React Native Player SDK',
   tagline: 'Native video player for React Native — powered by Blue Billywig',
   favicon: 'img/favicon.ico',
 
@@ -52,7 +52,7 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'BB Player SDK',
+      title: 'React Native Player SDK',
       items: [
         {
           type: 'docSidebar',
@@ -65,6 +65,11 @@ const config: Config = {
           sidebarId: 'api',
           position: 'left',
           label: 'API Reference',
+        },
+        {
+          href: 'https://bluebillywig.github.io/channel/',
+          label: 'BB Channels',
+          position: 'right',
         },
         {
           href: 'https://www.npmjs.com/package/@bluebillywig/react-native-bb-player',
@@ -100,6 +105,10 @@ const config: Config = {
         {
           title: 'More',
           items: [
+            {
+              label: 'BB Channels',
+              href: 'https://bluebillywig.github.io/channel/',
+            },
             {
               label: 'GitHub',
               href: 'https://github.com/bluebillywig/react-native-bb-player',
