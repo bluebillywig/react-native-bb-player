@@ -6,7 +6,7 @@ description: Install and set up the Blue Billywig React Native Player SDK in min
 
 # Getting Started
 
-`@bluebillywig/react-native-bb-player` gives you a production-ready native video player for React Native, powered by Blue Billywig's iOS (AVPlayer) and Android (ExoPlayer) SDKs.
+`@bluebillywig/react-native-bb-player` gives you a production-ready native video player for React Native.
 
 **What you get:**
 
