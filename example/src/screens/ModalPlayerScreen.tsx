@@ -8,13 +8,16 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BBModalPlayer } from '@bluebillywig/react-native-bb-player';
+import { BBModalPlayer, type ModalPlayerContext } from '@bluebillywig/react-native-bb-player';
 
 // Demo clips from same publication as native SDK demo
 const DEMO_CLIPS = [
   { id: '4256593', label: 'Clip 4256593' },
   { id: '4256575', label: 'Clip 4256575' },
 ];
+
+// Demo cliplist for playlist context
+const DEMO_CLIPLIST_ID = '681';
 
 const BASE_URL = 'https://demo.bbvms.com/p/native_sdk/c';
 
@@ -56,6 +59,20 @@ export function ModalPlayerScreen({ onBack }: ModalPlayerScreenProps) {
     }
   };
 
+  const handlePresentWithContext = (clipId: string) => {
+    const url = `${BASE_URL}/${clipId}.json`;
+    const context: ModalPlayerContext = {
+      contextEntityId: clipId,
+      contextCollectionType: 'MediaClipList',
+      contextCollectionId: DEMO_CLIPLIST_ID,
+    };
+    addEvent(`Presenting modal with playlist context: clipList=${DEMO_CLIPLIST_ID}`);
+    const success = BBModalPlayer.present(url, { autoPlay: true }, context);
+    if (!success) {
+      addEvent('Failed to present - native module not available');
+    }
+  };
+
   const handleDismiss = () => {
     addEvent('Dismissing modal...');
     BBModalPlayer.dismiss();
@@ -91,6 +108,22 @@ export function ModalPlayerScreen({ onBack }: ModalPlayerScreenProps) {
               onPress={() => handlePresent(clip.id)}
             >
               <Text style={styles.actionButtonText}>{clip.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.sectionTitle}>Present with Playlist Context</Text>
+        <Text style={styles.contextDescription}>
+          Opens clip within a playlist — enables auto-advance to next clip.
+        </Text>
+        <View style={styles.buttonsRow}>
+          {DEMO_CLIPS.map((clip) => (
+            <TouchableOpacity
+              key={`ctx-${clip.id}`}
+              style={styles.contextButton}
+              onPress={() => handlePresentWithContext(clip.id)}
+            >
+              <Text style={styles.actionButtonText}>{clip.label} + playlist</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -176,6 +209,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
+  },
+  contextButton: {
+    backgroundColor: '#5856D6',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  contextDescription: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 8,
   },
   dismissButton: {
     backgroundColor: '#FF3B30',
