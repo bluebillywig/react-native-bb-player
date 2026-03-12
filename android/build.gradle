@@ -76,6 +76,23 @@ repositories {
   }
 }
 
+// When native SDKs are vendored in android/repo/, make the local maven repo
+// available to consuming projects so they can resolve transitive dependencies.
+def vendoredRepo = file("$projectDir/repo")
+if (vendoredRepo.exists()) {
+  rootProject.allprojects { proj ->
+    proj.repositories {
+      maven {
+        name "BBPlayerVendored"
+        url vendoredRepo.toURI()
+        content {
+          includeGroup "com.bluebillywig.bbnativeplayersdk"
+        }
+      }
+    }
+  }
+}
+
 dependencies {
   // React Native
   implementation 'com.facebook.react:react-android'
