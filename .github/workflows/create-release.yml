@@ -50,6 +50,15 @@ jobs:
       - name: Verify native SDK availability
         run: |
           SDK_VERSION="${{ env.SDK_VERSION }}"
+
+          # Skip verification if native SDKs are vendored in the repo
+          if [ -d "ios/Frameworks/BBNativePlayerKit.xcframework" ] && [ -d "android/repo" ]; then
+            echo "✅ Native SDKs are vendored locally — skipping Maven/CocoaPods verification"
+            echo "   iOS: ios/Frameworks/BBNativePlayerKit.xcframework"
+            echo "   Android: android/repo/"
+            exit 0
+          fi
+
           echo "🔍 Verifying native SDK ${SDK_VERSION}.x is available..."
           echo ""
 
@@ -144,6 +153,13 @@ jobs:
       - name: Update native SDK versions
         run: |
           SDK_VERSION="${{ env.SDK_VERSION }}"
+
+          # Skip version pinning if native SDKs are vendored
+          if [ -d "ios/Frameworks/BBNativePlayerKit.xcframework" ] && [ -d "android/repo" ]; then
+            echo "✅ Native SDKs are vendored — skipping version pinning"
+            exit 0
+          fi
+
           echo "Updating native SDK versions to ${SDK_VERSION}.x"
 
           # Update Android build.gradle

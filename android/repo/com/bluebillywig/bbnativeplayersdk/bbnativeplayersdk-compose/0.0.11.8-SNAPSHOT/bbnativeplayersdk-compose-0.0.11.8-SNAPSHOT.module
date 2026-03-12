@@ -1,0 +1,167 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.bluebillywig.bbnativeplayersdk",
+    "module": "bbnativeplayersdk-compose",
+    "version": "0.0.11.8-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.9"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "com.bluebillywig.bbnativeplayersdk",
+          "module": "bbnativeplayersdk-core",
+          "version": {
+            "requires": "0.0.11.8-SNAPSHOT"
+          }
+        },
+        {
+          "group": "com.bluebillywig.bbnativeplayersdk",
+          "module": "bbnativeshared",
+          "version": {
+            "requires": "0.0.11.8-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.1.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "bbnativeplayersdk-compose-0.0.11.8-SNAPSHOT.aar",
+          "url": "bbnativeplayersdk-compose-0.0.11.8-SNAPSHOT.aar",
+          "size": 94539,
+          "sha512": "f8a0f9c3137f7ffef4f9b3a53ceab350520b4c62bc7899300cc6dac53a7931b993cda5c5f00af09cb6494dc7b48f4bb69ed1e67bec5792482d3a2f0dca3e0c6f",
+          "sha256": "36224001f8fb863174ee53bbeb204b5abf8dc2bc212959a51346dd80c5cbb049",
+          "sha1": "2b7f5b3ee28663a1ba981e350635ab14f2dba726",
+          "md5": "c0ce30d41b43492c309f51bca1cf2c22"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "androidx.compose",
+          "module": "compose-bom",
+          "version": {
+            "requires": "2025.01.01"
+          },
+          "attributes": {
+            "org.gradle.category": "platform"
+          },
+          "endorseStrictVersions": true
+        },
+        {
+          "group": "androidx.compose.ui",
+          "module": "ui"
+        },
+        {
+          "group": "androidx.compose.runtime",
+          "module": "runtime"
+        },
+        {
+          "group": "androidx.compose.foundation",
+          "module": "foundation"
+        },
+        {
+          "group": "com.bluebillywig.bbnativeplayersdk",
+          "module": "bbnativeplayersdk-core",
+          "version": {
+            "requires": "0.0.11.8-SNAPSHOT"
+          }
+        },
+        {
+          "group": "com.bluebillywig.bbnativeplayersdk",
+          "module": "bbnativeshared",
+          "version": {
+            "requires": "0.0.11.8-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.1.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "bbnativeplayersdk-compose-0.0.11.8-SNAPSHOT.aar",
+          "url": "bbnativeplayersdk-compose-0.0.11.8-SNAPSHOT.aar",
+          "size": 94539,
+          "sha512": "f8a0f9c3137f7ffef4f9b3a53ceab350520b4c62bc7899300cc6dac53a7931b993cda5c5f00af09cb6494dc7b48f4bb69ed1e67bec5792482d3a2f0dca3e0c6f",
+          "sha256": "36224001f8fb863174ee53bbeb204b5abf8dc2bc212959a51346dd80c5cbb049",
+          "sha1": "2b7f5b3ee28663a1ba981e350635ab14f2dba726",
+          "md5": "c0ce30d41b43492c309f51bca1cf2c22"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseSourcePublication",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "bbnativeplayersdk-compose-0.0.11.8-SNAPSHOT-sources.jar",
+          "url": "bbnativeplayersdk-compose-0.0.11.8-SNAPSHOT-sources.jar",
+          "size": 8069,
+          "sha512": "8c3c77a0dd107dfd3390cbdee83e4625876b9ddee16653943c7d54fea82cdd85ad2e7e5dc1ca3a63ed9eb3c2f7d2ceb60725642f4c63c727e3add61a7f58dabd",
+          "sha256": "fa04f74aa7d24699554a4914d42400ddf137eca6538c8e825495821408fd6b92",
+          "sha1": "44165942589a767d84611d69e0dd7e626429c914",
+          "md5": "01798ddb8e53d71b3ce4e4e62202336c"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseJavaDocPublication",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "javadoc",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "bbnativeplayersdk-compose-0.0.11.8-SNAPSHOT-javadoc.jar",
+          "url": "bbnativeplayersdk-compose-0.0.11.8-SNAPSHOT-javadoc.jar",
+          "size": 305026,
+          "sha512": "0d0f24ff201ec3a14d6491c14663610e87ffa7a965d069ef3cb2a140c4c06f0bcb3c78d5dd41f1bab44b317e28b8ef534b1a3711112477ffd6104f0d8bd9fe43",
+          "sha256": "8546c795e8f85ee96da6731162e5317c30164c58593b458bf164c869dc139d5f",
+          "sha1": "4d2402b48d44ad413d68840b7dacbd43a25a0ce4",
+          "md5": "0ba48173eafda9c19c236fc06714e088"
+        }
+      ]
+    }
+  ]
+}

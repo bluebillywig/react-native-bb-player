@@ -1,0 +1,264 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.bluebillywig.bbnativeplayersdk",
+    "module": "bbnativeplayersdk-core",
+    "version": "0.0.11.8-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.9"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "bbnativeplayersdk-core-0.0.11.8-SNAPSHOT.aar",
+          "url": "bbnativeplayersdk-core-0.0.11.8-SNAPSHOT.aar",
+          "size": 889279,
+          "sha512": "b2e22e430f90bbca23c4157c2ad674177ba8f1e9b7c01a563401f357896ba932a34cb43dc4b376475f869df61524cd0392bbd49f2d703875e01e6cbdd94d4bed",
+          "sha256": "c60e96bff3bec5e1a40738f323e0ed1b7270befeb84731c9c40e3b2cefdae6eb",
+          "sha1": "295a3c4d80ebd132a669741c8e32e3480f43ebd0",
+          "md5": "9b8889b0951a094f9611a93d9f6711d7"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.1.0"
+          }
+        },
+        {
+          "group": "com.bluebillywig.bbnativeplayersdk",
+          "module": "bbnativeshared",
+          "version": {
+            "requires": "0.0.11.8-SNAPSHOT"
+          }
+        },
+        {
+          "group": "androidx.media3",
+          "module": "media3-exoplayer",
+          "version": {
+            "strictly": "[1.1, 1.8[",
+            "requires": "[1.1, 1.8[",
+            "prefers": "1.7.1"
+          }
+        },
+        {
+          "group": "androidx.media3",
+          "module": "media3-exoplayer-hls",
+          "version": {
+            "strictly": "[1.1, 1.8[",
+            "requires": "[1.1, 1.8[",
+            "prefers": "1.7.1"
+          }
+        },
+        {
+          "group": "androidx.media3",
+          "module": "media3-exoplayer-dash",
+          "version": {
+            "strictly": "[1.1, 1.8[",
+            "requires": "[1.1, 1.8[",
+            "prefers": "1.7.1"
+          }
+        },
+        {
+          "group": "androidx.media3",
+          "module": "media3-ui",
+          "version": {
+            "strictly": "[1.1, 1.8[",
+            "requires": "[1.1, 1.8[",
+            "prefers": "1.7.1"
+          }
+        },
+        {
+          "group": "androidx.media3",
+          "module": "media3-exoplayer-ima",
+          "version": {
+            "strictly": "[1.1, 1.8[",
+            "requires": "[1.1, 1.8[",
+            "prefers": "1.7.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-android",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "io.ktor",
+          "module": "ktor-client-android",
+          "version": {
+            "requires": "3.0.3"
+          }
+        },
+        {
+          "group": "androidx.constraintlayout",
+          "module": "constraintlayout",
+          "version": {
+            "requires": "2.0.4"
+          }
+        },
+        {
+          "group": "com.benasher44",
+          "module": "uuid",
+          "version": {
+            "requires": "0.2.3"
+          }
+        },
+        {
+          "group": "androidx.mediarouter",
+          "module": "mediarouter",
+          "version": {
+            "requires": "1.2.4"
+          }
+        },
+        {
+          "group": "androidx.appcompat",
+          "module": "appcompat",
+          "version": {
+            "requires": "1.6.0"
+          }
+        },
+        {
+          "group": "androidx.sqlite",
+          "module": "sqlite-bundled-android",
+          "version": {
+            "requires": "2.5.0-beta01"
+          }
+        },
+        {
+          "group": "com.google.android.gms",
+          "module": "play-services-cast",
+          "version": {
+            "requires": "21.0.0"
+          }
+        },
+        {
+          "group": "com.google.android.gms",
+          "module": "play-services-cast-framework",
+          "version": {
+            "requires": "21.0.0"
+          }
+        },
+        {
+          "group": "com.google.android.material",
+          "module": "material",
+          "version": {
+            "requires": "1.6.1"
+          }
+        },
+        {
+          "group": "com.google.android.ump",
+          "module": "user-messaging-platform",
+          "version": {
+            "requires": "2.1.0"
+          }
+        },
+        {
+          "group": "io.coil-kt.coil3",
+          "module": "coil",
+          "version": {
+            "requires": "3.0.2"
+          }
+        },
+        {
+          "group": "io.coil-kt.coil3",
+          "module": "coil-network-okhttp",
+          "version": {
+            "requires": "3.0.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-datetime",
+          "version": {
+            "requires": "0.6.2"
+          }
+        },
+        {
+          "group": "com.google.ads.interactivemedia.v3",
+          "module": "interactivemedia",
+          "version": {
+            "requires": "3.36.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "bbnativeplayersdk-core-0.0.11.8-SNAPSHOT.aar",
+          "url": "bbnativeplayersdk-core-0.0.11.8-SNAPSHOT.aar",
+          "size": 889279,
+          "sha512": "b2e22e430f90bbca23c4157c2ad674177ba8f1e9b7c01a563401f357896ba932a34cb43dc4b376475f869df61524cd0392bbd49f2d703875e01e6cbdd94d4bed",
+          "sha256": "c60e96bff3bec5e1a40738f323e0ed1b7270befeb84731c9c40e3b2cefdae6eb",
+          "sha1": "295a3c4d80ebd132a669741c8e32e3480f43ebd0",
+          "md5": "9b8889b0951a094f9611a93d9f6711d7"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseSourcePublication",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "bbnativeplayersdk-core-0.0.11.8-SNAPSHOT-sources.jar",
+          "url": "bbnativeplayersdk-core-0.0.11.8-SNAPSHOT-sources.jar",
+          "size": 167895,
+          "sha512": "1601442d28b852aba58bf2f78befc6831dac2b9da650e5fa06a97fed430adde69fd66502d0722a38e309fbe9efe458557e734fbe0751cfddc585de56a9f5ffbf",
+          "sha256": "f9cefd64b1ad3114c84a03cfb08b2aed15a47297a65be0a7942aa4f515d2da50",
+          "sha1": "f9e4b4659a9f2ac9f723a523b1d23e77ce1531fc",
+          "md5": "b128c8462292d1a9782e3630db9946ea"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseJavaDocPublication",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "javadoc",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "bbnativeplayersdk-core-0.0.11.8-SNAPSHOT-javadoc.jar",
+          "url": "bbnativeplayersdk-core-0.0.11.8-SNAPSHOT-javadoc.jar",
+          "size": 482233,
+          "sha512": "444a1c9dadb247b29a059690fa06fe86b44c582d994f39bb3a30894678a3125251155d574ad310c2f3fa9d56694c18ff14f2cabe54e5b74aedb6fd89bb81d4d3",
+          "sha256": "d40dfbda0bbc532f67f4e3cbc07b052735d543645c00c8728f538e9dd485b6bb",
+          "sha1": "3b6823d82a98c3b5e615769c232093ce3758446c",
+          "md5": "09dd53be9a84f4f0fbb472086e3c25fa"
+        }
+      ]
+    }
+  ]
+}
