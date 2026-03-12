@@ -263,6 +263,7 @@ const BBOutstreamView = forwardRef<BBOutstreamViewMethods, BBOutstreamViewProps>
         seekRelative: (offset: number) => playerRef.current?.seekRelative(offset),
         setVolume: (volume: number) => playerRef.current?.setVolume(volume),
         setMuted: (muted: boolean) => playerRef.current?.setMuted(muted),
+        setInView: (inView: boolean) => playerRef.current?.setInView(inView),
         collapse: () => playerRef.current?.collapse(),
         expand: () => playerRef.current?.expand(),
         enterFullscreen: () => playerRef.current?.enterFullscreen(),
@@ -298,6 +299,9 @@ const BBOutstreamView = forwardRef<BBOutstreamViewMethods, BBOutstreamViewProps>
         getClipData: () => playerRef.current?.getClipData() ?? Promise.resolve(null),
         getProjectData: () => playerRef.current?.getProjectData() ?? Promise.resolve(null),
         getPlayoutData: () => playerRef.current?.getPlayoutData() ?? Promise.resolve(null),
+        getInView: () => playerRef.current?.getInView() ?? Promise.resolve(null),
+        getAdMediaWidth: () => playerRef.current?.getAdMediaWidth() ?? Promise.resolve(null),
+        getAdMediaHeight: () => playerRef.current?.getAdMediaHeight() ?? Promise.resolve(null),
         getPlayerState: () => playerRef.current?.getPlayerState() ?? Promise.resolve(null),
 
         // Outstream-specific methods

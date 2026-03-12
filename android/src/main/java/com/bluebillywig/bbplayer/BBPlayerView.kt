@@ -571,6 +571,12 @@ class BBPlayerView(private val reactContext: ThemedReactContext) : FrameLayout(r
         } else null
     }
 
+    fun setInView(inView: Boolean) {
+        if (::playerView.isInitialized) {
+            playerView.setApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.inView, inView)
+        }
+    }
+
     fun getControls(): Boolean? {
         return if (::playerView.isInitialized) {
             playerView.getApiProperty(com.bluebillywig.bbnativeshared.enums.ApiProperty.controls) as? Boolean

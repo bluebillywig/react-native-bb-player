@@ -299,6 +299,33 @@ class BBPlayerModule: RCTEventEmitter {
         }
     }
 
+    @objc func setInView(_ viewTag: NSNumber, inView: Bool) {
+        DispatchQueue.main.async {
+            self.getView(viewTag)?.setInView(inView)
+        }
+    }
+
+    @objc func getInView(_ viewTag: NSNumber, resolver: @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
+        DispatchQueue.main.async {
+            let inView = self.getView(viewTag)?.inView()
+            resolver(inView)
+        }
+    }
+
+    @objc func getAdMediaWidth(_ viewTag: NSNumber, resolver: @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
+        DispatchQueue.main.async {
+            let width = self.getView(viewTag)?.adMediaWidth()
+            resolver(width)
+        }
+    }
+
+    @objc func getAdMediaHeight(_ viewTag: NSNumber, resolver: @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
+        DispatchQueue.main.async {
+            let height = self.getView(viewTag)?.adMediaHeight()
+            resolver(height)
+        }
+    }
+
     // MARK: - Modal Player API
 
     @objc func presentModalPlayer(_ jsonUrl: String, optionsJson: String?, contextJson: String?) {

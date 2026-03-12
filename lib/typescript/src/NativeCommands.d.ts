@@ -33,6 +33,7 @@ export declare function createCommands(viewRef: React.RefObject<any>): {
     loadWithClipListJson: (clipListJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
     loadWithProjectJson: (projectJson: string, initiator?: string, autoPlay?: boolean, seekTo?: number, context?: LoadContext) => void;
     loadWithJsonUrl: (jsonUrl: string, autoPlay?: boolean, context?: LoadContext) => void;
+    setInView: (inView: boolean) => void;
     getDuration: () => Promise<number | null>;
     getMuted: () => Promise<boolean | null>;
     getVolume: () => Promise<number | null>;
@@ -52,6 +53,9 @@ export declare function createCommands(viewRef: React.RefObject<any>): {
     getPlayoutData: () => Promise<{
         name?: string;
     } | null>;
+    getInView: () => Promise<boolean | null>;
+    getAdMediaWidth: () => Promise<number | null>;
+    getAdMediaHeight: () => Promise<number | null>;
     /**
      * Get the complete player state as a structured object.
      * Aggregates all individual getter calls into a single BBPlayerState object.

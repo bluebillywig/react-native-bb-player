@@ -480,6 +480,10 @@ class BBPlayerView: UIView, BBNativePlayerViewDelegate {
     return playerView?.player.inView
   }
 
+  func setInView(_ inView: Bool) {
+    playerView?.player.inView = inView
+  }
+
   func mode() -> String? {
     return playerView?.player.mode
   }

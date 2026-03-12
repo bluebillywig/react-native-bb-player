@@ -34,7 +34,9 @@ class BBPlayerPackage : BaseReactPackage() {
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
         return listOf(
             BBPlayerViewManager(),
-            BBShortsViewManager()
+            BBShortsViewManager(),
+            BBCastButtonViewManager(),
+            BBCastMiniControlsViewManager()
         )
     }
 }

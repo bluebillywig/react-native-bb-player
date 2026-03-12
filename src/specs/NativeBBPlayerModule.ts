@@ -77,6 +77,9 @@ export interface Spec extends TurboModule {
   ): void;
   loadWithJsonUrl(viewTag: number, jsonUrl: string, autoPlay: boolean, contextJson: string | null): void;
 
+  // Void methods - viewability
+  setInView(viewTag: number, inView: boolean): void;
+
   // Promise getters
   getDuration(viewTag: number): Promise<number | null>;
   getMuted(viewTag: number): Promise<boolean | null>;
@@ -87,6 +90,9 @@ export interface Spec extends TurboModule {
   getClipData(viewTag: number): Promise<Object | null>;
   getProjectData(viewTag: number): Promise<Object | null>;
   getPlayoutData(viewTag: number): Promise<Object | null>;
+  getInView(viewTag: number): Promise<boolean | null>;
+  getAdMediaWidth(viewTag: number): Promise<number | null>;
+  getAdMediaHeight(viewTag: number): Promise<number | null>;
 
   // Modal player (module-level, no React view needed)
   presentModalPlayer(jsonUrl: string, optionsJson: string | null, contextJson: string | null): void;

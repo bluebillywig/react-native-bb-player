@@ -57,6 +57,9 @@ public abstract class NativeBBPlayerModuleSpec extends ReactContextBaseJavaModul
     public abstract void loadWithProjectJson(int viewTag, String projectJson, String initiator, boolean autoPlay, double seekTo, String contextJson);
     public abstract void loadWithJsonUrl(int viewTag, String jsonUrl, boolean autoPlay, String contextJson);
 
+    // Viewability control
+    public abstract void setInView(int viewTag, boolean inView);
+
     // Promise getters
     public abstract void getDuration(int viewTag, Promise promise);
     public abstract void getMuted(int viewTag, Promise promise);
@@ -67,4 +70,7 @@ public abstract class NativeBBPlayerModuleSpec extends ReactContextBaseJavaModul
     public abstract void getClipData(int viewTag, Promise promise);
     public abstract void getProjectData(int viewTag, Promise promise);
     public abstract void getPlayoutData(int viewTag, Promise promise);
+    public abstract void getInView(int viewTag, Promise promise);
+    public abstract void getAdMediaWidth(int viewTag, Promise promise);
+    public abstract void getAdMediaHeight(int viewTag, Promise promise);
 }

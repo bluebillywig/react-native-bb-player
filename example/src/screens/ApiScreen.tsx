@@ -11,6 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BBPlayerView,
+  BBCastButton,
+  BBCastMiniControls,
   type BBPlayerViewMethods,
 } from '@bluebillywig/react-native-bb-player';
 
@@ -22,7 +24,8 @@ const API_ACTIONS = {
   Playback: ['Play', 'Pause', 'Seek +10s', 'Seek -10s'],
   Audio: ['Mute', 'Unmute', 'Volume 50%', 'Volume 100%'],
   Fullscreen: ['Enter Fullscreen', 'Enter FS Landscape', 'Exit Fullscreen'],
-  Getters: ['Get Duration', 'Get Muted', 'Get Volume', 'Get Phase', 'Get State', 'Get Mode', 'Get Clip Data', 'Get Player State'],
+  Getters: ['Get Duration', 'Get Muted', 'Get Volume', 'Get Phase', 'Get State', 'Get Mode', 'Get Clip Data', 'Get Player State', 'Get InView', 'Get Ad Width', 'Get Ad Height'],
+  Viewability: ['Set InView true', 'Set InView false'],
   // Load actions use hardcoded IDs from same publication (demo.bbvms.com) - same as native demo
   // Note: Shorts require the separate BBShortsView component - see ShortsScreen
   Load: ['Load Clip (new API)', 'Load Clip 4256575', 'Load Clip 4256593', 'Load ClipList'],
@@ -139,6 +142,26 @@ export function ApiScreen({ onBack }: ApiScreenProps) {
         const playerState = await playerRef.current.getPlayerState();
         showResult('Player State', playerState);
         break;
+      case 'Get InView':
+        const inView = await playerRef.current.getInView();
+        showResult('InView', inView);
+        break;
+      case 'Get Ad Width':
+        const adWidth = await playerRef.current.getAdMediaWidth();
+        showResult('Ad Media Width', adWidth);
+        break;
+      case 'Get Ad Height':
+        const adHeight = await playerRef.current.getAdMediaHeight();
+        showResult('Ad Media Height', adHeight);
+        break;
+      case 'Set InView true':
+        playerRef.current.setInView(true);
+        showResult('setInView', true);
+        break;
+      case 'Set InView false':
+        playerRef.current.setInView(false);
+        showResult('setInView', false);
+        break;
 
       // Load - using hardcoded IDs from same publication (demo.bbvms.com), same as native demo
       case 'Load Clip (new API)':
@@ -209,6 +232,16 @@ export function ApiScreen({ onBack }: ApiScreenProps) {
           onDidTriggerAdError={(err) => addEvent(`Ad Error: ${err}`)}
           onDidFailWithError={(err) => addEvent(`Error: ${err}`)}
         />
+      </View>
+
+      {/* Cast UI */}
+      <View style={styles.castRow}>
+        <BBCastButton style={styles.castButton} tintColor="#007AFF" />
+        <Text style={styles.castLabel}>Cast Button</Text>
+        <View style={styles.castMiniContainer}>
+          <BBCastMiniControls style={styles.castMini} />
+        </View>
+        <Text style={styles.castLabel}>Mini Controls</Text>
       </View>
 
       {/* Last Result Display */}
@@ -286,6 +319,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   player: {
+    flex: 1,
+  },
+  castRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#eee',
+  },
+  castButton: {
+    width: 40,
+    height: 40,
+  },
+  castLabel: {
+    fontSize: 10,
+    color: '#666',
+    marginHorizontal: 4,
+  },
+  castMiniContainer: {
+    flex: 1,
+    height: 40,
+  },
+  castMini: {
     flex: 1,
   },
   resultContainer: {

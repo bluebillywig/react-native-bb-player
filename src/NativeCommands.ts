@@ -261,6 +261,12 @@ export function createCommands(viewRef: React.RefObject<any>) {
 
     // Note: For Shorts playback, use the BBShortsView component instead of BBPlayerView.
 
+    // Viewability control
+    setInView: (inView: boolean) => {
+      const tag = getViewTag(viewRef);
+      if (tag != null) BBPlayerModule?.setInView(tag, inView);
+    },
+
     // Getter methods (async)
     getDuration: async (): Promise<number | null> => {
       const tag = getViewTag(viewRef);
@@ -332,6 +338,27 @@ export function createCommands(viewRef: React.RefObject<any>) {
       const tag = getViewTag(viewRef);
       if (tag != null && BBPlayerModule?.getPlayoutData) {
         return BBPlayerModule.getPlayoutData(tag);
+      }
+      return null;
+    },
+    getInView: async (): Promise<boolean | null> => {
+      const tag = getViewTag(viewRef);
+      if (tag != null && BBPlayerModule?.getInView) {
+        return BBPlayerModule.getInView(tag);
+      }
+      return null;
+    },
+    getAdMediaWidth: async (): Promise<number | null> => {
+      const tag = getViewTag(viewRef);
+      if (tag != null && BBPlayerModule?.getAdMediaWidth) {
+        return BBPlayerModule.getAdMediaWidth(tag);
+      }
+      return null;
+    },
+    getAdMediaHeight: async (): Promise<number | null> => {
+      const tag = getViewTag(viewRef);
+      if (tag != null && BBPlayerModule?.getAdMediaHeight) {
+        return BBPlayerModule.getAdMediaHeight(tag);
       }
       return null;
     },

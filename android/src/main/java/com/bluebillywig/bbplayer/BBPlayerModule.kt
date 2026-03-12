@@ -555,6 +555,47 @@ class BBPlayerModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
+    @ReactMethod
+    override fun setInView(viewTag: Double, inView: Boolean) {
+        runOnUiThread(viewTag.toInt()) { it.setInView(inView) }
+    }
+
+    @ReactMethod
+    override fun getInView(viewTag: Double, promise: Promise) {
+        UiThreadUtil.runOnUiThread {
+            val view = findPlayerView(viewTag.toInt())
+            if (view != null) {
+                promise.resolve(view.getInView())
+            } else {
+                promise.resolve(null)
+            }
+        }
+    }
+
+    @ReactMethod
+    override fun getAdMediaWidth(viewTag: Double, promise: Promise) {
+        UiThreadUtil.runOnUiThread {
+            val view = findPlayerView(viewTag.toInt())
+            if (view != null) {
+                promise.resolve(view.getAdMediaWidth())
+            } else {
+                promise.resolve(null)
+            }
+        }
+    }
+
+    @ReactMethod
+    override fun getAdMediaHeight(viewTag: Double, promise: Promise) {
+        UiThreadUtil.runOnUiThread {
+            val view = findPlayerView(viewTag.toInt())
+            if (view != null) {
+                promise.resolve(view.getAdMediaHeight())
+            } else {
+                promise.resolve(null)
+            }
+        }
+    }
+
     companion object {
         const val NAME = "BBPlayerModule"
     }

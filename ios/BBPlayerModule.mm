@@ -49,6 +49,10 @@ RCT_EXTERN_METHOD(getMode:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolv
 RCT_EXTERN_METHOD(getClipData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
 RCT_EXTERN_METHOD(getProjectData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
 RCT_EXTERN_METHOD(getPlayoutData:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+RCT_EXTERN_METHOD(setInView:(nonnull NSNumber *)viewTag inView:(BOOL)inView)
+RCT_EXTERN_METHOD(getInView:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+RCT_EXTERN_METHOD(getAdMediaWidth:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+RCT_EXTERN_METHOD(getAdMediaHeight:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
 
 // Modal player (module-level)
 RCT_EXTERN_METHOD(presentModalPlayer:(NSString *)jsonUrl optionsJson:(NSString *)optionsJson contextJson:(NSString *)contextJson)

@@ -47,6 +47,8 @@ export type BBPlayerViewMethods = {
     seekRelative: (offsetSeconds: number) => void;
     setMuted: (muted: boolean) => void;
     setVolume: (volume: number) => void;
+    /** Override the scroll-based viewability state */
+    setInView: (inView: boolean) => void;
     enterFullscreen: () => void;
     enterFullscreenLandscape: () => void;
     exitFullscreen: () => void;
@@ -100,6 +102,12 @@ export type BBPlayerViewMethods = {
     getPlayoutData: () => Promise<{
         name?: string;
     } | null>;
+    /** Get current viewability override state */
+    getInView: () => Promise<boolean | null>;
+    /** Get the ad creative width in pixels */
+    getAdMediaWidth: () => Promise<number | null>;
+    /** Get the ad creative height in pixels */
+    getAdMediaHeight: () => Promise<number | null>;
     /**
      * Get the complete player state as a structured object.
      * This is the primary method for getting player state, matching the channel SDK pattern.
