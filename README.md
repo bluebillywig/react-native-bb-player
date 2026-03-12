@@ -411,9 +411,9 @@ npx react-native run-android
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
-| `jsonUrl` | `string` | Yes | Blue Billywig media JSON URL |
+| `jsonUrl` | `string` | Yes | JSON embed URL |
 | `playerId` | `string` | No | Unique identifier for multi-player scenarios |
-| `jwt` | `string` | No | JWT token for authenticated playback |
+| `jwt` | `string` | No | JWT token for authenticated access |
 | `options` | `Record<string, unknown>` | No | Player configuration options |
 | `style` | `ViewStyle` | No | React Native style object |
 | Event props | See below | No | Event callback handlers |

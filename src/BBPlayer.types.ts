@@ -179,7 +179,7 @@ export type BBPlayerViewProps = {
    */
   playerId?: string;
   /**
-   * JWT token for authenticated playback of protected content.
+   * JWT token for authenticated access to protected content.
    * Will be merged into options.jwt automatically.
    */
   jwt?: string;

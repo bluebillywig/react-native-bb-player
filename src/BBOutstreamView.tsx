@@ -329,6 +329,6 @@ const BBOutstreamView = forwardRef<BBOutstreamViewMethods, BBOutstreamViewProps>
   }
 );
 
-BBOutstreamView.displayName = 'BBOutstreamView';
+BBOutstreamView.displayName = 'BBOutstreamPlayerView';
 
 export default BBOutstreamView;

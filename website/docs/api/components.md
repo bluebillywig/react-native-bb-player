@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Components
-description: BBPlayerView, BBShortsView, BBOutstreamView, and BBModalPlayer API.
+description: BBPlayerView, BBShortsView, BBOutstreamPlayerView, and BBModalPlayer API.
 ---
 
 # Components
@@ -26,25 +26,56 @@ import { BBPlayerView } from '@bluebillywig/react-native-bb-player';
 
 | Prop | Type | Required | Description |
 |------|------|:---:|-------------|
-| `jsonUrl` | `string` | Yes | Blue Billywig media JSON URL |
+| `jsonUrl` | `string` | Yes | JSON embed URL |
 | `playerId` | `string` | No | Unique identifier for multi-player scenarios |
-| `jwt` | `string` | No | JWT token for authenticated playback |
-| `options` | `Record<string, unknown>` | No | Player configuration options |
+| `jwt` | `string` | No | JWT token for authenticated access |
+| `options` | `Record<string, unknown>` | No | Player configuration options (see below) |
 | `style` | `ViewStyle` | No | React Native style object |
 | Event callbacks | See [Events](./events.md) | No | Player lifecycle event handlers |
 
-### Common Options
+### Player Options
+
+Options are passed through to the native SDK's `createPlayerView`. They can override playout settings.
 
 ```tsx
 options={{
-  autoPlay: true,
-  autoMute: true,
-  controlBar: 'Autohide',       // 'Always' | 'Never' | 'Autohide'
-  showStartControlBar: 'Yes',
-  modalPlayer: true,             // Force landscape on fullscreen tap
-  allowCollapseExpand: true,     // Enable for outstream
-  noStats: false,                // Disable analytics
-  disableCookies: false,         // GDPR cookie compliance
+  // Playback
+  autoPlay: true,                    // Override playout auto-play setting
+  autoMute: true,                    // Override playout auto-mute setting
+  showStartControlBar: 'Yes',        // Override playout start control bar setting
+  controlBar: 'Autohide',            // 'Always' | 'Never' | 'Autohide'
+  modalPlayer: true,                 // Force landscape on fullscreen tap
+  forceFullscreenLandscape: true,    // Rotate to landscape on fullscreen
+
+  // Commercials
+  commercials: true,                 // Allow commercials (overrides playout)
+  noChromeCast: false,               // Disable ChromeCast support (overrides playout)
+
+  // Outstream
+  allowCollapseExpand: true,         // Enable collapse/expand (for outstream)
+
+  // Analytics
+  noStats: false,                    // Disable stats logging
+
+  // Consent Management
+  waitForCmp: true,                  // Wait for Consent Management before setup
+  handleConsentManagement: true,     // Handle Consent Management (requires waitForCmp)
+  tagForUnderAgeOfConsent: false,    // Tag for under age of consent
+  consent_string: '',                // Default consent string
+  consent_gdprApplies: 1,           // Default GDPR applies (0 or 1)
+  consent_cmpVersion: 2,            // Default CMP version
+  disableCookies: false,             // GDPR cookie compliance
+
+  // Ad System parameters
+  adsystem_buid: 'app-bundle-id',           // App bundle ID
+  adsystem_rdid: 'resettable-device-id',    // Resettable device identifier
+  adsystem_idtype: 'idfa',                  // 'idfa' (iOS) or 'adid' (Android)
+  adsystem_is_lat: false,                   // Limit ad tracking
+  adsystem_ppid: 'publisher-provided-id',   // Publisher-provided ID
+
+  // Custom ad tag URL parameters (prefix with adTagUrlParam_)
+  adTagUrlParam_userId: '12345',
+  adTagUrlParam_section: 'sports',
 }}
 ```
 
@@ -94,14 +125,16 @@ See [Shorts Guide](../guides/shorts.md) for usage details.
 
 ---
 
-## BBOutstreamView
+## BBOutstreamPlayerView
 
 Convenience wrapper for outstream advertising with automatic collapse/expand animations.
 
-```tsx
-import { BBOutstreamView } from '@bluebillywig/react-native-bb-player';
+> **Note**: Previously named `BBOutstreamView`. The old name is still exported as a deprecated alias.
 
-<BBOutstreamView
+```tsx
+import { BBOutstreamPlayerView } from '@bluebillywig/react-native-bb-player';
+
+<BBOutstreamPlayerView
   jsonUrl="https://demo.bbvms.com/a/native_sdk_outstream.json"
   expandedHeight={250}
   animation={{ type: 'spring', damping: 15, stiffness: 100 }}
@@ -142,11 +175,20 @@ Imperative API for presenting a native modal player. No component mounting requi
 ```tsx
 import { BBModalPlayer } from '@bluebillywig/react-native-bb-player';
 
-// Present
+// Present a clip
+BBModalPlayer.present('https://demo.bbvms.com/p/default/c/4701337.json', {
+  autoPlay: true,
+});
+
+// Present a clip within a playlist context (enables auto-advance)
 BBModalPlayer.present(
   'https://demo.bbvms.com/p/default/c/4701337.json',
   { autoPlay: true },
-  { contextId: '123' }
+  {
+    contextEntityId: '4701337',
+    contextCollectionId: '12345',
+    contextCollectionType: 'MediaClipList',
+  }
 );
 
 // Dismiss
@@ -172,7 +214,20 @@ BBModalPlayer.addEventListener('dismiss', () => {
 | Option | Type | Description |
 |--------|------|-------------|
 | `autoPlay` | `boolean` | Auto-play after loading |
-| `playout` | `string` | Override playout name |
+| `jwt` | `string` | JWT token for authenticated access |
+| `playerBackgroundColor` | `string` | Background color |
+| `fitmode` | `string` | Video fit mode |
+
+Any additional key-value pairs are passed through to the native SDK as player options.
+
+### ModalPlayerContext
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `contextEntityType` | `string` | Entity type (e.g. `'MediaClipList'`) |
+| `contextEntityId` | `string` | Entity ID (clip ID when playing within a collection) |
+| `contextCollectionType` | `string` | Collection type (e.g. `'MediaClipList'`) |
+| `contextCollectionId` | `string` | Collection ID (playlist/cliplist ID) |
 
 ### Events
 

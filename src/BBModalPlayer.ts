@@ -33,6 +33,21 @@ export interface ModalPlayerOptions {
   [key: string]: unknown;
 }
 
+/**
+ * Context for playlist/collection navigation in modal player.
+ * Uses the same field names as the native SDK (contextEntityId, contextCollectionId).
+ */
+export interface ModalPlayerContext {
+  /** Entity type (e.g. 'MediaClipList') */
+  contextEntityType?: string;
+  /** Entity ID (clip ID when playing within a collection) */
+  contextEntityId?: string;
+  /** Collection type (e.g. 'MediaClipList') */
+  contextCollectionType?: string;
+  /** Collection ID (playlist/cliplist ID) */
+  contextCollectionId?: string;
+}
+
 export const BBModalPlayer = {
   /**
    * Whether the native modal player module is available.
@@ -42,7 +57,7 @@ export const BBModalPlayer = {
     return BBPlayerModule != null;
   },
 
-  present(jsonUrl: string, options?: ModalPlayerOptions, context?: Record<string, string>): boolean {
+  present(jsonUrl: string, options?: ModalPlayerOptions, context?: ModalPlayerContext): boolean {
     if (!BBPlayerModule) {
       console.warn('[BBModalPlayer] present() called but native module is null — cannot open modal');
       return false;

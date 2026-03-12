@@ -25,14 +25,14 @@ https://{domain}.bbvms.com/a/{outstreamPlayout}.json
 https://{domain}.bbvms.com/p/{playout}/c/{clipId}.json
 ```
 
-## Option 1: BBOutstreamView (Recommended)
+## Option 1: BBOutstreamPlayerView (Recommended)
 
 Pre-built wrapper with automatic collapse/expand animations:
 
 ```tsx
 import React, { useRef, useEffect } from 'react';
 import { ScrollView, Text, StyleSheet } from 'react-native';
-import { BBOutstreamView, type BBOutstreamViewMethods } from '@bluebillywig/react-native-bb-player';
+import { BBOutstreamPlayerView, type BBOutstreamViewMethods } from '@bluebillywig/react-native-bb-player';
 
 function ArticleWithAd() {
   const outstreamRef = useRef<BBOutstreamViewMethods>(null);
@@ -45,7 +45,7 @@ function ArticleWithAd() {
     <ScrollView style={styles.container}>
       <Text style={styles.paragraph}>Article content above the ad...</Text>
 
-      <BBOutstreamView
+      <BBOutstreamPlayerView
         ref={outstreamRef}
         jsonUrl="https://demo.bbvms.com/a/native_sdk_outstream.json"
         expandedHeight={250}
@@ -65,16 +65,16 @@ function ArticleWithAd() {
 
 ```tsx
 // Smooth timing (default)
-<BBOutstreamView animation={{ type: 'timing', duration: 300 }} />
+<BBOutstreamPlayerView animation={{ type: 'timing', duration: 300 }} />
 
 // Spring with bounce
-<BBOutstreamView animation={{ type: 'spring', damping: 15, stiffness: 100 }} />
+<BBOutstreamPlayerView animation={{ type: 'spring', damping: 15, stiffness: 100 }} />
 
 // LayoutAnimation
-<BBOutstreamView animation={{ type: 'layout', duration: 250 }} />
+<BBOutstreamPlayerView animation={{ type: 'layout', duration: 250 }} />
 
 // Instant
-<BBOutstreamView animation={{ type: 'none' }} />
+<BBOutstreamPlayerView animation={{ type: 'none' }} />
 ```
 
 ### Props
