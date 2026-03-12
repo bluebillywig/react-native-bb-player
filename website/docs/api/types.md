@@ -260,7 +260,7 @@ type BBShortsViewProps = {
 };
 ```
 
-### BBOutstreamViewProps
+### BBOutstreamViewProps (BBOutstreamPlayerView)
 
 Extends `BBPlayerViewProps` plus:
 
@@ -290,7 +290,21 @@ type OutstreamAnimationConfig =
 ```typescript
 type ModalPlayerOptions = {
   autoPlay?: boolean;
-  playout?: string;
+  jwt?: string;
+  playerBackgroundColor?: string;
+  fitmode?: string;
+  [key: string]: unknown; // Additional options passed to native SDK
+};
+```
+
+### ModalPlayerContext
+
+```typescript
+type ModalPlayerContext = {
+  contextEntityType?: string;      // e.g. 'MediaClipList'
+  contextEntityId?: string;        // Clip ID within a collection
+  contextCollectionType?: string;  // e.g. 'MediaClipList'
+  contextCollectionId?: string;    // Playlist/cliplist ID
 };
 ```
 

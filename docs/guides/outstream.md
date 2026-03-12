@@ -42,14 +42,14 @@ Note the `/a/` path segment instead of `/p/` for Outstream.
 
 You can integrate Outstream in two ways:
 
-1. **BBOutstreamView** (Recommended) - Convenience wrapper with automatic collapse/expand animations
+1. **BBOutstreamPlayerView** (Recommended) - Convenience wrapper with automatic collapse/expand animations
 2. **BBPlayerView** - Direct usage with manual height management
 
 ---
 
-## Option 1: BBOutstreamView (Convenience Wrapper)
+## Option 1: BBOutstreamPlayerView (Convenience Wrapper)
 
-`BBOutstreamView` is a pre-built wrapper component that handles collapse/expand animations automatically.
+`BBOutstreamPlayerView` is a pre-built wrapper component that handles collapse/expand animations automatically.
 
 ### Basic Usage
 
@@ -57,7 +57,7 @@ You can integrate Outstream in two ways:
 import React, { useRef, useEffect } from 'react';
 import { ScrollView, Text, StyleSheet } from 'react-native';
 import {
-  BBOutstreamView,
+  BBOutstreamPlayerView,
   type BBOutstreamViewMethods,
 } from '@bluebillywig/react-native-bb-player';
 
@@ -75,7 +75,7 @@ function ArticleWithAd() {
         Lorem ipsum dolor sit amet, consectetur adipiscing elit...
       </Text>
 
-      <BBOutstreamView
+      <BBOutstreamPlayerView
         ref={outstreamRef}
         jsonUrl="https://demo.bbvms.com/a/native_sdk_outstream.json"
         expandedHeight={250}
@@ -112,35 +112,35 @@ const styles = StyleSheet.create({
 
 ### Animation Options
 
-`BBOutstreamView` supports multiple animation types:
+`BBOutstreamPlayerView` supports multiple animation types:
 
 ```tsx
 // Smooth timing animation (default)
-<BBOutstreamView
+<BBOutstreamPlayerView
   animation={{ type: 'timing', duration: 300 }}
   // ...
 />
 
 // Spring animation with bounce
-<BBOutstreamView
+<BBOutstreamPlayerView
   animation={{ type: 'spring', damping: 15, stiffness: 100 }}
   // ...
 />
 
 // LayoutAnimation (may be smoother on some devices)
-<BBOutstreamView
+<BBOutstreamPlayerView
   animation={{ type: 'layout', duration: 250 }}
   // ...
 />
 
 // No animation (instant)
-<BBOutstreamView
+<BBOutstreamPlayerView
   animation={{ type: 'none' }}
   // ...
 />
 ```
 
-### BBOutstreamView Props
+### BBOutstreamPlayerView Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -154,9 +154,9 @@ const styles = StyleSheet.create({
 | `onAnimationStart` | `(isCollapsing: boolean) => void` | - | Called when animation starts |
 | All `BBPlayerView` props | - | - | Supports all player events |
 
-### BBOutstreamView Methods
+### BBOutstreamPlayerView Methods
 
-In addition to all `BBPlayerViewMethods`, BBOutstreamView adds:
+In addition to all `BBPlayerViewMethods`, BBOutstreamPlayerView adds:
 
 | Method | Return Type | Description |
 |--------|-------------|-------------|
@@ -353,7 +353,7 @@ options={{
 ### Key Events for Outstream
 
 ```tsx
-<BBOutstreamView
+<BBOutstreamPlayerView
   // Collapse/Expand events
   onDidRequestCollapse={() => console.log('Player requests collapse')}
   onDidRequestExpand={() => console.log('Player requests expand')}
@@ -385,7 +385,7 @@ options={{
 import React, { useRef, useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import {
-  BBOutstreamView,
+  BBOutstreamPlayerView,
   type BBOutstreamViewMethods,
 } from '@bluebillywig/react-native-bb-player';
 
@@ -451,7 +451,7 @@ export function OutstreamAd({ articleId, position }: OutstreamAdProps) {
         </View>
       )}
 
-      <BBOutstreamView
+      <BBOutstreamPlayerView
         ref={outstreamRef}
         jsonUrl="https://demo.bbvms.com/a/native_sdk_outstream.json"
         expandedHeight={250}
@@ -527,7 +527,7 @@ useEffect(() => {
 
 1. Ensure `allowCollapseExpand: true` is set in options
 2. Verify `onDidRequestCollapse` and `onDidRequestExpand` callbacks are connected
-3. For `BBOutstreamView`, check that `expandedHeight` is set
+3. For `BBOutstreamPlayerView`, check that `expandedHeight` is set
 
 ### Animation Issues
 

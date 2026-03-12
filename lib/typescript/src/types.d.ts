@@ -66,7 +66,7 @@ export type MediaClipList = {
     allowDatasource_boolean?: boolean;
     score?: number;
     count?: number;
-    items?: MediaClip[];
+    items?: (MediaClip | MediaClipList | Project)[];
 };
 export type MediaClip = {
     id?: string;

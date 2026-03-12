@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  BBOutstreamView,
+  BBOutstreamPlayerView,
   type BBOutstreamViewMethods,
   type OutstreamAnimationType,
 } from '@bluebillywig/react-native-bb-player';
@@ -30,7 +30,7 @@ interface OutstreamScreenProps {
 }
 
 export function OutstreamScreen({ onBack }: OutstreamScreenProps) {
-  const outstreamRef = useRef<BBOutstreamViewMethods>(null);
+  const outstreamRef = useRef<BBOutstreamPlayerViewMethods>(null);
   const [animationType, setAnimationType] = useState<OutstreamAnimationType>('timing');
   const [eventLog, setEventLog] = useState<string[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -141,7 +141,7 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
         {/* Outstream Ad Placement */}
         <View style={styles.adWrapper}>
           <Text style={styles.adLabel}>ADVERTISEMENT</Text>
-          <BBOutstreamView
+          <BBOutstreamPlayerView
             ref={outstreamRef}
             jsonUrl={OUTSTREAM_URL}
             expandedHeight={250}
